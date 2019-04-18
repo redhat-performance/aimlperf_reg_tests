@@ -2,6 +2,18 @@
 #define PI 3.141592653589793238462643383279
 #define TIMELIMIT 2
 #define BUFFSIZE 4096
+#define PERFORMANCE_KEY "performance_results"
+#define INPUTS_KEY "inputs"
+#define RANK_KEY "rank"
+#define DIMS_KEY "dims"
+#define FS_KEY "fs_Hz"
+#define ITERATIONS_KEY "iterations"
+#define THREADS_KEY "threads"
+#define FWD_DFT_RESULTS_KEY "forward_dft_results"
+#define AVG_GFLOPS_KEY "average_gflops"
+#define STDEV_GFLOPS_KEY "stdev_gflops"
+#define BWD_DFT_RESULTS_KEY "backward_dft_results"
+#define AVG_EXEC_TIME_SECONDS_KEY "average_execution_time_seconds"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,10 +24,13 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <regex.h>
+#include <ctype.h>
 
 void generate_cosine_data(double *cosine, double fs, int rank, int *n, int matrix_size);
 void fill_row(double *cosine, double fs, int row_length, int start_idx, int n_sum, int matrix_size);
 void plot1D(double *cosine, int dim, int rank, int *n, double fs, char *title);
+int verifyCosineJSONFile(char *fftw_json_filename);
 
 int main(int argc, char* argv[]){
 
@@ -31,11 +46,11 @@ int main(int argc, char* argv[]){
     int n[100]; //will hold all of the rank data... max of 100 dims
     char *pEnd;
     if (argc == 1){
-        printf("No arguments were passed! Please enter: (1.) \"noplot\" or \"plot\" for plotting, (2.) JSON document name to save results to, (3.) number of threads to use, (4.) number of iterations to execute, (5.) the sampling frequency \"fs\" for the cosine, (6.) the rank of the cosine, and (7.) the size of each dimension.\n");
+        fprintf(stderr, "No arguments were passed! Please enter: (1.) \"noplot\" or \"plot\" for plotting, (2.) JSON document name to save results to, (3.) number of threads to use, (4.) number of iterations to execute, (5.) the sampling frequency \"fs\" for the cosine, (6.) the rank of the cosine, and (7.) the size of each dimension.\n");
         exit(0);
     }
     else if (argc < 5){
-        printf("Only %d argument(s) given. Minimum number of arguments is 6. Please enter: (1.) \"noplot\" or \"plot\" for plotting, (2.) JSON document name to save results to, (3.) number of threads to use, (4.) number of iterations to execute, (5.) the sampling frequency \"fs\" for the cosine, (6.) the rank of the cosine, and (7.) the size of each dimension", argc-1);
+        fprintf(stderr, "Only %d argument(s) given. Minimum number of arguments is 6. Please enter: (1.) \"noplot\" or \"plot\" for plotting, (2.) JSON document name to save results to, (3.) number of threads to use, (4.) number of iterations to execute, (5.) the sampling frequency \"fs\" for the cosine, (6.) the rank of the cosine, and (7.) the size of each dimension", argc-1);
         exit(0);
     }
     else{
@@ -46,7 +61,7 @@ int main(int argc, char* argv[]){
         else if (strcmp(plot_opt, "noplot") == 0)
             plot=false;
         else{
-            printf("Invalid input '%s' for plotting. Please use \"plot\" or \"noplot\"\n", plot_opt);
+            fprintf(stderr, "Invalid input '%s' for plotting. Please use \"plot\" or \"noplot\"\n", plot_opt);
             exit(0);
         }
 
@@ -57,12 +72,12 @@ int main(int argc, char* argv[]){
         rank = (int)strtol(argv[6], &pEnd, 10);
 
         if (argc <= rank+6){
-            printf("Rank is set to %d, but %d dimensions were passed. The number of dimensions passed must equal the rank. Exiting now.\n", rank, (rank+6-argc));
+            fprintf(stderr, "Rank is set to %d, but %d dimensions were passed. The number of dimensions passed must equal the rank. Exiting now.\n", rank, (rank+6-argc));
             exit(0);
         }
 
         if (argc > rank+7){
-            printf("Rank is set to %d, but %d dimensions were passed. The number of dimensions passed must equal the rank. Exiting now.\n", rank, (argc-(rank+5)));
+            fprintf(stderr, "Rank is set to %d, but %d dimensions were passed. The number of dimensions passed must equal the rank. Exiting now.\n", rank, (argc-(rank+5)));
             exit(0);
         }
 
@@ -71,21 +86,29 @@ int main(int argc, char* argv[]){
         }
 
         if (nthreads < 1){
-            printf("Number of threads must be greater than or equal to 1.\n");
+            fprintf(stderr, "Number of threads must be greater than or equal to 1.\n");
             exit(0);
         }
         if (niters < 1){
-            printf("Number of iterations must be greater than or equal to 1.\n");
+            fprintf(stderr, "Number of iterations must be greater than or equal to 1.\n");
             exit(0);
         }
         if (fs <= 10e-9){
-            printf("Sampling frequency must be greater than 0.0. You entered: %0.2e\n", fs);
+            fprintf(stderr, "Sampling frequency must be greater than 0.0. You entered: %0.2e\n", fs);
             exit(0);
         }
         if (rank < 1){
-            printf("The rank must be greater than or equal to 1.\n");
+            fprintf(stderr, "The rank must be greater than or equal to 1.\n");
             exit(0);
         }
+    }
+
+    // If the file exists, let's check that it's valid
+    if (access(filename, F_OK) != -1){
+        printf("Validating existing JSON file '%s'\n", filename);
+        int valid = verifyCosineJSONFile(filename);
+        if (valid != 0)
+            exit(0);
     }
 
     // Cosine variables
@@ -508,4 +531,395 @@ void plot1D(double *cosine, int dim_to_plot, int rank, int *n, double fs, char *
     for (i=0; i<11; i++){
         fprintf(gnuplot_pipe, "%s \n", gnuplot_cmds[i]);
     }
+}
+
+int verifyCosineJSONFile(char *fftw_json_filename){
+    /* This function verifies that a JSON file is valid and in the proper format for the input to
+     * an FFTW executable.
+     *
+     * Inputs
+     * ------
+     * char *fftw_json_filename
+     *     File to verify
+     *
+     * Error codes
+     * -----------
+     *  -1 : Invalid filename
+     *  -2 : Invalid key found in JSON file
+     *  -3 : Invalid number of brackets or curly braces
+     *  -4 : Invalid line (e.g., we have extra chars that are not null, ' ', or a bracket
+     *  -5 : Too many commas or periods
+     *  -6 : Invalid format for Fs (should be in the format of w.xe+yz or w.xe-yz)
+     */
+
+    // Check if file exists. If not, throw an error and return error code -1
+    if (access(fftw_json_filename, F_OK) == -1){
+        fprintf(stderr, "Invalid filename '%s'.\n", fftw_json_filename);
+        return -1;
+    }
+
+    // Open file
+    FILE *fftw_json_file = fopen(fftw_json_filename, "r");
+
+    // Get key lengths
+    const int performance_key_len = strlen(PERFORMANCE_KEY);
+    const int input_key_len = strlen(INPUTS_KEY);
+    const int rank_key_len = strlen(RANK_KEY);
+    const int dims_key_len = strlen(DIMS_KEY);
+    const int fs_key_len = strlen(FS_KEY);
+    const int iterations_key_len = strlen(ITERATIONS_KEY);
+    const int threads_key_len = strlen(THREADS_KEY);
+    const int fwd_dft_results_key_len = strlen(FWD_DFT_RESULTS_KEY);
+    const int avg_gflops_key_len = strlen(AVG_GFLOPS_KEY);
+    const int stdev_gflops_key_len = strlen(STDEV_GFLOPS_KEY);
+    const int bwd_dft_results_key_len = strlen(BWD_DFT_RESULTS_KEY);
+    const int avg_exec_time_seconds_key_len = strlen(AVG_EXEC_TIME_SECONDS_KEY);
+
+    // Iterate through file
+    int valid_key_count = 0;
+    char buffer[BUFFSIZE] = {'\0'};
+    char *curr_key;
+    int i;
+    char curr_char = '\0';
+    int open_curly_braces_count = 0;
+    int closed_curly_braces_count = 0;
+    int open_bracket_count = 0;
+    int closed_bracket_count = 0;
+    int null_char_count = 0;
+    int space_char_count = 0;
+    int colon_count = 0;
+    int quotes_count = 0;
+    int total_valid_char_count = 0;
+    int n_chars_in_key = 0;
+    int line_count = 1; //yes, we start at 1
+    int same_key_count = 0; //this value should always equal 1 after we've used our logic
+    int index_in_key = 0;
+    int e_count = 0;
+    int sign_count = 0;
+    int comma_count = 0;
+    int dot_count = 0;
+
+    // For checking timestamps
+    char *yyyy_mm_dd_pattern = ".*([0-9]{4})\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01]) ([01]?[0-9]|2[0-3]):([0-5]?[0-9]):([0-5][0-9]).*";
+    regex_t regex;
+    int reti;
+    size_t nmatch = 0;
+    regmatch_t pmatch[nmatch];
+
+    while (fgets(buffer, BUFFSIZE, fftw_json_file)){
+
+        // Check if the current key is valid and keep track of how many keys are found in the 
+        // current line. We want to handle the case where there are multiple of the "correct"
+        // keys in the same line, as that is invalid
+        if (strstr(buffer, PERFORMANCE_KEY) != NULL){
+            curr_key = PERFORMANCE_KEY;
+            n_chars_in_key = performance_key_len;
+            valid_key_count++;
+        }
+        if (strstr(buffer, INPUTS_KEY) != NULL){
+            curr_key = INPUTS_KEY;
+            n_chars_in_key = input_key_len;
+            valid_key_count++;
+        }
+        if (strstr(buffer, RANK_KEY) != NULL){
+            curr_key = RANK_KEY;
+            n_chars_in_key = rank_key_len;
+            valid_key_count++;
+        }
+        if (strstr(buffer, DIMS_KEY) != NULL){
+            curr_key = DIMS_KEY;
+            n_chars_in_key = dims_key_len;
+            valid_key_count++;
+        }
+        if (strstr(buffer, FS_KEY) != NULL){
+            curr_key = FS_KEY;
+            n_chars_in_key = fs_key_len;
+            valid_key_count++;
+        }
+        if (strstr(buffer, ITERATIONS_KEY) != NULL){
+            curr_key = ITERATIONS_KEY;
+            n_chars_in_key = iterations_key_len;
+            valid_key_count++;
+        }
+        if (strstr(buffer, FWD_DFT_RESULTS_KEY) != NULL){
+            curr_key = FWD_DFT_RESULTS_KEY;
+            n_chars_in_key = fwd_dft_results_key_len;
+            valid_key_count++;
+        }
+        if (strstr(buffer, AVG_GFLOPS_KEY) != NULL){
+            curr_key = AVG_GFLOPS_KEY;
+            n_chars_in_key = avg_gflops_key_len;
+            valid_key_count++;
+        }
+        if (strstr(buffer, STDEV_GFLOPS_KEY) != NULL){
+            curr_key = STDEV_GFLOPS_KEY;
+            n_chars_in_key = stdev_gflops_key_len;
+            valid_key_count++;
+        }
+        if (strstr(buffer, BWD_DFT_RESULTS_KEY) != NULL){
+            curr_key = BWD_DFT_RESULTS_KEY;
+            n_chars_in_key = bwd_dft_results_key_len;
+            valid_key_count++;
+        }
+        if (strstr(buffer, AVG_EXEC_TIME_SECONDS_KEY) != NULL){
+            curr_key = AVG_EXEC_TIME_SECONDS_KEY;
+            n_chars_in_key = avg_exec_time_seconds_key_len;
+            valid_key_count++;
+        }
+        if (strstr(buffer, THREADS_KEY) != NULL){
+            curr_key = THREADS_KEY;
+            n_chars_in_key = threads_key_len;
+            valid_key_count++;
+        }
+
+        // We've found more than one 'valid' key, which means something is wrong
+        if (valid_key_count > 1){
+            fprintf(stderr, "Invalid key found on line %d.\n", line_count);
+            return -2;
+        }
+
+        // If there is no key found, then we must check if there are balanced brackets or if the line is space
+        if (valid_key_count == 0){
+
+            reti = regcomp(&regex, yyyy_mm_dd_pattern, REG_EXTENDED);
+            if (reti){
+                fprintf(stderr, "Could not compile regex\n");
+            }
+            reti = regexec(&regex, buffer, nmatch, pmatch, 0);
+
+            // If we have a regex match, then continue
+            if (reti == 0){
+                continue;
+            }
+
+            for (i=0; i<BUFFSIZE; i++){
+
+                // Get the current character
+                curr_char = buffer[i];
+
+                // Check for spaces
+                if (curr_char == ' ')
+                    space_char_count++;
+
+                // Check for null chars
+                if (curr_char == '\0')
+                    null_char_count++;
+
+                // Check for open curly braces
+                if (curr_char == '{')
+                    open_curly_braces_count++;
+
+                // Check for closed curly braces
+                if (curr_char == '}')
+                    closed_curly_braces_count++;
+
+                // Check for commas
+                if (curr_char == ',')
+                    comma_count++;
+
+                // Now see if there are multiple closed brackets on the line
+                if ((open_curly_braces_count > 1) || (closed_curly_braces_count > 1)){
+                    fprintf(stderr, "Too many curly braces on line %d\n", line_count);
+                    return -3;
+                }
+
+                // Reset buffer by setting all chars equal to the null char
+                buffer[i] = '\0';
+            }
+            // Count the total number of valid characters. Make sure to add +1 at the end to include the new line character (\n)
+            total_valid_char_count = open_curly_braces_count + closed_curly_braces_count + space_char_count + null_char_count + comma_count + 1;
+            printf("%s",buffer);
+            if (total_valid_char_count != BUFFSIZE){
+                fprintf(stderr, "Invalid line %d in JSON file. If the line contains a timestamp, check that the day, month, year, hour, mins, and secs are valid. Otherwise, there are unrecognized chars.\n", line_count);
+                return -4;
+            }
+        }
+        // We've found a valid key, so let's check for a colon (:) and quotes (""). We also want to make sure
+        // that the colon occurs AFTER the key.
+        else{
+
+            // Now we have to check for the case if there are MULTIPLE of the same key (since we haven't checked that before)
+            const char *key = buffer;
+            while ((key = strstr(key, curr_key))){
+                same_key_count++;
+                key += strlen(curr_key);
+            }
+
+            // Now check how many of the same key we have. If we have a string such as "performance_key performance_key : {", 
+            // then we know we have the same key twice in the same line and we should throw an error.
+            if (same_key_count > 1){
+                fprintf(stderr, "Multiple keys on line %d.\n", line_count);
+                return -2;
+            }
+
+            for (i=0; i<BUFFSIZE; i++){
+
+                // Get the current character
+                curr_char = buffer[i];
+
+                // This condition checks if the colon has been found BEFORE the current key
+                if (curr_key[0] == curr_char && colon_count != 0){
+                    fprintf(stderr, "Missing key on line %d.\n", line_count);
+                    return -2;
+                }
+
+                // Keep track of the index of the key we're on
+                if (index_in_key < n_chars_in_key){
+                    if (curr_key[index_in_key] == curr_char){
+                        index_in_key++;
+                    }
+                }
+
+                // Check number of colons as we iterate
+                if (curr_char == ':' && colon_count > 1){
+                    fprintf(stderr, "Invalid key. Too many colons on line %d.\n", line_count);
+                    return -2;
+                }
+
+                // Check the number of quotes as we iterate
+                if (quotes_count > 2){
+                    fprintf(stderr, "Invalid key. Too many quotes on line %d.\n", line_count);
+                    return -2;
+                }
+
+                // Check the number of open and closed brackets in dims, as well as the comma count
+                if (strcmp(curr_key, DIMS_KEY) == 0){
+                    if (open_bracket_count > 1 || closed_bracket_count > 1){
+                        fprintf(stderr, "Too many brackets on line %d.\n", line_count);
+                        return -3;
+                    }
+                }
+                else if (open_bracket_count != 0 || closed_bracket_count != 0){
+                    fprintf(stderr, "Brackets are not allowed for key '%s' on line %d.\n", curr_key, line_count);
+                    return -3;
+                }
+                else if ((comma_count > 1) ||
+                    (strcmp(curr_key, THREADS_KEY) == 0 && comma_count != 0) ||
+                    (strcmp(curr_key, STDEV_GFLOPS_KEY) == 0 && comma_count != 0)){
+                    fprintf(stderr, "An excess of commas was found on line %d.\n", line_count);
+                    return -5;
+                }
+
+                // If there are multiple periods, then something went wrong
+                if (dot_count > 1){
+                    fprintf(stderr, "An excess of '.' was found on line %d.\n", line_count);
+                    return -5;
+                }
+
+                // Check if 'dims' has a period (or more) in it. By default, dims cannot have periods. The numbers must be whole.
+                if ((curr_char == '.' && strcmp(curr_key, DIMS_KEY) == 0) ||
+                    (curr_char == '.' && strcmp(curr_key, RANK_KEY) == 0) ||
+                    (curr_char == '.' && strcmp(curr_key, THREADS_KEY) == 0) ||
+                    (curr_char == '.' && strcmp(curr_key, ITERATIONS_KEY) == 0)){
+                    fprintf(stderr, "Float/Double values are not allowed for '%s' line %d. Please use whole numbers.\n", curr_key, line_count);
+                    return -5;
+                }
+
+                // Count the number of commas (we should have either 0 or 1 unless we're on the DIMS_KEY)
+                if (curr_char == ','){
+                    comma_count++;
+                }
+                // Count the number of periods
+                else if (curr_char == '.'){
+                    dot_count++;
+                }
+                // Count the number of colons (we only expect 1)
+                else if (curr_char == ':'){
+                    colon_count++;
+                }
+                // Count number of quotes (we only expect 2)
+                else if (curr_char == '\"'){
+                    quotes_count++;
+                }
+                // Count the number of open brackets (we only expect 1)
+                else if (curr_char == '['){
+                    open_bracket_count++;
+                }
+                // Count the number of closed brackets (we only expect 1)
+                else if (curr_char == ']'){
+                    closed_bracket_count++;
+                }
+                // We've (potentially) reached the case where there is an invalid character
+                else if ((curr_char != ' ') &&
+                         (curr_char != '\0') &&
+                         (curr_char != '\n') &&
+                         (curr_char != '{') &&
+                         (curr_char != '}') &&
+                         (curr_char != '.') &&
+                         (curr_char != ',') &&
+                         (isdigit(curr_char) == 0) &&
+                         (index_in_key == n_chars_in_key) &&
+                         (curr_char != curr_key[index_in_key-1])){
+
+                        if (strcmp(curr_key, DIMS_KEY) == 0){
+                            if (curr_char != ']' && curr_char != '['){
+                                fprintf(stderr, "Invalid key on line %d. Unrecognized character '%c'.\n", line_count, curr_char);
+                                return -2;
+                            }
+                        }
+                        else if (strcmp(curr_key, FS_KEY) == 0){
+
+                            // The only valid characters for fs_Hz are: digits, e, -, and +
+                            if (curr_char != 'e' && curr_char != '-' && curr_char != '+'){
+                                fprintf(stderr, "Invalid key on line %d. Unrecognized character '%c'.\n", line_count, curr_char);
+                                return -2;
+                            }
+                            else if (curr_char == 'e'){
+                                e_count++;
+                            }
+                            else if (curr_char == '+' || curr_char == '-'){
+                                sign_count++;
+                            }
+
+                            // If we have too many +'s or -'s, then the format of fs is wrong.
+                            if (e_count > 1 || sign_count > 1){
+                                fprintf(stderr, "%s", "Invalid format for fs.\n");
+                                return -6;
+                            }
+                        }
+                        else{
+                            fprintf(stderr, "Invalid key on line %d. Unrecognized character '%c'.\n", line_count, curr_char);
+                            return -2;
+                        }
+                }
+
+                // Reset buffer by setting all chars equal to the null char
+                buffer[i] = '\0';
+            }
+
+            // Check number of quotes and colons
+            if (colon_count != 1 && quotes_count != 2){
+                fprintf(stderr, "Invalid key found on line %d.\n", line_count);
+                return -2;
+            }
+
+        }
+        // Reset indices
+        index_in_key = 0;
+
+        // Reset counts
+        same_key_count = 0;
+        space_char_count = 0;
+        null_char_count = 0;
+        open_curly_braces_count = 0;
+        closed_curly_braces_count = 0;
+        open_bracket_count = 0;
+        closed_bracket_count = 0;
+        colon_count = 0;
+        quotes_count = 0;
+        comma_count = 0;
+        e_count = 0;
+        sign_count = 0;
+        dot_count = 0;
+
+        // Update line count
+        line_count++;
+
+        // Update valid key count
+        valid_key_count = 0;
+
+    }
+
+    regfree(&regex);
+    return 0;
 }
