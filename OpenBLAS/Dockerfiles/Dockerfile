@@ -107,12 +107,17 @@ RUN N_REAL_CORES=$(lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(
     sed -i "s|CC=gcc|CC=/usr/bin/x86_64-redhat-linux-gcc|" openblas.spec && \
     sed -i "349s|NMAX=\"NUM_THREADS=128\"|NMAX=\"NUM_THREADS=${N_REAL_CORES}\"|" openblas.spec && \
     cd .. && \
-    rpmbuild -ba ~/rpmbuild/SPECS/openblas.spec > openblas_build.log
+    rpmbuild -ba ~/rpmbuild/SPECS/openblas.spec > openblas_build.log && \
+    cd RPMS/x86_64 && \
+    dnf -y install * && \
+    cd .. && \
+    rpmbuild --clean ~/rpmbuild/SPECS/openblas.spec && \
+    rm -rf RPMS/x86_64
 
 # Create a folder for the benchmark tests and copy the tests to the new folder
 RUN mkdir -p /home/openblas_tests/src
-COPY src/gemm_test.c /home/openblas_tests/src
-COPY compile_gemm.sh /home/openblas_tests
+COPY ../src/gemm_test.c /home/openblas_tests/src
+COPY ../compile_gemm.sh /home/openblas_tests
 
 # When running the tests, don't forget to use export LD_LIBRARY_PATH=/path/to/openblas-lib-shared-objects
 # See README in the main git repo folder for how to compile and run the *gemm tests
