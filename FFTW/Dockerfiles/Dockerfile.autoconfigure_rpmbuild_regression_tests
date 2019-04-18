@@ -94,7 +94,12 @@ RUN . /usr/share/Modules/init/bash && \
     sed -i '367 i\   if [ "$mpi" == "mpich" ]; then ROOT_MPIRUN="mpirun"; else ROOT_MPIRUN="mpirun --allow-run-as-root"; fi' fftw.spec && \
     sed -i '368s|.*%{configure}.*|   %{configure} ${BASEFLAGS} ${prec_flags[iprec]} MPIRUN="${ROOT_MPIRUN}" --enable-mpi \\|' fftw.spec && \
     cd .. && \
-    rpmbuild -ba ~/rpmbuild/SPECS/fftw.spec > fftw_build.log
+    rpmbuild -ba ~/rpmbuild/SPECS/fftw.spec > fftw_build.log && \
+    cd /root/rpmbuild/RPMS/x86_64 && \
+    dnf -y install * && \
+    cd .. && \
+    rpmbuild --clean ~/rpmbuild/SPECS/fftw.spec && \
+    rm -rf /root/rpmbuild/RPMS/*
 
 # Download and install ImageMagick, as well as the jpeg library. We need the latest versions, which are NOT in RHEL 8 at the moment.
 # Additionally, one of the (known) problems with libjpeg is that the code has Windows line endings (\r\n) rather than Linux line endings.

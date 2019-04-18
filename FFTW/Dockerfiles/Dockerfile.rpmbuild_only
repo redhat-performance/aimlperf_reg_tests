@@ -79,4 +79,9 @@ RUN . /usr/share/Modules/init/bash && \
     sed -i '368s|.*%{configure}.*|   %{configure} ${BASEFLAGS} ${prec_flags[iprec]} MPIRUN="${ROOT_MPIRUN}" --enable-mpi \\|' fftw.spec && \
     if [[ $skip_check == "true" ]]; then  sed -i.bak -e '408,438d;445,446d' fftw.spec; fi && \
     cd .. && \
-    rpmbuild -ba ~/rpmbuild/SPECS/fftw.spec > default_fftw_build.log
+    rpmbuild -ba ~/rpmbuild/SPECS/fftw.spec > default_fftw_build.log && \
+    cd /root/rpmbuild/RPMS/x86_64 && \
+    dnf -y install * && \
+    cd .. && \
+    rpmbuild --clean ~/rpmbuild/SPECS/fftw.spec && \
+    rm -rf /root/rpmbuild/RPMS/*

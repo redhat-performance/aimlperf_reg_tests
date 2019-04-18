@@ -83,40 +83,45 @@ RUN . /usr/share/Modules/init/bash && \
     sed -i '367 i\   if [ "$mpi" == "mpich" ]; then ROOT_MPIRUN="mpirun"; else ROOT_MPIRUN="mpirun --allow-run-as-root"; fi' fftw.spec && \
     sed -i '368s|.*%{configure}.*|   %{configure} ${BASEFLAGS} ${prec_flags[iprec]} MPIRUN="${ROOT_MPIRUN}" --enable-mpi \\|' fftw.spec && \
     cd .. && \
-    rpmbuild -ba ~/rpmbuild/SPECS/fftw.spec > fftw_build.log
+    rpmbuild -ba ~/rpmbuild/SPECS/fftw.spec > fftw_build.log && \
+    cd /root/rpmbuild/RPMS/x86_64 && \
+    dnf -y install * && \
+    cd .. && \
+    rpmbuild --clean ~/rpmbuild/SPECS/fftw.spec && \
+    rm -rf /root/rpmbuild/RPMS/*
 
 # Download and install ImageMagick, as well as the jpeg library. We need the latest versions, which are NOT in RHEL 8 at the moment.
 # Additionally, one of the (known) problems with libjpeg is that the code has Windows line endings (\r\n) rather than Linux line endings.
 # Thus, we must use dos2unix to convert the line endings from Windows to Linux. And finally, we need to download the latest config.sub
 # file because the config.sub file that comes with libjpeg is outdated and does not recognize newer hardware!
-#RUN dnf -y install unzip dos2unix && \
-#    mkdir -p /usr/man/man1 && \
-#    cd /tmp && \
-#    wget https://downloads.sourceforge.net/project/libjpeg/libjpeg/6b/jpegsr6.zip && \
-#    unzip jpegsr6.zip && \
-#    cd jpeg-6b && \
-#    rm config.sub && \
-#    wget -c "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD" && \
-#    mv 'index.html?p=config.git;a=blob_plain;f=config.sub;hb=HEAD' config.sub && \
-#    chmod u+x config.sub && \
-#    for f in ./*; do dos2unix $f; done && \
-#    ./configure --prefix=/usr --enable-static --enable-shared && \
-#    make && \
-#    make install && \
-#    cd .. && \
-#    rm -rf jpeg-6b && \
-#    rm jpegsr6.zip && \
-#    wget https://imagemagick.org/download/ImageMagick.tar.gz && \
-#    tar xvf ImageMagick.tar.gz && \
-#    cd ImageMagick-7* && \
-#    ./configure && \
-#    make && \
-#    make install && \
-#    cd .. && \
-#    rm ImageMagick.tar.gz && \
-#    rm -rf ImageMagick-7.0.8-34 && \
-#    dnf -y erase dos2unix && \
-#    rm -rf /var/cache/dnf*
+RUN dnf -y install unzip dos2unix && \
+    mkdir -p /usr/man/man1 && \
+    cd /tmp && \
+    wget https://downloads.sourceforge.net/project/libjpeg/libjpeg/6b/jpegsr6.zip && \
+    unzip jpegsr6.zip && \
+    cd jpeg-6b && \
+    rm config.sub && \
+    wget -c "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD" && \
+    mv 'index.html?p=config.git;a=blob_plain;f=config.sub;hb=HEAD' config.sub && \
+    chmod u+x config.sub && \
+    for f in ./*; do dos2unix $f; done && \
+    ./configure --prefix=/usr --enable-static --enable-shared && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf jpeg-6b && \
+    rm jpegsr6.zip && \
+    wget https://imagemagick.org/download/ImageMagick.tar.gz && \
+    tar xvf ImageMagick.tar.gz && \
+    cd ImageMagick-7* && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm ImageMagick.tar.gz && \
+    rm -rf ImageMagick-7.0.8-34 && \
+    dnf -y erase dos2unix && \
+    rm -rf /var/cache/dnf*
 
 # Copy the benchmarks from this repository to this Dockerfile
 ENV FFTW_BENCHMARKS=/home/fftw_benchmarks
