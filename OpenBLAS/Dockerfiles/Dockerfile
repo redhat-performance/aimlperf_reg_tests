@@ -18,31 +18,43 @@ RUN dnf -y update && \
 # Set /usr/bin/python to be python36
 RUN ln -s /usr/bin/python /usr/bin/python36
 
+# Edit yum.conf
+RUN echo "exclude=*.i?86 *.i686" >> /etc/yum.conf
+
 # Install rpmbuild because we will build the package
 RUN dnf -y erase yum && \
     dnf -y install automake \
+                   http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/lapack/3.8.0/8.el8/x86_64/blas-3.8.0-8.el8.x86_64.rpm \
+                   http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/lapack/3.8.0/8.el8/x86_64/blas-devel-3.8.0-8.el8.x86_64.rpm \
+                   http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/lapack/3.8.0/8.el8/x86_64/lapack-3.8.0-8.el8.x86_64.rpm \
+                   http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/lapack/3.8.0/8.el8/x86_64/lapack-devel-3.8.0-8.el8.x86_64.rpm \
+                   http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/lapack/3.8.0/8.el8/x86_64/lapack-static-3.8.0-8.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/binutils/2.30/52.el8/x86_64/binutils-2.30-52.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/gcc/8.2.1/3.5.el8/x86_64/cpp-8.2.1-3.5.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/gcc/8.2.1/3.5.el8/x86_64/gcc-8.2.1-3.5.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/gcc/8.2.1/3.5.el8/x86_64/gcc-c++-8.2.1-3.5.el8.x86_64.rpm \
+                   http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/gcc/8.2.1/3.5.el8/x86_64/libstdc++-devel-8.2.1-3.5.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/gcc/8.2.1/3.5.el8/x86_64/gcc-gfortran-8.2.1-3.5.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/gcc/8.2.1/3.5.el8/x86_64/libgcc-8.2.1-3.5.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/gcc/8.2.1/3.5.el8/x86_64/libgfortran-8.2.1-3.5.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/gcc/8.2.1/3.5.el8/x86_64/libgomp-8.2.1-3.5.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/gcc/8.2.1/3.5.el8/x86_64/libquadmath-8.2.1-3.5.el8.x86_64.rpm \
+                   http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/gcc/8.2.1/3.5.el8/x86_64/libquadmath-devel-8.2.1-3.5.el8.x86_64.rpm \
                    bc \
                    diffutils \
-                   execstack \
+                   http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/execstack/0.5.0/15.el8/x86_64/execstack-0.5.0-15.el8.x86_64.rpm \
                    lapack-static \
                    libtool \
                    make \
                    multilib-rpm-config \
                    patch \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/perl/5.26.3/416.el8/x86_64/perl-Errno-1.28-416.el8.x86_64.rpm \
+                   http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/perl-Encode/2.97/3.el8/x86_64/perl-Encode-devel-2.97-3.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/perl/5.26.3/416.el8/x86_64/perl-5.26.3-416.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/perl/5.26.3/416.el8/x86_64/perl-devel-5.26.3-416.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/perl/5.26.3/416.el8/x86_64/perl-interpreter-5.26.3-416.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/perl/5.26.3/416.el8/x86_64/perl-libs-5.26.3-416.el8.x86_64.rpm \
+                   http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/perl/5.26.3/416.el8/noarch/perl-utils-5.26.3-416.el8.noarch.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/rpm/4.14.2/7.el8/x86_64/rpm-4.14.2-7.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/rpm/4.14.2/7.el8/x86_64/rpm-build-4.14.2-7.el8.x86_64.rpm \
                    http://download.eng.bos.redhat.com/brewroot/vol/rhel-8/packages/rpm/4.14.2/7.el8/x86_64/rpm-build-libs-4.14.2-7.el8.x86_64.rpm \
