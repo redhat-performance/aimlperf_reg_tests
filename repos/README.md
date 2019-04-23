@@ -4,7 +4,17 @@ In this folder, create your own `.repo` files usable by the Dockerfiles containe
 
 Format:
 
-1. `rhel8-Latest.repo`
+1. `rhel7-Latest.repo`
+
+```
+[rhel7-Latest]
+name=RHEL7-Latest
+baseurl=<path/to/rhel7-latest/tree>
+enabled=1
+gpgcheck=0
+```
+
+2. `rhel8-Latest.repo`
 
 ```
 [rhel8-Latest]
@@ -14,7 +24,7 @@ enabled=1
 gpgcheck=0
 ```
 
-2. `rhel8-Appstream-Latest.repo`
+3. `rhel8-Appstream-Latest.repo`
 
 ```
 [rhel8-additional-latest-nightly-appstream]

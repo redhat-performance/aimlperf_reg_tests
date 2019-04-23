@@ -4,8 +4,9 @@
 
 To build OpenBLAS, use one of the Dockerfiles provided in this repo. The Dockerfiles tell Podman to build OpenBLAS using rpmbuild with specific parameters. You can either (1.) use `Dockerfile.autoconfig` to autoconfigure the OpenBLAS build, or (2.) use `Dockerfile` and modify the environment variables at the top.
 
+### RHEL 8
 
-### Autoconfigure the Build
+#### Autoconfigure the Build
 
 `Dockerfile.autoconfig` looks at your CPU microarchitecture to determine if you need to use "HASWELL", "SKYLAKEX", "NEHALEM", "SANDYBRIDGE", etc. as your target CPU. (Default is "CORE2".) It also checks for AVX\* instructions on your machine. While OpenBLAS does have scripts to autodetect the CPU type, sometimes it cannot do it properly and will ask you to input a target CPU, causing the automated build to fail.
 
@@ -15,7 +16,7 @@ To build,
 $ podman build -f Dockerfiles/Dockerfile.autoconfig --tag=rhel8_openblas_autoconfig_build
 ```
 
-### Manually Configure the Build
+#### Manually Configure the Build
 
 If you're familiar with how OpenBLAS works or you want to manually tweak parameters,
 
@@ -26,6 +27,16 @@ To build,
 
 ```
 $ podman build -f Dockerfiles/Dockerfile --tag=rhel8_openblas_custom_build
+```
+
+### RHEL 7
+
+The RHEL 7 Dockerfile, `Dockerfile.rhel7`, does everything the `Dockerfile` and `Dockerfile.autoconfig` do, except on RHEL 7. However, it downloads the OpenBLAS source rpm via yum, rather than acquiring the source rpm from a website.
+
+To build,
+
+```
+$ podman build -f Dockerfiles/Dockerfile.rhel7 --tag=rhel7_openblas_custom_build
 ```
 
 ## How to Build the Tests
