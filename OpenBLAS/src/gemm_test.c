@@ -102,7 +102,7 @@ int main(int argc, char *argv[]){
         fill_double_arr(a, M * K);
         fill_double_arr(b, K * N);
 #else
-        fprintf(stderr, "Invalid value for GEMM_TYPE. Please use -D to set GEMM_TYPE to either \"1\" (for sgemm) or \"2\" (for dgemm), without quotes.");
+        fprintf(stderr, "gemm type not defined. Please use -D when compiling this code to set gemm type. Either -DSGEMM or -DDGEMM");
         exit(0);
 #endif
 
