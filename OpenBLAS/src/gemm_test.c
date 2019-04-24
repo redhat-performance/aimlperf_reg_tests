@@ -57,16 +57,17 @@ void fill_double_arr(double *arr, int arr_len){
 int main(int argc, char *argv[]){
 
     // Check user input
+    char *required_args_error_str = "Required arguments: (1.) number of threads, (2.) number of iterations (for finding an average performance in GFlops)";
     if (argc == 1){
-        fprintf(stderr, "No arguments were passed. Required arguments: (1.) number of threads, (2.) number of iterations (for finding an average performance in GFlops).\n");
+        fprintf(stderr, "No arguments were passed. %s.\n", required_args_error_str);
         exit(0);
     }
     else if (argc == 2){
-        fprintf(stderr, "Too few arguments. Required arguments: (1.) number of threads, (2.) number of iterations (for finding an average performance in GFlops).\n");
+        fprintf(stderr, "Too few arguments. %s.\n", required_args_error_str);
         exit(0);
     }
     else if (argc > 3){
-        fprintf(stderr, "Too many arguments. Required arguments: (1.) number of threads, (2.) number of iterations (for finding an average performance in GFlops).\n");
+        fprintf(stderr, "Too many arguments. %s.\n", required_args_error_str);
         exit(0);
     }
 
