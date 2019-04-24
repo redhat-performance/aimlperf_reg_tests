@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <math.h>
 
 extern void openblas_set_num_threads(int num_threads);
 void openblas_set_num_threads_(int* num_threads){
@@ -95,6 +96,23 @@ void print_JSON_results(char *JSON_doc_filename, int linestart){
             continue;
         printf("%s", buffer);
     }
+};
+/***************************************************/
+// Gets standard deviation
+long double get_standard_deviation(double average_execution_time, double *performance_times, double num_iters){
+
+    double time_diff, time_diff_squared;
+    long double squared_diff_sum = 0;
+    
+    int i;
+    for (i=0; i<num_iters; i++){
+        time_diff = performance_times[i] - average_execution_time;
+        time_diff_squared = time_diff * time_diff;
+        squared_diff_sum += time_diff_squared;
+    }
+
+    long double stdev = pow((squared_diff_sum / num_iters), 0.5);
+    return stdev;
 };
 /***************************************************/
 
@@ -194,14 +212,16 @@ int main(int argc, char *argv[]){
 
     // Compute sgemm while getting execution time
     struct timeval start, stop, result;
-    double execution_time;
-    double execution_time_ms;
+    double execution_time = 0;
+    double total_execution_time_sec = 0;
 
     int count = 1;
+    double *performance_times_sec = malloc(sizeof(double) * num_iters);
 #ifdef SGEMM
-        // Start clock
-        gettimeofday(&start, NULL);
         for (i=0; i<num_iters; i++){
+
+            // Start clock
+            gettimeofday(&start, NULL);
 
             // Compute sgemm
             cblas_sgemm(CblasColMajor,
@@ -219,16 +239,27 @@ int main(int argc, char *argv[]){
                         c,
                         LDC);
 
+            // Stop clock
+            gettimeofday(&stop, NULL);
+
+            // Save performance times
+            execution_time = (stop.tv_sec - start.tv_sec) * 1000.0;
+            execution_time += (stop.tv_usec - start.tv_usec) / 1000.0;
+            execution_time *= (1.0e-3);
+            performance_times_sec[i] = execution_time;
+
+            // Keep track of total execution time
+            total_execution_time_sec += execution_time;
+
             // Dummy value to prevent the compiler from optimizing the loop
             count += count * 4 / 3;
         }
 
-        // Stop clock
-        gettimeofday(&stop, NULL);
 #else
-        // Start clock
-        gettimeofday(&start, NULL);
         for (i=0; i<num_iters; i++){
+
+            // Start clock
+            gettimeofday(&start, NULL);
 
             // Compute dgemm
             cblas_dgemm(CblasColMajor,
@@ -246,22 +277,32 @@ int main(int argc, char *argv[]){
                         c,
                         LDC);
 
+            // Stop clock
+            gettimeofday(&stop, NULL);
+
+            // Save performance times
+            execution_time = (stop.tv_sec - start.tv_sec) * 1000.0;
+            execution_time += (stop.tv_usec - start.tv_usec) / 1000.0;
+            execution_time *= (1.0e-3);
+            performance_times_sec[i] = execution_time;
+
+            // Keep track of total execution time
+            total_execution_time_sec += execution_time;
+
             // Dummy value to prevent the compiler from optimizing the loop
             count += count * 4 / 3;
         }
-
-        // Stop clock
-        gettimeofday(&stop, NULL);
 #endif
 
-    // Compute execution time
-    execution_time = (stop.tv_sec - start.tv_sec) * 1000.0;
-    execution_time += (stop.tv_usec - start.tv_usec) / 1000.0;
-    execution_time *= (1.0e-3);
+    // Compute average execution time
+    double average_execution_time_sec = total_execution_time_sec / num_iters;
 
     // Compute GFlops
     double num_ops = (2.0 * M * N * K) / (1e9);
-    double gflops_approx = num_ops / (execution_time / num_iters);
+    double gflops_approx = num_ops / average_execution_time_sec;
+
+    // Compute standard deviation
+    long double stdev = get_standard_deviation(average_execution_time_sec, performance_times_sec, num_iters);
 
     // Save results to file
     FILE *tmp_gemm_JSON_doc = fopen("tmp_gemm_results.json", "w");
@@ -366,7 +407,8 @@ int main(int argc, char *argv[]){
     fprintf(tmp_gemm_JSON_doc, "            }\n");
     fprintf(tmp_gemm_JSON_doc, "        },\n");
     fprintf(tmp_gemm_JSON_doc, "        \"performance_results\": {\n");
-    fprintf(tmp_gemm_JSON_doc, "            \"average_execution_time_seconds\": %0.5f,\n", execution_time / num_iters);
+    fprintf(tmp_gemm_JSON_doc, "            \"average_execution_time_seconds\": %0.5f,\n", average_execution_time_sec);
+    fprintf(tmp_gemm_JSON_doc, "            \"standard_deviation_seconds\": %0.5Lf,\n", stdev);
     fprintf(tmp_gemm_JSON_doc, "            \"average_gflops\": %0.5f\n", gflops_approx);
     fprintf(tmp_gemm_JSON_doc, "        }\n");
     fprintf(tmp_gemm_JSON_doc, "    }\n");
