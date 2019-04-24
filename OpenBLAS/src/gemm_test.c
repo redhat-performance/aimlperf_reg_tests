@@ -329,12 +329,22 @@ int main(int argc, char *argv[]){
         min_str[0] = (min - (min % 10)) / 10 + '0';
     }
 
+    char sec_str[2];
+    if (sec < 10){
+        sec_str[0] = '0';
+        sec_str[1] = sec + '0';
+    }
+    else{
+        sec_str[1] = (sec % 10) + '0';
+        sec_str[0] = (sec - (sec % 10)) / 10 + '0';
+    }
+
     // Start saving results to file
     if (gemm_JSON_document_exists == false)
         fprintf(tmp_gemm_JSON_doc, "{\n");
     else
         fprintf(tmp_gemm_JSON_doc, "\n");
-    fprintf(tmp_gemm_JSON_doc, "    \"%d-%d-%d %d:%c%c:%d\": {\n", year, month, day, hour, min_str[0], min_str[1], sec);
+    fprintf(tmp_gemm_JSON_doc, "    \"%d-%d-%d %d:%c%c:%c%c\": {\n", year, month, day, hour, min_str[0], min_str[1], sec_str[0], sec_str[1]);
     fprintf(tmp_gemm_JSON_doc, "        \"inputs\": {\n");
 #ifdef SGEMM
     fprintf(tmp_gemm_JSON_doc, "            \"gemm_type:\": \"sgemm\",\n");
