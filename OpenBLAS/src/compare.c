@@ -181,6 +181,113 @@ int main(int argc, char *argv[]){
         profile_idx = 0;
         unique_profile = true;
 
+        // DGEMM
+        for (j=0; j<dgemm_entry_counts[i]; j++){
+            
+            // Get current entry in the current file
+            entry = dgemm_entries[i][j];
+
+            // Get dims
+            M = entry.matrix_A_dims[0];
+            K = entry.matrix_A_dims[1];
+            N = entry.matrix_B_dims[1];
+            if (entry.matrix_B_dims[0] != K){
+                fprintf(stderr, "Error reading JSON file. Matrix dims are invalid. K != K.");
+                free(sgemm_entry_counts);
+                free(dgemm_entry_counts);
+                free(sgemm_entries);
+                free(dgemm_entries);
+                exit(0);
+            }
+            else if (entry.matrix_C_dims[0] != M){
+                fprintf(stderr, "Error reading JSON file. Matrix dims are invalid. M != M");
+                free(sgemm_entry_counts);
+                free(dgemm_entry_counts);
+                free(sgemm_entries);
+                free(dgemm_entries);
+                exit(0);
+            }
+
+            // Get alpha and beta
+            alpha = entry.alpha;
+            beta = entry.beta;
+
+            // Check if the current dimension is unique
+            for (h=0; h<profile_idx; h++){
+                
+                // Get existing unique M, N, and K values
+                existing_M = dgemm_cprofiles[i][h].M;
+                existing_N = dgemm_cprofiles[i][h].N;
+                existing_K = dgemm_cprofiles[i][h].K;
+
+                // Get existing alpha and beta values
+                existing_alpha = dgemm_cprofiles[i][h].alpha;
+                existing_beta = dgemm_cprofiles[i][h].beta;
+
+                // We (possibly) have a unique profile if we have a unique combination of M, N, K, alpha, and beta
+                if (M != existing_M || N != existing_N || K != existing_K || alpha != existing_alpha || beta != existing_beta){
+                    unique_profile = true;
+                }
+                else{
+                    unique_profile = false;
+                    break;
+                }
+            }
+
+            // If we have a unique profile, let's create one
+            if (unique_profile == true){
+
+#ifdef DEBUG
+                printf("Creating unique DGEMM profile #%d under %s\n", profile_idx+1, files[i]);
+                printf("    <> Dims:\n");
+                printf("        - M: %d\n", M);
+                printf("        - N: %d\n", N);
+                printf("        - K: %d\n", K);
+                printf("    <> Scalar values:\n");
+                printf("        - alpha: %0.2f\n", alpha);
+                printf("        - beta:  %0.2f\n", beta);
+#endif
+
+                // Add data to 'cprofile' temp var
+                cprofile.M = M;
+                cprofile.N = N;
+                cprofile.K = K;
+                cprofile.alpha = alpha;
+                cprofile.beta = beta;
+                cprofile.gflops_approx[0] = entry.gflops_approx;
+                cprofile.avg_execution_time_sec[0] = entry.avg_execution_time_sec;
+                cprofile.execution_time_stdev[0] = entry.execution_time_stdev;
+                cprofile.num_profiles = 1;
+                for (g=0; g<MAX_DATETIME_LEN; g++)
+                    cprofile.datetimes[0][g] = entry.datetime[g];
+
+                // Add the profile to the unique profiles
+                dgemm_cprofiles[i][profile_idx] = cprofile;
+                profile_idx++;
+            }
+            else{
+#ifdef DEBUG
+                printf("Appending DGEMM profile #%d with new data\n", h+1);
+                printf("   New entry: ");
+                for (g=0; g<MAX_DATETIME_LEN; g++)
+                    printf("%c", entry.datetime[g]);
+                printf("\n");
+#endif
+
+                // Update existing cprofile
+                existing_idx = dgemm_cprofiles[i][h].num_profiles;
+                dgemm_cprofiles[i][h].gflops_approx[existing_idx]          = entry.gflops_approx;
+                dgemm_cprofiles[i][h].avg_execution_time_sec[existing_idx] = entry.avg_execution_time_sec;
+                dgemm_cprofiles[i][h].execution_time_stdev[existing_idx]   = entry.execution_time_stdev;
+                dgemm_cprofiles[i][h].num_profiles += 1;
+                for (g=0; g<MAX_DATETIME_LEN; g++)
+                    dgemm_cprofiles[i][h].datetimes[existing_idx][g] = entry.datetime[g];
+            }
+        }
+
+        profile_idx = 0;
+        unique_profile = true;
+
         // SGEMM
         for (j=0; j<sgemm_entry_counts[i]; j++){
             
@@ -238,7 +345,7 @@ int main(int argc, char *argv[]){
             if (unique_profile == true){
 
 #ifdef DEBUG
-                printf("Creating unique profile #%d under %s\n", profile_idx+1, files[i]);
+                printf("Creating unique SGEMM profile #%d under %s\n", profile_idx+1, files[i]);
                 printf("    <> Dims:\n");
                 printf("        - M: %d\n", M);
                 printf("        - N: %d\n", N);
@@ -267,7 +374,7 @@ int main(int argc, char *argv[]){
             }
             else{
 #ifdef DEBUG
-                printf("Appending profile #%d with new data\n", h+1);
+                printf("Appending SGEMM profile #%d with new data\n", h+1);
                 printf("   New entry: ");
                 for (g=0; g<MAX_DATETIME_LEN; g++)
                     printf("%c", entry.datetime[g]);
@@ -291,10 +398,27 @@ int main(int argc, char *argv[]){
     printf("List of profiles found\n");
     printf("=======================\n");
     for (i=0; i<num_files; i++){
+        if (dgemm_entry_counts[i] == 0)
+            continue;
+        printf("%s\n", files[i]);
+        h = 0;
+        while (dgemm_cprofiles[i][h].M != 0){
+            printf("    <> DGEMM profile #%d:\n", h+1);
+            cprofile = dgemm_cprofiles[i][h];
+            printf("        - (M, N, K): (%d,%d,%d)\n", cprofile.M, cprofile.N, cprofile.K);
+            printf("        - (alpha, beta): (%0.2f,%0.2f)\n", cprofile.alpha, cprofile.beta);
+            printf("        - %d data point(s)\n", cprofile.num_profiles);
+            h++;
+        }
+        printf("\n");
+    }
+    for (i=0; i<num_files; i++){
+        if (sgemm_entry_counts[i] == 0)
+            continue;
         printf("%s\n", files[i]);
         h = 0;
         while (sgemm_cprofiles[i][h].M != 0){
-            printf("    <> Profile #%d:\n", h+1);
+            printf("    <> SGEMM profile #%d:\n", h+1);
             cprofile = sgemm_cprofiles[i][h];
             printf("        - (M, N, K): (%d,%d,%d)\n", cprofile.M, cprofile.N, cprofile.K);
             printf("        - (alpha, beta): (%0.2f,%0.2f)\n", cprofile.alpha, cprofile.beta);
@@ -307,40 +431,71 @@ int main(int argc, char *argv[]){
 
 
     // Find max performance for each common profile
-    double gflops_approx, max_gflops;
-    int max_idx;
-    CommonProfile max_cprofile;
+    double gflops_approx, max_sgemm_gflops, max_dgemm_gflops;
+    int max_sgemm_idx, max_dgemm_idx;
+    CommonProfile max_sgemm_cprofile, max_dgemm_cprofile;
     for (i=0; i<num_files; i++){
-        max_idx = -1;
-        max_gflops = -1;
+        max_dgemm_idx = -1;
+        max_dgemm_gflops = -1;
+        max_sgemm_idx = -1;
+        max_sgemm_gflops = -1;
         gflops_approx = -1;
 
         // For each file, we want to iterate through each common profile
-        h = 0;
-        while (sgemm_cprofiles[i][h].M != 0){
-            cprofile = sgemm_cprofiles[i][h];
+        if (sgemm_entry_counts[i] != 0){
+            h = 0;
+            while (sgemm_cprofiles[i][h].M != 0){
+                cprofile = sgemm_cprofiles[i][h];
 
-            for (j=0; j<cprofile.num_profiles; j++){
-                gflops_approx = cprofile.gflops_approx[j];
-                if (gflops_approx > max_gflops){
-                    max_gflops = gflops_approx;
-                    max_idx = j;
-                    max_cprofile = cprofile;
+                for (j=0; j<cprofile.num_profiles; j++){
+                    gflops_approx = cprofile.gflops_approx[j];
+                    if (gflops_approx > max_sgemm_gflops){
+                        max_sgemm_gflops = gflops_approx;
+                        max_sgemm_idx = j;
+                        max_sgemm_cprofile = cprofile;
+                    }
                 }
+                h++;
             }
-            h++;
+            if (max_sgemm_idx == -1 || max_sgemm_gflops == -1 || gflops_approx == -1){
+                fprintf(stderr, "SGEMM date index assertion failed.\n");
+                exit(0);
+            }
+            printf("%s\n    Max SGEMM performance occurred on ", files[i]);
+            for (g=0; g<MAX_DATETIME_LEN; g++){
+                printf("%c", max_sgemm_cprofile.datetimes[max_sgemm_idx][g]);
+            }
+            printf(" with %0.2f GFlops\n", max_sgemm_gflops);
         }
+        if (dgemm_entry_counts[i] != 0){
+            h = 0;
+            while (dgemm_cprofiles[i][h].M != 0){
+                cprofile = dgemm_cprofiles[i][h];
 
-        if (max_idx == -1 || max_gflops == -1 || gflops_approx == -1){
-            fprintf(stderr, "Date index assertion failed.\n");
-            exit(0);
-        }
+                for (j=0; j<cprofile.num_profiles; j++){
+                    gflops_approx = cprofile.gflops_approx[j];
+                    if (gflops_approx > max_dgemm_gflops){
+                        max_dgemm_gflops = gflops_approx;
+                        max_dgemm_idx = j;
+                        max_dgemm_cprofile = cprofile;
+                    }
+                }
+                h++;
+            }
 
-        printf("Max performance for %s occured on ", files[i]);
-        for (g=0; g<MAX_DATETIME_LEN; g++){
-            printf("%c", max_cprofile.datetimes[max_idx][g]);
+            if (max_dgemm_idx == -1 || max_dgemm_gflops == -1 || gflops_approx == -1){
+                fprintf(stderr, "DGEMM date index assertion failed.\n");
+                exit(0);
+            }
+            if (sgemm_entry_counts[i] == 0)
+                printf("%s\n    Max DGEMM performance occurred on ", files[i]);
+            else
+                printf("    Max DGEMM performance occurred on ");
+            for (g=0; g<MAX_DATETIME_LEN; g++){
+                printf("%c", max_dgemm_cprofile.datetimes[max_dgemm_idx][g]);
+            }
+            printf(" with %0.2f GFlops\n", max_dgemm_gflops);
         }
-        printf(" with %0.2f GFlops\n", max_gflops);
     }
 
     return 0;
