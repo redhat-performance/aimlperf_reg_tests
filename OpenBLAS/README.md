@@ -1,5 +1,9 @@
 # OpenBLAS Regression Tests
 
+This folder contains benchmarks that test two BLAS routines: (1.) SGEMM, and (2.) DGEMM.
+
+After you've run the benchmarks, you can run the `compare_gemm_results` executable to compare the results you get across different files.
+
 ## Building OpenBLAS
 
 To build OpenBLAS, use one of the Dockerfiles provided in this repo. The Dockerfiles tell Podman to build OpenBLAS using rpmbuild with specific parameters. You can either (1.) use `Dockerfile.autoconfig` to autoconfigure the OpenBLAS build, or (2.) use `Dockerfile` and modify the environment variables at the top.
@@ -87,3 +91,20 @@ $ dgemm_test.sh 24 10 "dgemm_results.json" true
 ```
 
 This will execute a dgemm test on 24 threads, repeating the same computation 10 times. The results will be saved to `dgemm_results.json` and printed out to the command line.
+
+
+## Comparing Test Results
+
+Let's say you have one or more JSON files outputted by `run_benchmarks.sh`, `sgemm_test`, or `dgemm_test`. You can easily compare the performance across files by running the `compare_results` executable.
+
+To create the executable, run
+
+```
+$ sh compile_compare.sh
+```
+
+This command will generate the executable, which you can run by:
+
+```
+$ ./compare_gemm_results <number_of_files> <file1> <file2> ... <fileN>
+```
