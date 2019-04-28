@@ -47,6 +47,8 @@ int __parse_int(char *buffer);
 void __parse_int_array(char *buffer, int *dim1, int *dim2);
 double __parse_double(char *buffer);
 void check_dims(PerformanceEntry entry, bool *valid_M, bool *valid_N, bool *valid_K);
+int get_max_performance_index(CommonProfile cprofile);
+void print_common_profile_max_performance(CommonProfile cprofile, char *profile_type, int profile_id, int max_idx);
 
 int main(int argc, char *argv[]){
 
@@ -449,74 +451,69 @@ int main(int argc, char *argv[]){
             printf("\n");
         }
     }
+    printf("Performance Results\n");
+    printf("=======================\n");
 #endif
 
 
     // Find max performance for each common profile
-    double gflops_approx, max_sgemm_gflops, max_dgemm_gflops;
     int max_sgemm_idx, max_dgemm_idx;
-    CommonProfile max_sgemm_cprofile, max_dgemm_cprofile;
     for (i=0; i<num_files; i++){
-        max_dgemm_idx = -1;
-        max_dgemm_gflops = -1;
-        max_sgemm_idx = -1;
-        max_sgemm_gflops = -1;
-        gflops_approx = -1;
+
+        printf("%s\n", files[i]);
 
         // For each file, we want to iterate through each common profile
         if (sgemm_entry_counts[i] != 0){
             h = 0;
             while (sgemm_cprofiles[i][h].M != 0){
+
+                // Extract the current profile
                 cprofile = sgemm_cprofiles[i][h];
 
-                for (j=0; j<cprofile.num_profiles; j++){
-                    gflops_approx = cprofile.gflops_approx[j];
-                    if (gflops_approx > max_sgemm_gflops){
-                        max_sgemm_gflops = gflops_approx;
-                        max_sgemm_idx = j;
-                        max_sgemm_cprofile = cprofile;
-                    }
-                }
+                // Get M, N, and K (for printing results)
+                M = cprofile.M;
+                N = cprofile.N;
+                K = cprofile.K;
+
+                // Do the same for alpha and beta
+                alpha = cprofile.alpha;
+                beta = cprofile.beta;
+
+                // Get the index that points to the max sgemm gflops value
+                max_sgemm_idx = get_max_performance_index(cprofile);
+
+                // Print performance
+                print_common_profile_max_performance(cprofile, "SGEMM", h+1, max_sgemm_idx);
+
+                // Update h
                 h++;
             }
-            if (max_sgemm_idx == -1 || max_sgemm_gflops == -1 || gflops_approx == -1){
-                fprintf(stderr, "SGEMM date index assertion failed.\n");
-                exit(0);
-            }
-            printf("%s\n    Max SGEMM performance occurred on ", files[i]);
-            for (g=0; g<MAX_DATETIME_LEN; g++){
-                printf("%c", max_sgemm_cprofile.datetimes[max_sgemm_idx][g]);
-            }
-            printf(" with %0.2f GFlops\n", max_sgemm_gflops);
         }
         if (dgemm_entry_counts[i] != 0){
             h = 0;
             while (dgemm_cprofiles[i][h].M != 0){
+
+                // Extract the current profile
                 cprofile = dgemm_cprofiles[i][h];
 
-                for (j=0; j<cprofile.num_profiles; j++){
-                    gflops_approx = cprofile.gflops_approx[j];
-                    if (gflops_approx > max_dgemm_gflops){
-                        max_dgemm_gflops = gflops_approx;
-                        max_dgemm_idx = j;
-                        max_dgemm_cprofile = cprofile;
-                    }
-                }
+                // Get M, N, and K (for printing results)
+                M = cprofile.M;
+                N = cprofile.N;
+                K = cprofile.K;
+
+                // Do the same for alpha and beta
+                alpha = cprofile.alpha;
+                beta = cprofile.beta;
+
+                // Get the index that points to the max sgemm gflops value
+                max_dgemm_idx = get_max_performance_index(cprofile);
+
+                // Print performance
+                print_common_profile_max_performance(cprofile, "DGEMM", h+1, max_dgemm_idx);
+
+                // Update h
                 h++;
             }
-
-            if (max_dgemm_idx == -1 || max_dgemm_gflops == -1 || gflops_approx == -1){
-                fprintf(stderr, "DGEMM date index assertion failed.\n");
-                exit(0);
-            }
-            if (sgemm_entry_counts[i] == 0)
-                printf("%s\n    Max DGEMM performance occurred on ", files[i]);
-            else
-                printf("    Max DGEMM performance occurred on ");
-            for (g=0; g<MAX_DATETIME_LEN; g++){
-                printf("%c", max_dgemm_cprofile.datetimes[max_dgemm_idx][g]);
-            }
-            printf(" with %0.2f GFlops\n", max_dgemm_gflops);
         }
     }
 
@@ -918,4 +915,72 @@ void check_dims(PerformanceEntry entry, bool *valid_M, bool *valid_N, bool *vali
             *valid_K = false;
         else
             *valid_K = true;
+}
+
+int get_max_performance_index(CommonProfile cprofile){
+/* Gets the max performance in GFlops found in the entire profile
+ *
+ * Inputs
+ * ------
+ *     CommonProfile cprofile
+ *         The common profile to assess, which contains the results
+ *         of various runs in GFlops
+ *
+ * Returns
+ * -------
+ *     int max_performance_idx
+ *         The index value which points to the location of the max
+ *         performance in the CommonProfile
+ */
+    int j, max_performance_idx, max_gflops, gflops_approx;
+    max_performance_idx = -1;
+    max_gflops = -1;
+    for (j=0; j<cprofile.num_profiles; j++){
+        gflops_approx = cprofile.gflops_approx[j];
+        if (gflops_approx > max_gflops){
+            max_gflops = gflops_approx;
+            max_performance_idx = j;
+        }
+    }
+    return max_performance_idx;
+}
+
+void print_common_profile_max_performance(CommonProfile cprofile, char *profile_type, int profile_id, int max_idx){
+/* Prints the common profile information where the performance is
+ * at its maximum.
+ *
+ * Inputs
+ * ------
+ *     CommonProfile cprofile
+ *         The common profile to print results from
+ *
+ *     char *profile_type
+ *         SGEMM or DGEMM
+ *
+ *     int profile_id
+ *         ID of the profile
+ *
+ *     int max_idx
+ *         The index that corresponds to the max performance in
+ *         the custom profile
+ */
+    int M = cprofile.M;
+    int N = cprofile.N;
+    int K = cprofile.K;
+    double alpha = cprofile.alpha;
+    double beta = cprofile.beta;
+    int g;
+
+    printf("    %s Profile #%d\n", profile_type, profile_id);
+    printf("        |- M: %d\n", M);
+    printf("        |- N: %d\n", N);
+    printf("        |- K: %d\n", K);
+    printf("        |- alpha: %0.2f\n", alpha);
+    printf("        |- beta: %0.2f\n", beta);
+    printf("        Timestamp: ");
+    for (g=0; g<MAX_DATETIME_LEN; g++){
+        printf("%c", cprofile.datetimes[max_idx][g]);
+    }
+    printf("\n");
+    printf("        Max GFlops: %0.2f\n", cprofile.gflops_approx[max_idx]);
 }
