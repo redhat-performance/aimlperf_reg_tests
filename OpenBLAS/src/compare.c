@@ -46,6 +46,7 @@ void read_json(char *json_filename, PerformanceEntry *entries, int *num_entries)
 int __parse_int(char *buffer);
 void __parse_int_array(char *buffer, int *dim1, int *dim2);
 double __parse_double(char *buffer);
+void check_dims(PerformanceEntry entry, bool *valid_M, bool *valid_N, bool *valid_K);
 
 int main(int argc, char *argv[]){
 
@@ -171,7 +172,8 @@ int main(int argc, char *argv[]){
     int h, g, profile_idx, M, N, K, existing_M, existing_N, existing_K, existing_idx;
     double alpha, beta, existing_alpha, existing_beta;
     CommonProfile cprofile;
-    bool unique_profile;
+    bool unique_profile, valid_M, valid_N, valid_K;
+    char *invalid_dimension_error = "Dimension %s is invalid. %s must be a positive integer, and must align across matrices.\n";
 #ifdef DEBUG
         printf("\nFinding common profiles\n");
         printf("=======================\n");
@@ -187,51 +189,55 @@ int main(int argc, char *argv[]){
             // Get current entry in the current file
             entry = dgemm_entries[i][j];
 
-            // Get dims
-            M = entry.matrix_A_dims[0];
-            K = entry.matrix_A_dims[1];
-            N = entry.matrix_B_dims[1];
-            if (entry.matrix_B_dims[0] != K){
-                fprintf(stderr, "Error reading JSON file. Matrix dims are invalid. K != K.");
-                free(sgemm_entry_counts);
-                free(dgemm_entry_counts);
-                free(sgemm_entries);
-                free(dgemm_entries);
+            // Check validity of dimensions
+            check_dims(entry, &valid_M, &valid_N, &valid_K);
+            if (valid_M == false)
+                fprintf(stderr, invalid_dimension_error, "M", "M");
+            if (valid_N == false)
+                fprintf(stderr, invalid_dimension_error, "N", "N");
+            if (valid_K == false)
+                fprintf(stderr, invalid_dimension_error, "K", "K");
+            if (valid_M == false || valid_N == false || valid_K == false)
                 exit(0);
-            }
-            else if (entry.matrix_C_dims[0] != M){
-                fprintf(stderr, "Error reading JSON file. Matrix dims are invalid. M != M");
-                free(sgemm_entry_counts);
-                free(dgemm_entry_counts);
-                free(sgemm_entries);
-                free(dgemm_entries);
-                exit(0);
-            }
 
             // Get alpha and beta
             alpha = entry.alpha;
             beta = entry.beta;
 
-            // Check if the current dimension is unique
-            for (h=0; h<profile_idx; h++){
-                
-                // Get existing unique M, N, and K values
-                existing_M = dgemm_cprofiles[i][h].M;
-                existing_N = dgemm_cprofiles[i][h].N;
-                existing_K = dgemm_cprofiles[i][h].K;
+            // Get M, N, and K
+            M = entry.matrix_A_dims[0];
+            N = entry.matrix_B_dims[1];
+            K = entry.matrix_B_dims[1];
 
-                // Get existing alpha and beta values
-                existing_alpha = dgemm_cprofiles[i][h].alpha;
-                existing_beta = dgemm_cprofiles[i][h].beta;
+            // Make sure alpha and beta are greater than or equal to zeroi. But since alpha
+            // and beta are doubles, we have to check for +0 and -0
+            if (alpha >= 0 && beta >= 0){
 
-                // We (possibly) have a unique profile if we have a unique combination of M, N, K, alpha, and beta
-                if (M != existing_M || N != existing_N || K != existing_K || alpha != existing_alpha || beta != existing_beta){
-                    unique_profile = true;
+                // Check if the current dimension is unique
+                for (h=0; h<profile_idx; h++){
+                    
+                    // Get existing unique M, N, and K values
+                    existing_M = dgemm_cprofiles[i][h].M;
+                    existing_N = dgemm_cprofiles[i][h].N;
+                    existing_K = dgemm_cprofiles[i][h].K;
+
+                    // Get existing alpha and beta values
+                    existing_alpha = dgemm_cprofiles[i][h].alpha;
+                    existing_beta = dgemm_cprofiles[i][h].beta;
+
+                    // We (possibly) have a unique profile if we have a unique combination of M, N, K, alpha, and beta
+                    if (M != existing_M || N != existing_N || K != existing_K || alpha != existing_alpha || beta != existing_beta){
+                        unique_profile = true;
+                    }
+                    else{
+                        unique_profile = false;
+                        break;
+                    }
                 }
-                else{
-                    unique_profile = false;
-                    break;
-                }
+            }
+            else{
+                fprintf(stderr, "alpha and beta must be greater than or equal to 0\n");
+                exit(0);
             }
 
             // If we have a unique profile, let's create one
@@ -294,51 +300,52 @@ int main(int argc, char *argv[]){
             // Get current entry in the current file
             entry = sgemm_entries[i][j];
 
-            // Get dims
-            M = entry.matrix_A_dims[0];
-            K = entry.matrix_A_dims[1];
-            N = entry.matrix_B_dims[1];
-            if (entry.matrix_B_dims[0] != K){
-                fprintf(stderr, "Error reading JSON file. Matrix dims are invalid. K != K.");
-                free(sgemm_entry_counts);
-                free(dgemm_entry_counts);
-                free(sgemm_entries);
-                free(dgemm_entries);
+            // Check validity of dimensions
+            check_dims(entry, &valid_M, &valid_N, &valid_K);
+            if (valid_M == false)
+                fprintf(stderr, invalid_dimension_error, "M", "M");
+            if (valid_N == false)
+                fprintf(stderr, invalid_dimension_error, "N", "N");
+            if (valid_K == false)
+                fprintf(stderr, invalid_dimension_error, "K", "K");
+            if (valid_M == false || valid_N == false || valid_K == false)
                 exit(0);
-            }
-            else if (entry.matrix_C_dims[0] != M){
-                fprintf(stderr, "Error reading JSON file. Matrix dims are invalid. M != M");
-                free(sgemm_entry_counts);
-                free(dgemm_entry_counts);
-                free(sgemm_entries);
-                free(dgemm_entries);
-                exit(0);
-            }
 
             // Get alpha and beta
             alpha = entry.alpha;
             beta = entry.beta;
 
+            // Get M, N, and K
+            M = entry.matrix_A_dims[0];
+            N = entry.matrix_B_dims[1];
+            K = entry.matrix_B_dims[1];
+
             // Check if the current dimension is unique
-            for (h=0; h<profile_idx; h++){
-                
-                // Get existing unique M, N, and K values
-                existing_M = sgemm_cprofiles[i][h].M;
-                existing_N = sgemm_cprofiles[i][h].N;
-                existing_K = sgemm_cprofiles[i][h].K;
+            if (alpha >= 0 && beta >= 0){
+                for (h=0; h<profile_idx; h++){
+                    
+                    // Get existing unique M, N, and K values
+                    existing_M = sgemm_cprofiles[i][h].M;
+                    existing_N = sgemm_cprofiles[i][h].N;
+                    existing_K = sgemm_cprofiles[i][h].K;
 
-                // Get existing alpha and beta values
-                existing_alpha = sgemm_cprofiles[i][h].alpha;
-                existing_beta = sgemm_cprofiles[i][h].beta;
+                    // Get existing alpha and beta values
+                    existing_alpha = sgemm_cprofiles[i][h].alpha;
+                    existing_beta = sgemm_cprofiles[i][h].beta;
 
-                // We (possibly) have a unique profile if we have a unique combination of M, N, K, alpha, and beta
-                if (M != existing_M || N != existing_N || K != existing_K || alpha != existing_alpha || beta != existing_beta){
-                    unique_profile = true;
+                    // We (possibly) have a unique profile if we have a unique combination of M, N, K, alpha, and beta
+                    if (M != existing_M || N != existing_N || K != existing_K || alpha != existing_alpha || beta != existing_beta){
+                        unique_profile = true;
+                    }
+                    else{
+                        unique_profile = false;
+                        break;
+                    }
                 }
-                else{
-                    unique_profile = false;
-                    break;
-                }
+            }
+            else{
+                fprintf(stderr, "alpha and beta must be greater than or equal to 0\n");
+                exit(0);
             }
 
             // If we have a unique profile, let's create one
@@ -842,4 +849,52 @@ double __parse_double(char buffer[]){
         }
     }
     return parsed_double + parsed_decimal_part;
+}
+
+void check_dims(PerformanceEntry entry, bool *valid_M, bool *valid_N, bool *valid_K){
+/* Checks if the dimensions of the matrices line up.
+ *
+ * A = [M x K]
+ * B = [K x N]
+ * C = [M x N]
+ *
+ * If any of the dimensions don't align, then we have a problem
+ *
+ * Inputs
+ * ------
+ *     PerformanceEntry entry
+ *         Performance entry which contains matrix info
+ *
+ * Returns
+ * -------
+ *     true/false depending on if the matrix is valid
+ */
+
+        // Get dims for matrix A
+        int aM = entry.matrix_A_dims[0];
+        int aK = entry.matrix_A_dims[1];
+
+        // Get dims for matrix B
+        int bK = entry.matrix_B_dims[0];
+        int bN = entry.matrix_B_dims[1];
+
+        // Get dims for matrix C
+        int cM = entry.matrix_C_dims[0];
+        int cN = entry.matrix_C_dims[1];
+
+        // Save whether the dims are valid or not
+        if (aM != cM)
+            *valid_M = false;
+        else
+            *valid_M = true;
+
+        if (bN != cN)
+            *valid_N = false;
+        else
+            *valid_N = true;
+
+        if (aK != bK)
+            *valid_K = false;
+        else
+            *valid_K = true;
 }
