@@ -398,34 +398,33 @@ int main(int argc, char *argv[]){
     printf("List of profiles found\n");
     printf("=======================\n");
     for (i=0; i<num_files; i++){
-        if (dgemm_entry_counts[i] == 0)
+        if (dgemm_entry_counts[i] == 0 && sgemm_entry_counts[i] == 0)
             continue;
         printf("%s\n", files[i]);
         h = 0;
-        while (dgemm_cprofiles[i][h].M != 0){
-            printf("    <> DGEMM profile #%d:\n", h+1);
-            cprofile = dgemm_cprofiles[i][h];
-            printf("        - (M, N, K): (%d,%d,%d)\n", cprofile.M, cprofile.N, cprofile.K);
-            printf("        - (alpha, beta): (%0.2f,%0.2f)\n", cprofile.alpha, cprofile.beta);
-            printf("        - %d data point(s)\n", cprofile.num_profiles);
-            h++;
+        if (dgemm_entry_counts[i] != 0){
+            while (dgemm_cprofiles[i][h].M != 0){
+                printf("    <> DGEMM profile #%d:\n", h+1);
+                cprofile = dgemm_cprofiles[i][h];
+                printf("        - (M, N, K): (%d,%d,%d)\n", cprofile.M, cprofile.N, cprofile.K);
+                printf("        - (alpha, beta): (%0.2f,%0.2f)\n", cprofile.alpha, cprofile.beta);
+                printf("        - %d data point(s)\n", cprofile.num_profiles);
+                h++;
+            }
+            printf("\n");
         }
-        printf("\n");
-    }
-    for (i=0; i<num_files; i++){
-        if (sgemm_entry_counts[i] == 0)
-            continue;
-        printf("%s\n", files[i]);
-        h = 0;
-        while (sgemm_cprofiles[i][h].M != 0){
-            printf("    <> SGEMM profile #%d:\n", h+1);
-            cprofile = sgemm_cprofiles[i][h];
-            printf("        - (M, N, K): (%d,%d,%d)\n", cprofile.M, cprofile.N, cprofile.K);
-            printf("        - (alpha, beta): (%0.2f,%0.2f)\n", cprofile.alpha, cprofile.beta);
-            printf("        - %d data point(s)\n", cprofile.num_profiles);
-            h++;
+        if (sgemm_entry_counts[i] != 0){
+            h = 0;
+            while (sgemm_cprofiles[i][h].M != 0){
+                printf("    <> SGEMM profile #%d:\n", h+1);
+                cprofile = sgemm_cprofiles[i][h];
+                printf("        - (M, N, K): (%d,%d,%d)\n", cprofile.M, cprofile.N, cprofile.K);
+                printf("        - (alpha, beta): (%0.2f,%0.2f)\n", cprofile.alpha, cprofile.beta);
+                printf("        - %d data point(s)\n", cprofile.num_profiles);
+                h++;
+            }
+            printf("\n");
         }
-        printf("\n");
     }
 #endif
 
