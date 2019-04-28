@@ -173,7 +173,7 @@ int main(int argc, char *argv[]){
     double alpha, beta, existing_alpha, existing_beta;
     CommonProfile cprofile;
     bool unique_profile, valid_M, valid_N, valid_K;
-    char *invalid_dimension_error = "Dimension %s is invalid. %s must be a positive integer, and must align across matrices.\n";
+    char *invalid_dimension_error = "<< ERROR >> Dimension %s is invalid. %s must be a positive integer, and must align across matrices.\n";
 #ifdef DEBUG
         printf("\nFinding common profiles\n");
         printf("=======================\n");
@@ -189,6 +189,14 @@ int main(int argc, char *argv[]){
             // Get current entry in the current file
             entry = dgemm_entries[i][j];
 
+            // Check number of iterations and threads (to make sure the run was valid, even though we're
+            // not actually processing this data)
+            if (entry.num_threads <= 0)
+                fprintf(stderr, "<< ERROR >> Number of threads is invalid: %d\n", entry.num_threads);
+
+            if (entry.num_iters <= 0)
+                fprintf(stderr, "<< ERROR >> Number of iterations is invalid: %d\n", entry.num_iters);
+
             // Check validity of dimensions
             check_dims(entry, &valid_M, &valid_N, &valid_K);
             if (valid_M == false)
@@ -197,7 +205,7 @@ int main(int argc, char *argv[]){
                 fprintf(stderr, invalid_dimension_error, "N", "N");
             if (valid_K == false)
                 fprintf(stderr, invalid_dimension_error, "K", "K");
-            if (valid_M == false || valid_N == false || valid_K == false)
+            if (valid_M == false || valid_N == false || valid_K == false || entry.num_threads <= 0 || entry.num_iters <= 0)
                 exit(0);
 
             // Get alpha and beta
@@ -300,6 +308,14 @@ int main(int argc, char *argv[]){
             // Get current entry in the current file
             entry = sgemm_entries[i][j];
 
+            // Check number of iterations and threads (to make sure the run was valid, even though we're
+            // not actually processing this data)
+            if (entry.num_threads <= 0)
+                fprintf(stderr, "Number of threads is invalid: %d\n", entry.num_threads);
+
+            if (entry.num_iters <= 0)
+                fprintf(stderr, "Number of iterations is invalid: %d\n", entry.num_iters);
+
             // Check validity of dimensions
             check_dims(entry, &valid_M, &valid_N, &valid_K);
             if (valid_M == false)
@@ -308,7 +324,7 @@ int main(int argc, char *argv[]){
                 fprintf(stderr, invalid_dimension_error, "N", "N");
             if (valid_K == false)
                 fprintf(stderr, invalid_dimension_error, "K", "K");
-            if (valid_M == false || valid_N == false || valid_K == false)
+            if (valid_M == false || valid_N == false || valid_K == false || entry.num_threads <= 0 || entry.num_iters <= 0)
                 exit(0);
 
             // Get alpha and beta
@@ -700,6 +716,7 @@ int __parse_int(char buffer[]){
     char current_char = '\0';
     int char_as_int;
     int parsed_integer = 0;
+    int sign = 1;
     int i;
     for (i=0; i<BUFFSIZE; i++){
 
@@ -715,12 +732,16 @@ int __parse_int(char buffer[]){
             continue;
         }
 
+        if (current_char == '-')
+            sign = -1;
+
         if (current_char >= '0' && current_char <= '9'){
             char_as_int = current_char - '0';
             parsed_integer *= 10;
             parsed_integer += char_as_int;
         }
     }
+    parsed_integer *= sign;
     return parsed_integer;
 }
 
