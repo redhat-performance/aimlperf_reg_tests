@@ -5,6 +5,8 @@
 #include <string.h>
 #include <math.h>
 #include <regex.h>
+#include <time.h>
+#include <sys/time.h>
 
 #define BUFFSIZE 4096
 #define MAX_ENTRIES 50
@@ -48,6 +50,7 @@ double __parse_double(char *buffer);
 void check_dims(PerformanceEntry entry, bool *valid_M, bool *valid_N, bool *valid_K);
 int get_max_performance_index(CommonProfile cprofile);
 void print_common_profile_max_performance(CommonProfile cprofile, char *profile_type, int profile_id, int max_idx);
+void save_results_to_json_file(char *gemm_type, int num_files, int entry_counts[], CommonProfile **cprofiles);
 
 int main(int argc, char *argv[]){
 
@@ -452,8 +455,6 @@ int main(int argc, char *argv[]){
     }
     printf("Performance Results\n");
     printf("=======================\n");
-#endif
-
 
     // Find max performance for each common profile
     int max_sgemm_idx, max_dgemm_idx;
@@ -515,6 +516,11 @@ int main(int argc, char *argv[]){
             }
         }
     }
+#endif
+
+    // Save results
+    save_results_to_json_file("sgemm", num_files, sgemm_entry_counts, sgemm_cprofiles);
+    save_results_to_json_file("dgemm", num_files, dgemm_entry_counts, dgemm_cprofiles);
 
     return 0;
 }
@@ -982,4 +988,137 @@ void print_common_profile_max_performance(CommonProfile cprofile, char *profile_
     }
     printf("\n");
     printf("        Max GFlops: %0.2f\n", cprofile.gflops_approx[max_idx]);
+}
+
+void save_results_to_json_file(char *gemm_type, int num_files, int entry_counts[], CommonProfile **cprofiles){
+/* Saves compared performance results to a JSON file for interpreting
+ *
+ *  Inputs
+ *  ------
+ *      char *gemm_type
+ *          The *GEMM routine. (either "sgemm" or "dgemm")
+ *
+ *      int num_files
+ *          Number of files processed
+ *
+ *      int entry_counts[]
+ *          Number of entries in `cprofiles`
+ *
+ *      CommonProfile cprofiles[][]
+ *          Common profiles
+ *
+ */
+    // Initialize vars for processing loop
+    int g, h, i, max_idx, M, N, K;
+    double alpha, beta, gflops, avg_time_sec, avg_time_stdev;
+    CommonProfile cprofile;
+    char current_char;
+
+    // Get current year, month, day, hours, mins, seconds
+    time_t raw_time = time(NULL);
+    struct tm *timeinfo = localtime(&raw_time);
+    int year = timeinfo->tm_year + 1900;
+    int month = timeinfo->tm_mon + 1;
+    int day = timeinfo->tm_mday;
+    int hour = timeinfo->tm_hour;
+    int min = timeinfo->tm_min;
+    int sec = timeinfo->tm_sec;
+
+    // 'min' is an integer, so it does not have a leading 0 for single digits. Thus, we
+    // need to form a string which leads with a 0 if the integer is a single digit.
+    char min_str[2];
+    if (min < 10){
+        min_str[0] = '0';
+        min_str[1] = min + '0';
+    }
+    else{
+        min_str[1] = (min % 10) + '0';
+        min_str[0] = (min - (min % 10)) / 10 + '0';
+    }
+
+    // Do the same for 'sec'
+    char sec_str[2];
+    if (sec < 10){
+        sec_str[0] = '0';
+        sec_str[1] = sec + '0';
+    }
+    else{
+        sec_str[1] = (sec % 10) + '0';
+        sec_str[0] = (sec - (sec % 10)) / 10 + '0';
+    }
+
+    // The filename which we will save the results to
+    char filename_buffer[40];
+    sprintf(filename_buffer, "openblas_%s_results_%d-%d-%d_%d:%c%c:%c%c", gemm_type, year, month, day, hour, min_str[0], min_str[1], sec_str[0], sec_str[1]);
+    char *results_filename = filename_buffer;
+
+    // Create file now
+    FILE *results_json = fopen(results_filename, "w");
+
+    // Find max performance for each common profile and save to JSON
+    fprintf(results_json, "{\n");
+    fprintf(results_json, "    \"%s\": {\n", gemm_type);
+    for (i=0; i<num_files; i++){
+
+        // For each file, we want to iterate through each common profile
+        if (entry_counts[i] == 0)
+            continue;
+
+        h = 0;
+        while (cprofiles[i][h].M != 0){
+
+            // Extract the current profile
+            cprofile = cprofiles[i][h];
+
+            // Get the index that points to the max sgemm gflops value
+            max_idx = get_max_performance_index(cprofile);
+
+            // Get cprofile matrix data
+            M = cprofile.M;
+            N = cprofile.N;
+            K = cprofile.K;
+            alpha = cprofile.alpha;
+            beta = cprofile.beta;
+
+            // Get cprofile gflops and average time data
+            gflops = cprofile.gflops_approx[max_idx]; 
+            avg_time_sec = cprofile.avg_execution_time_sec[max_idx];
+            avg_time_stdev = cprofile.execution_time_stdev[max_idx];
+
+            // Save to results JSON file
+            fprintf(results_json, "        \"profile%d\": {\n", h+1);
+            fprintf(results_json, "            \"matrix_info\": {\n");
+            fprintf(results_json, "                \"M\": %d,\n", M);
+            fprintf(results_json, "                \"N\": %d,\n", N);
+            fprintf(results_json, "                \"K\": %d,\n", K);
+            fprintf(results_json, "                \"alpha\": %0.2f,\n", alpha);
+            fprintf(results_json, "                \"beta\": %0.2f\n", beta);
+            fprintf(results_json, "            },\n");
+            fprintf(results_json, "            \"max_performance\": {\n");
+            fprintf(results_json, "                \"gflops\": %0.2f,\n", gflops);
+            fprintf(results_json, "                \"average_execution_time_sec\": %0.2f,\n", avg_time_sec);
+            fprintf(results_json, "                \"average_execution_time_stdev\": %0.2f,\n", avg_time_stdev);
+            fprintf(results_json, "                \"timestamp\": \"");
+            for (g=0; g<MAX_DATETIME_LEN; g++){
+                current_char = cprofile.datetimes[max_idx][g];
+                if ((current_char >= '0' && current_char <= '9') || (current_char == '-') || (current_char == ':') || (current_char == ' '))
+                    fprintf(results_json, "%c", current_char);
+            }
+            fprintf(results_json, "\"\n");
+            fprintf(results_json, "            }\n");
+            if (cprofiles[i][h+1].M != 0)
+                fprintf(results_json, "        },\n");
+            else
+                fprintf(results_json, "        }\n");
+
+            // Update h
+            h++;
+        }
+    }
+
+    fprintf(results_json, "    }\n");
+    fprintf(results_json, "}\n");
+
+    // Close filename
+    fclose(results_json);
 }
