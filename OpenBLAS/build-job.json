@@ -1,0 +1,55 @@
+{
+    "kind": "Template",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "openblas-build-job",
+        "annotations": {
+            "description": "Template to create a Job to build files.",
+            "tags": "openblas-benchmark-job"
+        }
+    },
+    "objects": [
+        {
+            "kind": "Job",
+            "apiVersion": "batch/v1",
+            "metadata": {
+                "name": "${APPLICATION_NAME}",
+                "labels": {
+                    "appTypes": "openblas-benchmark-job",
+                    "appName": "${APPLICATION_NAME}"
+                }
+            },
+            "spec": {
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "appTypes": "openblas-benchmark-job",
+                            "deploymentconfig": "${APPLICATION_NAME}",
+                            "appName": "${APPLICATION_NAME}"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "${APPLICATION_NAME}",
+                                "image": "${BUILDER_IMAGESTREAM}",
+                                "command": ["/entrypoint", "/usr/libexec/s2i/run"],
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "8",
+                                        "memory": "8Gi"
+                                    },
+                                    "requests": {
+                                        "cpu": "4",
+                                        "memory": "2Gi"
+                                    }
+                                }
+                            }
+                        ],
+						"restartPolicy": "Never"
+                    }
+                }
+            }
+        }
+    ]
+}
