@@ -2,7 +2,7 @@
     "kind": "Template",
     "apiVersion": "v1",
     "metadata": {
-        "name": "openblas-build-job",
+        "name": "openblas-benchmark-job",
         "annotations": {
             "description": "Template to create a Job to build files.",
             "tags": "openblas-benchmark-job"
