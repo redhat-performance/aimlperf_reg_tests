@@ -1,0 +1,110 @@
+#!/bin/bash
+
+#THIS IS FOR RHEL7
+
+# Prevent yum from installing .i686 files
+echo "exclude=*.i?86 *.i686" >> /etc/yum.conf
+
+# Install necessary packages
+yum -y update
+yum -y install automake \
+               blas \
+               cpp \
+               gcc \
+               gcc-c++ \
+               gcc-gfortran \
+               lapack \
+               libgfortran \
+               libgomp \
+               libquadmath \
+               libquadmath-devel \
+               libtool \
+               make \
+               multilib-rpm-config \
+               patch \
+               perl-Errno \
+               perl-Encode-devel \
+               perl \
+               perl-devel \
+               perl-interpreter \
+               perl-libs \
+               perl-utils \
+               prelink \
+               python3-rpm \
+               rpm \
+               rpm-build \
+               rpm-build-libs \
+               rpm-devel \
+               rpm-libs \
+               rpmdevtools \
+               rpmlint \
+               time \
+               wget \
+               yum-utils \
+               --nogpgcheck  && \
+/bin/rm -rf /var/cache/yum*
+
+# Setup rpmbuild tree
+rpmdev-setuptree
+
+# Get official OpenBLAS patches
+RPMBUILD_DIR=/root/rpmbuild
+cd /tmp
+yumdownloader --source openblas
+rpm2cpio openblas*.rpm | cpio -idmv
+mv openblas.spec ${RPMBUILD_DIR}/SPECS
+mv *patch ${RPMBUILD_DIR}/SOURCES
+rm openblas*.rpm
+rm openblas*.tar.gz
+
+# Get git OpenBLAS patches
+yum -y install git
+git config --global user.email "root@s2i"
+git config --global user.name "root"
+cd ${RPMBUILD_DIR}/SOURCES
+wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2010.patch
+wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2018.patch
+wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2019.patch
+wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2021.patch
+wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2023.patch
+wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2024.patch
+
+# Apply OpenBLAS patches
+OPENBLAS_VERSION=$(cat ${RPMBUILD_DIR}/SPECS/openblas.spec | grep "Version:" | rev | cut -d" " -f 1 | rev)
+git clone https://github.com/xianyi/OpenBLAS.git
+cd OpenBLAS
+git checkout v${OPENBLAS_VERSION}
+git am ../2010.patch
+git am ../2018.patch
+git am ../2019.patch
+git am ../2021.patch
+git am ../2023.patch
+git am ../2024.patch
+
+# Re-tar the OpenBLAS file
+mv OpenBLAS OpenBLAS-${OPENBLAS_VERSION}
+tar czvf openblas-${OPENBLAS_VERSION}.tar.gz OpenBLAS-${OPENBLAS_VERSION}
+
+# Clean up
+rm 2010.patch 2018.patch 2019.patch 2021.patch 2023.patch 2024.patch
+rm -rf OpenBLAS-${OPENBLAS_VERSION}
+yum -y erase git
+rm -rf /var/cache/yum*
+
+# Build OpenBLAS
+N_REAL_CORES=$(lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(s\):/ {sockets=$NF}; END{print cores*sockets}')
+cd ${RPMBUILD_DIR}/SPECS
+sed -i "/^%__global_compiler_flags.*/s/^/#/" /usr/lib/rpm/redhat/macros
+sed -i "/.*%__global_compiler_flags.*/a %__global_compiler_flags ${OPENBLAS_CFLAGS}" /usr/lib/rpm/redhat/macros
+sed -i "352s|TARGET.*|TARGET=\"${TARGET_CPU}\"|" openblas.spec
+sed -i "80s|%global build64 1|%global build64 0|" openblas.spec
+sed -i "361 i\export AVX=\"${AVX_FLAGS}\"" openblas.spec
+sed -i "s|CC=gcc|CC=/usr/bin/x86_64-redhat-linux-gcc|" openblas.spec
+sed -i "349s|NMAX=\"NUM_THREADS=128\"|NMAX=\"NUM_THREADS=${N_REAL_CORES}\"|" openblas.spec
+cd ..
+rpmbuild -ba ~/rpmbuild/SPECS/openblas.spec > openblas_build.log
+cd RPMS/x86_64
+yum -y install *
+cd ..
+rpmbuild --clean ~/rpmbuild/SPECS/openblas.spec
+rm -rf RPMS/x86_64
