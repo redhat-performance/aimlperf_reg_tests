@@ -11,7 +11,6 @@
 #define MAX_FILENAME_LEN 100
 #define MAX_DATETIME_LEN 24
 #define PRECISION 1e-5
-#define DEBUG
 
 typedef struct {
     char datetime[MAX_DATETIME_LEN];

@@ -108,3 +108,9 @@ This command will generate the executable, which you can run by:
 ```
 $ ./compare_gemm_results <number_of_files> <file1> <file2> ... <fileN>
 ```
+
+If you want debug statements turned on, use the following to compile `compare.c`:
+
+```
+$ gcc src/compare.c -o compare_gemm_results -lm -Wall -DDEBUG
+```
