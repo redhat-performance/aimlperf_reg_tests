@@ -7,13 +7,147 @@ ENV BUILDER_VERSION 1.0
 
 LABEL io.openshift.s2i.scripts-url="image:///usr/libexec/s2i"
 
+# Copy s2i assemble + run
 COPY ./s2i/bin/ /usr/libexec/s2i
 ADD entrypoint /entrypoint
 RUN chmod +x /entrypoint
 
+# Put on port 8080
 EXPOSE 8080
 
 ENV HOME /home/$NB_USER
+
+# Flags for building OpenBLAS. Change these for a different build!
+ENV OPENBLAS_CFLAGS="-O2 -ftree-vectorize -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches %{_hardened_cflags}"
+ENV AVX_FLAGS="NO_AVX=0 NO_AVX2=0 NO_AVX512=1"
+ENV TARGET_CPU="TARGET=HASWELL DYNAMIC_ARCH=1"
+
+COPY rhel7-Latest.repo /etc/yum.repos.d/rhel7-Latest.repo
+RUN yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+    yum -y update && \
+    /bin/rm -rf /var/cache/yum*
+
+# Edit yum.conf
+RUN echo "exclude=*.i?86 *.i686" >> /etc/yum.conf
+
+# Install rpmbuild because we will build the package
+RUN yum -y downgrade glibc glibc-common glibc-devel libstdc++ && \
+    yum -y install automake \
+                   blas \
+                   cpp \
+                   gcc \
+                   gcc-c++ \
+                   gcc-gfortran \
+                   lapack \
+                   libgfortran \
+                   libgomp \
+                   libquadmath \
+                   libquadmath-devel \
+                   libtool \
+                   make \
+                   multilib-rpm-config \
+                   patch \
+                   perl-Errno \
+                   perl-Encode-devel \
+                   perl \
+                   perl-devel \
+                   perl-interpreter \
+                   perl-libs \
+                   perl-utils \
+                   prelink \
+                   python3-rpm \
+                   rpm \
+                   rpm-build \
+                   rpm-build-libs \
+                   rpm-devel \
+                   rpm-libs \
+                   rpmdevtools \
+                   rpmlint \
+                   time \
+                   wget \
+                   yum-utils \
+                   --nogpgcheck  && \
+    rm -rf /var/cache/yum*
+
+# Setup rpmbuild tree
+RUN /usr/bin/rpmdev-setuptree
+
+# Get OpenBLAS spec file and move to "SPECS" folder under /root/rpmbuild
+ENV RPMBUILD_DIR=${HOME}/rpmbuild
+RUN cd /tmp && \
+    yumdownloader --source openblas && \
+    rpm2cpio openblas*.rpm | cpio -idmv && \
+    mv openblas.spec ${RPMBUILD_DIR}/SPECS && \
+    mv *patch ${RPMBUILD_DIR}/SOURCES && \
+    rm openblas*.rpm && \
+    rm openblas*.tar.gz
+
+# Get latest OpenBLAS and apply patches
+RUN yum -y install git && \
+    git config --global user.email "root@podman" && \
+    git config --global user.name "root" && \
+    \
+    \
+    cd ${RPMBUILD_DIR}/SOURCES && \
+    wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2010.patch && \
+    wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2018.patch && \
+    wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2019.patch && \
+    wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2021.patch && \
+    wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2023.patch && \
+    wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2024.patch && \
+    \
+    \
+    OPENBLAS_VERSION=$(cat ${RPMBUILD_DIR}/SPECS/openblas.spec | grep "Version:" | rev |  cut -d" " -f 1 | rev) && \
+    \
+    \
+    git clone https://github.com/xianyi/OpenBLAS.git && \
+    cd OpenBLAS && \
+    git checkout v${OPENBLAS_VERSION} && \
+    git am ../2010.patch && \
+    git am ../2018.patch && \
+    git am ../2019.patch && \
+    git am ../2021.patch && \
+    git am ../2023.patch && \
+    git am ../2024.patch && \
+    \
+    \
+    cd .. && \
+    mv OpenBLAS OpenBLAS-${OPENBLAS_VERSION} && \
+    tar czvf openblas-${OPENBLAS_VERSION}.tar.gz OpenBLAS-${OPENBLAS_VERSION} && \
+    \
+    \
+    rm 2010.patch 2018.patch 2019.patch 2021.patch 2023.patch 2024.patch && \
+    rm -rf OpenBLAS-${OPENBLAS_VERSION} && \
+    yum -y erase git && \
+    rm -rf /var/cache/yum*
+
+RUN LS_RPMBUILD_SPECS=$(ls ${RPMBUILD_DIR}/SPECS) && echo $LS_RPMBUILD_SPECS
+
+# Build OpenBLAS with rpmbuild. Note that we must set the "global compiler flags" (i.e., CFLAGS) by editing the macros file.
+# We also must set the AVX* flags (NO_AVX, NO_AVX2, and NO_AVX512), the target CPU, and the max number of threads. See top of
+# Dockerfile for OPENBLAS_CFLAGS, AVX_FLAGS, and TARGET environment vars. Also note that the 64 bit packages are not built
+# because they take up a lot of space and we just want to test the basic, non-64 versions.
+RUN N_REAL_CORES=$(lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(s\):/ {sockets=$NF}; END{print cores*sockets}') && \
+    cd ${RPMBUILD_DIR}/SPECS && \
+    sed -i "/^%__global_cflags.*/s/^/#/" /usr/lib/rpm/redhat/macros && \
+    sed -i "/.*%__global_cflags.*/a %__global_cflags ${OPENBLAS_CFLAGS}" /usr/lib/rpm/redhat/macros && \
+    sed -i "s|TARGET=\"TARGET=CORE2 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1\"|TARGET=\"${TARGET_CPU}\"|" openblas.spec && \
+    sed -i "80s|%global build64 1|%global build64 0|" openblas.spec && \
+    sed -i "361 i\export AVX=\"${AVX_FLAGS}\"" openblas.spec && \
+    sed -i "s|CC=gcc|CC=/usr/bin/x86_64-redhat-linux-gcc|" openblas.spec && \
+    sed -i "s|NMAX=\"NUM_THREADS=128\"|NMAX=\"NUM_THREADS=${N_REAL_CORES}\"|" openblas.spec && \
+    cd .. && \
+    rpmbuild -ba ${RPMBUILD_DIR}/SPECS/openblas.spec > openblas_build.log && \
+    cd RPMS/x86_64 && \
+    yum -y install * && \
+    cd .. && \
+    rpmbuild --clean ${RPMBUILD_DIR}/SPECS/openblas.spec && \
+    rm -rf RPMS/x86_64
+
+# Create a folder for the benchmark tests and copy the tests to the new folder
+RUN mkdir -p /home/openblas_tests/src
+COPY ../src/gemm_test.c /home/openblas_tests/src
+COPY ../compile_gemm.sh /home/openblas_tests
 
 USER 1001
 
