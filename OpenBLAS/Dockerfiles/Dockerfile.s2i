@@ -5,24 +5,24 @@ ENV LANG=en_US.utf8
 USER root
 ENV BUILDER_VERSION 1.0
 
+# Set up labels
 LABEL io.openshift.s2i.scripts-url="image:///usr/libexec/s2i"
+LABEL io.openshift.expose-services="8080:http"
 
 # Copy s2i assemble + run
-COPY ./s2i/bin/ /usr/libexec/s2i
-ADD entrypoint /entrypoint
+COPY OpenBLAS/s2i/bin/ /usr/libexec/s2i
+ADD OpenBLAS/entrypoint /entrypoint
 RUN chmod +x /entrypoint
 
 # Put on port 8080
 EXPOSE 8080
-
-ENV HOME /home/$NB_USER
 
 # Flags for building OpenBLAS. Change these for a different build!
 ENV OPENBLAS_CFLAGS="-O2 -ftree-vectorize -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches %{_hardened_cflags}"
 ENV AVX_FLAGS="NO_AVX=0 NO_AVX2=0 NO_AVX512=1"
 ENV TARGET_CPU="TARGET=HASWELL DYNAMIC_ARCH=1"
 
-COPY rhel7-Latest.repo /etc/yum.repos.d/rhel7-Latest.repo
+COPY repos/rhel7-Latest.repo /etc/yum.repos.d/rhel7-Latest.repo
 RUN yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
     yum -y update && \
     /bin/rm -rf /var/cache/yum*
@@ -132,7 +132,7 @@ RUN N_REAL_CORES=$(lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(
     sed -i "/^%__global_cflags.*/s/^/#/" /usr/lib/rpm/redhat/macros && \
     sed -i "/.*%__global_cflags.*/a %__global_cflags ${OPENBLAS_CFLAGS}" /usr/lib/rpm/redhat/macros && \
     sed -i "s|TARGET=\"TARGET=CORE2 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1\"|TARGET=\"${TARGET_CPU}\"|" openblas.spec && \
-    sed -i "80s|%global build64 1|%global build64 0|" openblas.spec && \
+    sed -i "s|%global build64 1|%global build64 0|" openblas.spec && \
     sed -i "361 i\export AVX=\"${AVX_FLAGS}\"" openblas.spec && \
     sed -i "s|CC=gcc|CC=/usr/bin/x86_64-redhat-linux-gcc|" openblas.spec && \
     sed -i "s|NMAX=\"NUM_THREADS=128\"|NMAX=\"NUM_THREADS=${N_REAL_CORES}\"|" openblas.spec && \
@@ -145,12 +145,23 @@ RUN N_REAL_CORES=$(lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(
     rm -rf RPMS/x86_64
 
 # Create a folder for the benchmark tests and copy the tests to the new folder
-RUN mkdir -p /home/openblas_tests/src
-COPY ../src/gemm_test.c /home/openblas_tests/src
-COPY ../compile_gemm.sh /home/openblas_tests
+ENV OPENBLAS_TESTS=/home/openblas_tests
+RUN mkdir -p ${OPENBLAS_TESTS}/src
+COPY OpenBLAS/src/gemm_test.c ${OPENBLAS_TESTS}/src
+COPY OpenBLAS/run_benchmarks.sh ${OPENBLAS_TESTS}
+COPY OpenBLAS/compile_gemm.sh ${OPENBLAS_TESTS}
 
+RUN chmod 777 ${OPENBLAS_TESTS}/compile_gemm.sh && \
+    chmod 777 ${OPENBLAS_TESTS}/src/gemm_test.c && \
+    chmod 777 ${OPENBLAS_TESTS} && \
+    chmod 777 ${OPENBLAS_TESTS}/src
+
+# This default user is created in the openshift/base-centos7 image
 USER 1001
 
-WORKDIR /workspace
+WORKDIR /home/openblas_tests
 
 ENTRYPOINT ["/entrypoint"]
+
+# TODO: Set the default CMD for the image
+CMD ["/usr/libexec/s2i/usage"]

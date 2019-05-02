@@ -4,7 +4,59 @@ This folder contains benchmarks that test two BLAS routines: (1.) SGEMM, and (2.
 
 After you've run the benchmarks, you can run the `compare_gemm_results` executable to compare the results you get across different files.
 
-## Building OpenBLAS
+## Building OpenBLAS w/ s2i
+
+To build OpenBLAS with s2i, make sure you have Docker and the `s2i` command line tool installed. 
+
+
+### Installing Docker
+
+For Docker on RHEL 7.x,
+
+```
+# yum -y install docker
+```
+
+For Docker on RHEL 8.x,
+
+```
+$ git clone https://github.com/docker/docker.git
+$ cd docker
+$ su -
+# make build
+# make binary
+```
+
+Make sure Docker is up and running via `systemctl start docker`
+
+### Installing s2i
+
+You can download the latest s2i command line tool with this command:
+
+```
+$ wget $(curl -s https://api.github.com/repos/openshift/source-to-image/releases/latest | grep browser_download_url | cut -d '"' -f 4 | grep linux-386)
+```
+
+Alternatively, you choose a different release here: https://github.com/openshift/source-to-image/releases 
+
+Now untar it and move it to `/usr/bin`:
+
+```
+$ tar xvf source-to-image*linux-386.tar.gz
+# mv s2i /usr/bin
+```
+
+### Using s2i
+
+Finally,
+
+```
+$ cd /path/to/aiml_perf_reg_tests
+$ docker build -f OpenBLAS/Dockerfiles/Dockerfile.s2i -t openblas-rhel7 .
+$ s2i build . openblas-rhel7 openblas-dgemm-app
+```
+
+## Building OpenBLAS w/ Podman
 
 To build OpenBLAS, use one of the Dockerfiles provided in this repo. The Dockerfiles tell Podman to build OpenBLAS using rpmbuild with specific parameters. You can either (1.) use `Dockerfile.autoconfig` to autoconfigure the OpenBLAS build, or (2.) use `Dockerfile` and modify the environment variables at the top.
 
