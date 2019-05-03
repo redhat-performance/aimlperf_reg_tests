@@ -158,11 +158,13 @@ COPY OpenBLAS/src/gemm_test.c ${OPENBLAS_TESTS}/src
 COPY OpenBLAS/src/compare.c ${OPENBLAS_TESTS}/src
 COPY OpenBLAS/run_benchmarks.sh ${OPENBLAS_TESTS}
 COPY OpenBLAS/compile_gemm.sh ${OPENBLAS_TESTS}
+COPY OpenBLAS/compile_compare.sh ${OPENBLAS_TESTS}
 
 RUN chmod 777 ${OPENBLAS_TESTS}/compile_gemm.sh && \
     chmod 777 ${OPENBLAS_TESTS}/src/gemm_test.c && \
     chmod 777 ${OPENBLAS_TESTS} && \
-    chmod 777 ${OPENBLAS_TESTS}/src
+    chmod 777 ${OPENBLAS_TESTS}/src && \
+    chmod 777 /usr/libexec/s2i/run
 
 # This default user is created in the openshift/base-centos7 image
 USER 1001

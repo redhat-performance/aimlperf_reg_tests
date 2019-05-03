@@ -77,9 +77,9 @@ fi
 
 # Compile gemm_test.c based on user inputs
 if [[ "$gemm_type" == "sgemm" ]]; then
-    gcc -DSGEMM src/gemm_test.c -o sgemm_test -include$cblas_path -L$openblas_lib_path -I$openblas_include_path -l$openblas_lib_name -mcmodel=large
+    gcc -DSGEMM src/gemm_test.c -o sgemm_test -include$cblas_path -L$openblas_lib_path -I$openblas_include_path -l$openblas_lib_name -mcmodel=large -lm
 elif [[ "$gemm_type" == "dgemm" ]]; then
-    gcc -DDGEMM src/gemm_test.c -o dgemm_test -include$cblas_path -L$openblas_lib_path -I$openblas_include_path -l$openblas_lib_name -mcmodel=large
+    gcc -DDGEMM src/gemm_test.c -o dgemm_test -include$cblas_path -L$openblas_lib_path -I$openblas_include_path -l$openblas_lib_name -mcmodel=large -lm
 else
     echo "ERROR. Invalid gemm type $gemm_type. Please choose from: \"sgemm\" or \"dgemm\""
     exit 1
