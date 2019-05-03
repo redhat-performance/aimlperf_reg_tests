@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/rhscl/s2i-core-rhel7
+FROM registry.access.redhat.com/rhscl/s2i-core-rhel7:latest
 MAINTAINER Courtney Pacheco <cpacheco@redhat.com>
 MAINTAINER Subin Modeel <smodeel@redhat.com>
 ENV LANG=en_US.utf8
@@ -23,18 +23,17 @@ ENV AVX_FLAGS="NO_AVX=0 NO_AVX2=0 NO_AVX512=1"
 ENV TARGET_CPU="TARGET=HASWELL DYNAMIC_ARCH=1"
 
 COPY repos/rhel7-Latest.repo /etc/yum.repos.d/rhel7-Latest.repo
-RUN yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-    yum -y update && \
-    /bin/rm -rf /var/cache/yum*
 
 # Edit yum.conf
 RUN echo "exclude=*.i?86 *.i686" >> /etc/yum.conf
 
 # Install rpmbuild because we will build the package
-RUN yum -y downgrade glibc glibc-common glibc-devel libstdc++ && \
+RUN yum -y update && \
+    yum -y downgrade glibc glibc-common glibc-devel libstdc++ && \
     yum -y install automake \
                    blas \
                    cpp \
+                   https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
                    gcc \
                    gcc-c++ \
                    gcc-gfortran \
@@ -136,6 +135,14 @@ RUN N_REAL_CORES=$(lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(
     sed -i "361 i\export AVX=\"${AVX_FLAGS}\"" openblas.spec && \
     sed -i "s|CC=gcc|CC=/usr/bin/x86_64-redhat-linux-gcc|" openblas.spec && \
     sed -i "s|NMAX=\"NUM_THREADS=128\"|NMAX=\"NUM_THREADS=${N_REAL_CORES}\"|" openblas.spec && \
+    sed -i "/.*Rblas.*/s/^/#/" openblas.spec && \
+    sed -i "/mkdir -p %{buildroot}%{_libdir}\/R\/lib\//s/^/#/" openblas.spec && \
+    sed -i "/.*openmp.*/s/^/#/" openblas.spec && \
+    sed -i "/.*olibname.*/s/^/#/" openblas.spec && \
+    sed -i "/Install the OpenMP library.*/,+9 s/^/#/" openblas.spec && \
+    sed -i "/install -D -p -m 644 openmp64.*/,+9 s/^/#/" openblas.spec && \
+    sed -i '/.*ln -sf ${oname.*/s/^/#/' openblas.spec && \
+    sed -i '/.*%{_libdir}\/lib%{name}o.*/s/^/#/' openblas.spec && \
     cd .. && \
     rpmbuild -ba ${RPMBUILD_DIR}/SPECS/openblas.spec > openblas_build.log && \
     cd RPMS/x86_64 && \
@@ -148,6 +155,7 @@ RUN N_REAL_CORES=$(lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(
 ENV OPENBLAS_TESTS=/home/openblas_tests
 RUN mkdir -p ${OPENBLAS_TESTS}/src
 COPY OpenBLAS/src/gemm_test.c ${OPENBLAS_TESTS}/src
+COPY OpenBLAS/src/compare.c ${OPENBLAS_TESTS}/src
 COPY OpenBLAS/run_benchmarks.sh ${OPENBLAS_TESTS}
 COPY OpenBLAS/compile_gemm.sh ${OPENBLAS_TESTS}
 
