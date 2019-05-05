@@ -10,18 +10,14 @@ LABEL io.openshift.s2i.scripts-url="image:///usr/libexec/s2i"
 LABEL io.openshift.expose-services="8080:http"
 
 # Copy s2i assemble + run
-COPY OpenBLAS/s2i/bin/ /usr/libexec/s2i
+COPY OpenBLAS/.s2i/bin/ /usr/libexec/s2i
 ADD OpenBLAS/entrypoint /entrypoint
 RUN chmod +x /entrypoint
 
 # Put on port 8080
 EXPOSE 8080
 
-# Flags for building OpenBLAS. Change these for a different build!
-ENV OPENBLAS_CFLAGS="-O2 -ftree-vectorize -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches %{_hardened_cflags}"
-ENV AVX_FLAGS="NO_AVX=0 NO_AVX2=0 NO_AVX512=1"
-ENV TARGET_CPU="TARGET=HASWELL DYNAMIC_ARCH=1"
-
+# Copy repo file
 COPY repos/rhel7-Latest.repo /etc/yum.repos.d/rhel7-Latest.repo
 
 # Edit yum.conf
@@ -37,6 +33,7 @@ RUN yum -y update && \
                    gcc \
                    gcc-c++ \
                    gcc-gfortran \
+                   git \
                    lapack \
                    libgfortran \
                    libgomp \
@@ -68,89 +65,6 @@ RUN yum -y update && \
                    --nogpgcheck  && \
     rm -rf /var/cache/yum*
 
-# Setup rpmbuild tree
-RUN /usr/bin/rpmdev-setuptree
-
-# Get OpenBLAS spec file and move to "SPECS" folder under /root/rpmbuild
-ENV RPMBUILD_DIR=${HOME}/rpmbuild
-RUN cd /tmp && \
-    yumdownloader --source openblas && \
-    rpm2cpio openblas*.rpm | cpio -idmv && \
-    mv openblas.spec ${RPMBUILD_DIR}/SPECS && \
-    mv *patch ${RPMBUILD_DIR}/SOURCES && \
-    rm openblas*.rpm && \
-    rm openblas*.tar.gz
-
-# Get latest OpenBLAS and apply patches
-RUN yum -y install git && \
-    git config --global user.email "root@podman" && \
-    git config --global user.name "root" && \
-    \
-    \
-    cd ${RPMBUILD_DIR}/SOURCES && \
-    wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2010.patch && \
-    wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2018.patch && \
-    wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2019.patch && \
-    wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2021.patch && \
-    wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2023.patch && \
-    wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2024.patch && \
-    \
-    \
-    OPENBLAS_VERSION=$(cat ${RPMBUILD_DIR}/SPECS/openblas.spec | grep "Version:" | rev |  cut -d" " -f 1 | rev) && \
-    \
-    \
-    git clone https://github.com/xianyi/OpenBLAS.git && \
-    cd OpenBLAS && \
-    git checkout v${OPENBLAS_VERSION} && \
-    git am ../2010.patch && \
-    git am ../2018.patch && \
-    git am ../2019.patch && \
-    git am ../2021.patch && \
-    git am ../2023.patch && \
-    git am ../2024.patch && \
-    \
-    \
-    cd .. && \
-    mv OpenBLAS OpenBLAS-${OPENBLAS_VERSION} && \
-    tar czvf openblas-${OPENBLAS_VERSION}.tar.gz OpenBLAS-${OPENBLAS_VERSION} && \
-    \
-    \
-    rm 2010.patch 2018.patch 2019.patch 2021.patch 2023.patch 2024.patch && \
-    rm -rf OpenBLAS-${OPENBLAS_VERSION} && \
-    yum -y erase git && \
-    rm -rf /var/cache/yum*
-
-RUN LS_RPMBUILD_SPECS=$(ls ${RPMBUILD_DIR}/SPECS) && echo $LS_RPMBUILD_SPECS
-
-# Build OpenBLAS with rpmbuild. Note that we must set the "global compiler flags" (i.e., CFLAGS) by editing the macros file.
-# We also must set the AVX* flags (NO_AVX, NO_AVX2, and NO_AVX512), the target CPU, and the max number of threads. See top of
-# Dockerfile for OPENBLAS_CFLAGS, AVX_FLAGS, and TARGET environment vars. Also note that the 64 bit packages are not built
-# because they take up a lot of space and we just want to test the basic, non-64 versions.
-RUN N_REAL_CORES=$(lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(s\):/ {sockets=$NF}; END{print cores*sockets}') && \
-    cd ${RPMBUILD_DIR}/SPECS && \
-    sed -i "/^%__global_cflags.*/s/^/#/" /usr/lib/rpm/redhat/macros && \
-    sed -i "/.*%__global_cflags.*/a %__global_cflags ${OPENBLAS_CFLAGS}" /usr/lib/rpm/redhat/macros && \
-    sed -i "s|TARGET=\"TARGET=CORE2 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1\"|TARGET=\"${TARGET_CPU}\"|" openblas.spec && \
-    sed -i "s|%global build64 1|%global build64 0|" openblas.spec && \
-    sed -i "361 i\export AVX=\"${AVX_FLAGS}\"" openblas.spec && \
-    sed -i "s|CC=gcc|CC=/usr/bin/x86_64-redhat-linux-gcc|" openblas.spec && \
-    sed -i "s|NMAX=\"NUM_THREADS=128\"|NMAX=\"NUM_THREADS=${N_REAL_CORES}\"|" openblas.spec && \
-    sed -i "/.*Rblas.*/s/^/#/" openblas.spec && \
-    sed -i "/mkdir -p %{buildroot}%{_libdir}\/R\/lib\//s/^/#/" openblas.spec && \
-    sed -i "/.*openmp.*/s/^/#/" openblas.spec && \
-    sed -i "/.*olibname.*/s/^/#/" openblas.spec && \
-    sed -i "/Install the OpenMP library.*/,+9 s/^/#/" openblas.spec && \
-    sed -i "/install -D -p -m 644 openmp64.*/,+9 s/^/#/" openblas.spec && \
-    sed -i '/.*ln -sf ${oname.*/s/^/#/' openblas.spec && \
-    sed -i '/.*%{_libdir}\/lib%{name}o.*/s/^/#/' openblas.spec && \
-    cd .. && \
-    rpmbuild -ba ${RPMBUILD_DIR}/SPECS/openblas.spec > openblas_build.log && \
-    cd RPMS/x86_64 && \
-    yum -y install * && \
-    cd .. && \
-    rpmbuild --clean ${RPMBUILD_DIR}/SPECS/openblas.spec && \
-    rm -rf RPMS/x86_64
-
 # Create a folder for the benchmark tests and copy the tests to the new folder
 ENV OPENBLAS_TESTS=/home/openblas_tests
 RUN mkdir -p ${OPENBLAS_TESTS}/src
@@ -160,7 +74,10 @@ COPY OpenBLAS/run_benchmarks.sh ${OPENBLAS_TESTS}
 COPY OpenBLAS/compile_gemm.sh ${OPENBLAS_TESTS}
 COPY OpenBLAS/compile_compare.sh ${OPENBLAS_TESTS}
 
-RUN chmod 777 ${OPENBLAS_TESTS}/compile_gemm.sh && \
+# Give user permissions to modify the 'macros' file + other files to run tests
+RUN chmod 777 /usr/lib/rpm/redhat/macros && \
+    chmod 777 ${OPENBLAS_TESTS}/compile_gemm.sh && \
+    chmod 777 ${OPENBLAS_TESTS}/compile_compare.sh && \
     chmod 777 ${OPENBLAS_TESTS}/src/gemm_test.c && \
     chmod 777 ${OPENBLAS_TESTS} && \
     chmod 777 ${OPENBLAS_TESTS}/src && \
@@ -168,6 +85,7 @@ RUN chmod 777 ${OPENBLAS_TESTS}/compile_gemm.sh && \
 
 # This default user is created in the openshift/base-centos7 image
 USER 1001
+RUN rpmdev-setuptree
 
 WORKDIR /home/openblas_tests
 

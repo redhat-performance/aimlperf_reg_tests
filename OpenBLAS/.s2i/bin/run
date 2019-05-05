@@ -1,0 +1,138 @@
+#!/bin/bash
+
+# Set CFLAGS (these will NOT change)
+OPENBLAS_CFLAGS="-O2 -ftree-vectorize -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches %{_hardened_cflags}"
+AVX_FLAGS="NO_AVX=0 NO_AVX2=0 NO_AVX512=1"
+TARGET_CPU="TARGET=HASWELL DYNAMIC_ARCH=1"
+
+# The rpmbuild will be done as a user
+RPMBUILD_DIR=${HOME}/rpmbuild
+
+# Configure git with dummy values
+git config --global user.email "root@s2i"
+git config --global user.name "root"
+
+#########################################
+#             OPENBLAS.SPEC             #
+#########################################
+# Get OpenBLAS spec file and move to the SPECS folder under the rpmbuild tree
+cd /tmp
+yumdownloader --source openblas
+rpm2cpio openblas*.rpm | cpio -idmv
+mv openblas.spec ${RPMBUILD_DIR}/SPECS
+mv *patch ${RPMBUILD_DIR}/SOURCES
+rm openblas*.rpm
+rm openblas*.tar.gz
+
+#########################################
+#           OPENBLAS PATCHES            #
+#########################################
+# We're going to be working in the SOURCES directory for rpmbuild
+cd ${RPMBUILD_DIR}/SOURCES
+
+# Get latest OpenBLAS version
+OPENBLAS_VERSION=$(cat ${RPMBUILD_DIR}/SPECS/openblas.spec | grep "Version:" | rev |  cut -d" " -f 1 | rev)
+
+# Download patches
+wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2010.patch
+wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2018.patch
+wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2019.patch
+wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2021.patch
+wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2023.patch
+wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2024.patch
+
+# Clone OpenBLAS git repo
+git clone https://github.com/xianyi/OpenBLAS.git
+
+# Checkout the latest OpenBLAS version and apply patches
+cd OpenBLAS
+git checkout v${OPENBLAS_VERSION}
+git am ../2010.patch
+git am ../2018.patch
+git am ../2019.patch
+git am ../2021.patch
+git am ../2023.patch
+git am ../2024.patch
+
+# Re-tar the OpenBLAS folder
+cd ..
+mv OpenBLAS OpenBLAS-${OPENBLAS_VERSION}
+tar czvf openblas-${OPENBLAS_VERSION}.tar.gz OpenBLAS-${OPENBLAS_VERSION}
+
+# Remove patches and OpenBLAS folder (since we've tarred up the folder)
+rm 2010.patch 2018.patch 2019.patch 2021.patch 2023.patch 2024.patch
+rm -rf OpenBLAS-${OPENBLAS_VERSION}
+
+#########################################
+#             RPMBUILD STEPS            #
+#########################################
+# Build OpenBLAS with rpmbuild. Note that we must set the "global compiler flags" (i.e., CFLAGS) by editing the macros file.
+# We also must set the AVX* flags (NO_AVX, NO_AVX2, and NO_AVX512), the target CPU, and the max number of threads. Also note
+# that the 64 bit packages are not built because they take up a lot of space and we just want to test the basic, non-64
+# versions.
+N_REAL_CORES=$(lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(s\):/ {sockets=$NF}; END{print cores*sockets}')
+cd ${RPMBUILD_DIR}/SPECS
+
+# Here, we set CFLAGS
+#rpmbuild --define "__global_cflags ${OPENBLAS_CFLAGS}"
+#sed -i "/^%__global_cflags.*/s/^/#/" /usr/lib/rpm/redhat/macros
+#sed -i "/.*%__global_cflags.*/a %__global_cflags ${OPENBLAS_CFLAGS}" /usr/lib/rpm/redhat/macros
+#cat /usr/lib/rpm/redhat/macros
+
+# Here, we set the  target architecture and make sure we have it dynamic
+sed -i "s|TARGET=\"TARGET=CORE2 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1\"|TARGET=\"${TARGET_CPU}\"|" openblas.spec
+
+# We're not going to build the 64-bit interfaces
+sed -i "s|%global build64 1|%global build64 0|" openblas.spec
+
+# Set environment vars
+sed -i "361 i\AVX=\"${AVX_FLAGS}\"" openblas.spec
+sed -i "s|CC=gcc|CC=/usr/bin/x86_64-redhat-linux-gcc|" openblas.spec
+sed -i "s|NMAX=\"NUM_THREADS=128\"|NMAX=\"NUM_THREADS=${N_REAL_CORES}\"|" openblas.spec
+
+# Do not build Rblas
+sed -i "/.*Rblas.*/s/^/#/" openblas.spec
+sed -i "/mkdir -p %{buildroot}%{_libdir}\/R\/lib\//s/^/#/" openblas.spec
+
+# Do not build OpenMP
+sed -i "/.*openmp.*/s/^/#/" openblas.spec
+sed -i "/.*olibname.*/s/^/#/" openblas.spec
+sed -i "/Install the OpenMP library.*/,+9 s/^/#/" openblas.spec
+sed -i "/install -D -p -m 644 openmp64.*/,+9 s/^/#/" openblas.spec
+sed -i '/.*ln -sf ${oname.*/s/^/#/' openblas.spec
+sed -i '/.*%{_libdir}\/lib%{name}o.*/s/^/#/' openblas.spec
+
+# Now build the rpms
+cd ..
+rpmbuild --define "__global_cflags ${OPENBLAS_CFLAGS}" -ba ${RPMBUILD_DIR}/SPECS/openblas.spec > openblas_build.log
+
+# Install the rpms
+cd RPMS/x86_64
+rpm -ivh *.rpm
+
+# Clean up
+cd ..
+rpmbuild --clean ${RPMBUILD_DIR}/SPECS/openblas.spec
+rm -rf RPMS/x86_64
+
+#########################################
+#               BENCHMARKS              #
+#########################################
+# All tests were saved to /home/openblas_tests
+cd /home/openblas_tests
+
+# Compile the code
+sh compile_gemm.sh -g dgemm -I /usr/include/openblas -L /usr/lib64 -n openblasp
+sh compile_compare.sh
+
+# Run the benchmarks and print out the results
+sh run_benchmarks.sh -e dgemm_test -i 5 -j dgemm_results.json
+echo "PERFORMANCE RESULTS"
+echo "-------------------"
+cat dgemm_results.json
+
+# Run the comparative code and print out the results
+./compare_gemm_results 1 dgemm_results.json
+echo "OVERALL BEST PERFORMANCE"
+echo "------------------------"
+cat openblas*

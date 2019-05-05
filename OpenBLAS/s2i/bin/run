@@ -1,6 +1,0 @@
-#!/bin/bash
-
-cd /home/openblas_tests
-sh compile_gemm.sh -g dgemm -I /usr/include/openblas -L /usr/lib64 -n openblasp
-sh run_benchmarks.sh -e dgemm_test -i 10 -j dgemm_results.json
-cat dgemm_results.json
