@@ -4,6 +4,9 @@ This folder contains benchmarks that test two BLAS routines: (1.) SGEMM, and (2.
 
 After you've run the benchmarks, you can run the `compare_gemm_results` executable to compare the results you get across different files.
 
+Provided below are instructions on how to build OpenBLAS with Podman or s2i. (OpenShift instructions coming soon!)
+
+
 ## Building OpenBLAS w/ s2i
 
 To build OpenBLAS with s2i, make sure you have Docker and the `s2i` command line tool installed. 
@@ -48,13 +51,137 @@ $ tar xvf source-to-image*linux-386.tar.gz
 
 ### Using s2i
 
-Finally,
+The first step is to build the special OpenBLAS image:
 
 ```
 $ cd /path/to/aiml_perf_reg_tests
 $ docker build -f OpenBLAS/Dockerfiles/Dockerfile.s2i -t openblas-rhel7 .
+```
+
+Once the image has been built, we can use `s2i`. However, make sure you are in the `.s2i` directory before calling `s2i`:
+
+```
+$ cd OpenBLAS/.s2i
 $ s2i build . openblas-rhel7 openblas-dgemm-app
 ```
+
+The above s2i command will build our app, which we can run using:
+
+```
+$ docker run -it openblas-dgemm-app
+```
+
+### Sample s2i Output
+
+```
+Using
+default thread values.
+executing. / dgemm_test 1 5 dgemm_results.json false
+Using dgemm with 1 threads and 5 iterations.
+executing. / dgemm_test 2 5 dgemm_results.json false
+Using dgemm with 2 threads and 5 iterations.
+executing. / dgemm_test 4 5 dgemm_results.json false
+Using dgemm with 4 threads and 5 iterations.
+PERFORMANCE RESULTS
+-------------------
+{
+	"2019-5-6 13:51:55": {
+		"inputs": {
+			"gemm_type:": "dgemm",
+			"iterations:": 5,
+			"threads": 1,
+			"matrix_params": {
+				"dims": {
+					"matrix_A": [16000, 16000],
+					"matrix_B": [16000, 16000],
+					"matrix_C": [16000, 16000]
+				},
+				"scalar_values": {
+					"alpha": 0.10,
+					"beta": 0.00
+				}
+			}
+		},
+		"performance_results": {
+			"average_execution_time_seconds": 171.45410,
+			"standard_deviation_seconds": 1.53879,
+			"average_gflops": 47.77955
+		}
+	},
+
+	"2019-5-6 14:01:07": {
+		"inputs": {
+			"gemm_type:": "dgemm",
+			"iterations:": 5,
+			"threads": 2,
+			"matrix_params": {
+				"dims": {
+					"matrix_A": [16000, 16000],
+					"matrix_B": [16000, 16000],
+					"matrix_C": [16000, 16000]
+				},
+				"scalar_values": {
+					"alpha": 0.10,
+					"beta": 0.00
+				}
+			}
+		},
+		"performance_results": {
+			"average_execution_time_seconds": 108.27988,
+			"standard_deviation_seconds": 1.54252,
+			"average_gflops": 75.65579
+		}
+	},
+
+	"2019-5-6 14:09:52": {
+		"inputs": {
+			"gemm_type:": "dgemm",
+			"iterations:": 5,
+			"threads": 4,
+			"matrix_params": {
+				"dims": {
+					"matrix_A": [16000, 16000],
+					"matrix_B": [16000, 16000],
+					"matrix_C": [16000, 16000]
+				},
+				"scalar_values": {
+					"alpha": 0.10,
+					"beta": 0.00
+				}
+			}
+		},
+		"performance_results": {
+			"average_execution_time_seconds": 102.70730,
+			"standard_deviation_seconds": 6.28957,
+			"average_gflops": 79.76064
+		}
+	}
+}
+OVERALL BEST PERFORMANCE
+------------------------
+{
+	"dgemm": {
+		"profile1": {
+			"matrix_info": {
+				"M": 16000,
+				"N": 16000,
+				"K": 16000,
+				"alpha": 0.10,
+				"beta": 0.00
+			},
+			"max_performance": {
+				"gflops": 79.76,
+				"average_execution_time_sec": 102.71,
+				"average_execution_time_stdev": 6.29,
+				"timestamp": "2019-5-6 14:09:52"
+			}
+		}
+	}
+} {
+	"sgemm": {}
+}
+```
+
 
 ## Building OpenBLAS w/ Podman
 

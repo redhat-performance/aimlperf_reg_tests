@@ -73,12 +73,6 @@ rm -rf OpenBLAS-${OPENBLAS_VERSION}
 N_REAL_CORES=$(lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(s\):/ {sockets=$NF}; END{print cores*sockets}')
 cd ${RPMBUILD_DIR}/SPECS
 
-# Here, we set CFLAGS
-#rpmbuild --define "__global_cflags ${OPENBLAS_CFLAGS}"
-#sed -i "/^%__global_cflags.*/s/^/#/" /usr/lib/rpm/redhat/macros
-#sed -i "/.*%__global_cflags.*/a %__global_cflags ${OPENBLAS_CFLAGS}" /usr/lib/rpm/redhat/macros
-#cat /usr/lib/rpm/redhat/macros
-
 # Here, we set the  target architecture and make sure we have it dynamic
 sed -i "s|TARGET=\"TARGET=CORE2 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1\"|TARGET=\"${TARGET_CPU}\"|" openblas.spec
 
@@ -106,14 +100,18 @@ sed -i '/.*%{_libdir}\/lib%{name}o.*/s/^/#/' openblas.spec
 cd ..
 rpmbuild --define "__global_cflags ${OPENBLAS_CFLAGS}" -ba ${RPMBUILD_DIR}/SPECS/openblas.spec > openblas_build.log
 
-# Install the rpms
-cd RPMS/x86_64
-rpm -ivh *.rpm
+# Create custom directory tree to install openblas build artifacts to
+OPENBLAS_INSTALL_DIR=${HOME}/custom_openblas
+mkdir -p ${OPENBLAS_INSTALL_DIR}
+mkdir -p ${OPENBLAS_INSTALL_DIR}/lib64
+mkdir -p ${OPENBLAS_INSTALL_DIR}/include
 
-# Clean up
-cd ..
+# Install the rpm contents to a custom dir and clean everything
+cp ${RPMBUILD_DIR}/BUILD/openblas-${OPENBLAS_VERSION}/threaded/libopenblasp* ${OPENBLAS_INSTALL_DIR}/lib64
+cp ${RPMBUILD_DIR}/BUILD/openblas-${OPENBLAS_VERSION}/threaded/*.h ${OPENBLAS_INSTALL_DIR}/include
+
+# Clean
 rpmbuild --clean ${RPMBUILD_DIR}/SPECS/openblas.spec
-rm -rf RPMS/x86_64
 
 #########################################
 #               BENCHMARKS              #
@@ -122,7 +120,8 @@ rm -rf RPMS/x86_64
 cd /home/openblas_tests
 
 # Compile the code
-sh compile_gemm.sh -g dgemm -I /usr/include/openblas -L /usr/lib64 -n openblasp
+export LD_LIBRARY_PATH=${OPENBLAS_INSTALL_DIR}/lib64:$LD_LIBRARY_PATH
+sh compile_gemm.sh -g dgemm -I ${OPENBLAS_INSTALL_DIR}/include -L ${OPENBLAS_INSTALL_DIR}/lib64 -n openblasp
 sh compile_compare.sh
 
 # Run the benchmarks and print out the results
