@@ -72,8 +72,7 @@ COPY OpenBLAS/compile_gemm.sh ${OPENBLAS_TESTS}
 COPY OpenBLAS/compile_compare.sh ${OPENBLAS_TESTS}
 
 # Give user permissions to modify the 'macros' file + other files to run tests
-RUN chmod 777 /usr/lib/rpm/redhat/macros && \
-    chmod 777 ${OPENBLAS_TESTS}/compile_gemm.sh && \
+RUN chmod 777 ${OPENBLAS_TESTS}/compile_gemm.sh && \
     chmod 777 ${OPENBLAS_TESTS}/compile_compare.sh && \
     chmod 777 ${OPENBLAS_TESTS}/src/gemm_test.c && \
     chmod 777 ${OPENBLAS_TESTS} && \
