@@ -81,7 +81,6 @@ RUN chmod 777 ${OPENBLAS_TESTS}/compile_gemm.sh && \
 
 # This default user is created in the openshift/base-centos7 image
 USER 1001
-RUN rpmdev-setuptree
 
 WORKDIR /home/openblas_tests
 
