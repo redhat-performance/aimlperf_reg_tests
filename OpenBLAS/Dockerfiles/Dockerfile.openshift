@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/rhscl/s2i-core-rhel7:latest
+FROM registry.access.redhat.com/ubi7/s2i-base:latest
 MAINTAINER Courtney Pacheco <cpacheco@redhat.com>
 MAINTAINER Subin Modeel <smodeel@redhat.com>
 ENV LANG=en_US.utf8
@@ -16,14 +16,6 @@ RUN chmod +x /entrypoint
 
 # Put on port 8080
 EXPOSE 8080
-
-# Get repo URL
-ENV RHEL_7_LATEST_REPO="/etc/yum.repos.d/rhel7-Latest.repo"
-RUN echo "[rhel7-Latest]" >> ${RHEL_7_LATEST_REPO} && \
-    echo "name=RHEL7-Latest" >> ${RHEL_7_LATEST_REPO} && \
-    echo "baseurl=${BASEURL}" >> ${RHEL_7_LATEST_REPO} && \
-    echo "enabled=1" >> ${RHEL_7_LATEST_REPO} && \
-    echo "gpgcheck=0" >> ${RHEL_7_LATEST_REPO}
 
 # Edit yum.conf
 RUN echo "exclude=*.i?86 *.i686" >> /etc/yum.conf

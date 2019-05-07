@@ -24,9 +24,6 @@ objects:
       type: "Docker"
       dockerStrategy:
         dockerfilePath: "OpenBLAS/Dockerfiles/Dockerfile.openshift"
-        env:
-          - name: "BASEURL"
-            value: "baseurl"
     output: 
       to:
         kind: "DockerImage"
