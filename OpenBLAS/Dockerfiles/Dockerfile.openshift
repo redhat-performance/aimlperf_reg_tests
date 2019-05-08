@@ -84,7 +84,7 @@ RUN chmod 777 ${OPENBLAS_TESTS}/compile_gemm.sh && \
     chmod 777 ${OPENBLAS_TESTS} && \
     chmod 777 ${OPENBLAS_TESTS}/src && \
     chmod 777 /usr/libexec/s2i/run && \
-    chmod 777 rpmdev-setuptree
+    chmod 777 /usr/bin/rpmdev-setuptree
 
 # This default user is created in the openshift/base-centos7 image
 USER 1001
