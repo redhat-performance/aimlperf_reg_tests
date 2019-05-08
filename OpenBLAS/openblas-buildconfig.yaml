@@ -26,12 +26,12 @@ objects:
         dockerfilePath: "OpenBLAS/Dockerfiles/Dockerfile.openshift"
     output: 
       to:
-        kind: "DockerImage"
-        name: "image-registry-openshift-image-registry.apps.cpacheco-gpu-cluster02.devcluster.openshift.com:5000/openshift-image-registry/openblas-rhel7:latest"
+        kind: "ImageStreamTag"
+        name: "openblas-gemm-rhel7:latest"
 - apiVersion: "v1"
   kind: "ImageStream"
   metadata:
-    name: "openblas-gemm-is"
+    name: "openblas-gemm-rhel7"
     namespace: "openshift-image-registry"
   spec:
-    dockerImageRepository: "image-registry-openshift-image-registry.apps.cpacheco-gpu-cluster02.devcluster.openshift.com:5000/openshift-image-registry"
+    dockerImageRepository: "image-registry.openshift-image-registry.svc:5000/image-registry"
