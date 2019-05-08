@@ -54,7 +54,6 @@ RUN yum -y update && \
                    rpm-build-libs \
                    rpm-devel \
                    rpm-libs \
-                   rpmdevtools \
                    rpmlint \
                    time \
                    wget \
@@ -71,16 +70,27 @@ COPY OpenBLAS/run_benchmarks.sh ${OPENBLAS_TESTS}
 COPY OpenBLAS/compile_gemm.sh ${OPENBLAS_TESTS}
 COPY OpenBLAS/compile_compare.sh ${OPENBLAS_TESTS}
 
+# Get rpmdev-setuptree
+RUN git clone https://pagure.io/rpmdevtools.git && \
+    cd rpmdevtools && \
+    mv rpmdev-setuptree /usr/bin && \
+    cd .. && \
+    rm -rf rpmdevtools
+
 # Give user permissions to modify the 'macros' file + other files to run tests
 RUN chmod 777 ${OPENBLAS_TESTS}/compile_gemm.sh && \
     chmod 777 ${OPENBLAS_TESTS}/compile_compare.sh && \
     chmod 777 ${OPENBLAS_TESTS}/src/gemm_test.c && \
     chmod 777 ${OPENBLAS_TESTS} && \
     chmod 777 ${OPENBLAS_TESTS}/src && \
-    chmod 777 /usr/libexec/s2i/run
+    chmod 777 /usr/libexec/s2i/run && \
+    chmod 777 rpmdev-setuptree
 
 # This default user is created in the openshift/base-centos7 image
 USER 1001
+
+# Set up rpmbuild dir
+RUN rpmdev-setuptree
 
 WORKDIR /home/openblas_tests
 
