@@ -42,6 +42,8 @@ RUN yum -y update && \
                    libtool \
                    make \
                    multilib-rpm-config \
+                   nspr \
+                   nspr-devel \
                    patch \
                    perl-Errno \
                    perl-Encode-devel \
@@ -79,6 +81,14 @@ RUN git clone https://pagure.io/rpmdevtools.git && \
     mv rpmdev-setuptree /usr/bin && \
     cd .. && \
     rm -rf rpmdevtools
+
+# Get rpmbuild
+RUN wget http://ftp.rpm.org/releases/rpm-4.14.x/rpm-4.14.2.1.tar.bz2 && \
+    tar xvf rpm-4.14.2.1.tar.bz2 && \
+    cd rpm-4.14.2.1 && \
+    ./configure && \
+    make && \
+    make install
 
 # Give user permissions to modify the 'macros' file + other files to run tests
 RUN chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
