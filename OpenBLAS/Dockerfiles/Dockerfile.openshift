@@ -100,6 +100,7 @@ RUN uid=1000280000 && \
     echo "${uid}:x:${uid}:${gid}:default uid:/home/default:/bin/sh" >> /etc/passwd
 
 # Set up rpmbuild dir
+ENV HOME=/home
 RUN rpmdev-setuptree
 
 WORKDIR /home/openblas_tests
