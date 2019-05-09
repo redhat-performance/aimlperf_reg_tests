@@ -88,12 +88,12 @@ RUN chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
     chmod 777 /etc/passwd
 
 # This default user is created in the openshift/base-centos7 image
-USER default
+USER 1000280000
 
 # Add to passwd
-RUN uid=$(id -u) && \
-    gid=$(id -g) && \
-    echo "default:x:${uid}:${gid}:default uid:/home/openblas_tests:/bin/sh" >> /etc/passwd
+RUN uid=1000280000 && \
+    gid=0 && \
+    echo "${uid}:x:${uid}:${gid}:default uid:/home/openblas_tests:/bin/sh" >> /etc/passwd
 
 # Set up rpmbuild dir
 RUN rpmdev-setuptree
