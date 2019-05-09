@@ -32,8 +32,6 @@ RUN yum -y update && \
                    gcc-c++ \
                    gcc-gfortran \
                    git \
-                   glibc \
-                   glibc.i686 \
                    lapack \
                    libgfortran \
                    libgomp \
@@ -91,7 +89,7 @@ RUN git config --global user.email "root@s2i" && \
 # Get rpmbuild, but first step is to get nspr
 RUN git clone https://github.com/servo/nspr.git && \
     cd nspr && \
-    ./configure && \
+    ./configure --enable-64bit && \
     make && \
     make install
 RUN wget http://ftp.rpm.org/releases/rpm-4.14.x/rpm-4.14.2.1.tar.bz2 && \
