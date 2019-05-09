@@ -88,6 +88,9 @@ RUN chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
     chmod 777 /etc/passwd && \
     chown -R 1001:1001 /opt/app-root
 
+# Add user 'default' to /etc/passwd
+RUN echo "1001:x:1001:1001:default uid:/opt/app-root:/bin/sh" >> /etc/passwd
+
 # This default user is created in the openshift/base-centos7 image
 USER default
 
