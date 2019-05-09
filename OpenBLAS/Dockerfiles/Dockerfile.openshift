@@ -78,14 +78,16 @@ RUN git clone https://pagure.io/rpmdevtools.git && \
     rm -rf rpmdevtools
 
 # Give user permissions to modify the 'macros' file + other files to run tests
-RUN chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
+RUN mkdir -p /home/default && \
+    chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
     chmod +x ${OPENBLAS_TESTS}/compile_compare.sh && \
     chmod 777 ${OPENBLAS_TESTS}/src/gemm_test.c && \
     chmod 777 ${OPENBLAS_TESTS} && \
     chmod 777 ${OPENBLAS_TESTS}/src && \
     chmod 777 /usr/libexec/s2i/run && \
     chmod +x /usr/bin/rpmdev-setuptree && \
-    chmod 777 /etc/passwd
+    chmod 777 /etc/passwd && \
+    chmod 777 /home/default
 
 # This default user is created in the openshift/base-centos7 image
 USER 1000280000
@@ -96,9 +98,7 @@ RUN uid=1000280000 && \
     echo "${uid}:x:${uid}:${gid}:default uid:/home/default:/bin/sh" >> /etc/passwd
 
 # Config git
-RUN cd /home && \
-    mkdir default && \
-    cd default && \
+RUN cd /home/default
     git config --global user.email "1000280000@s2i" && \
     git config --global user.name "1000280000"
 
