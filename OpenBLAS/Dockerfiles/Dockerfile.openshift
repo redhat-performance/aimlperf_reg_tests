@@ -90,6 +90,10 @@ RUN chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
 # This default user is created in the openshift/base-centos7 image
 USER 1000280000
 
+# Config git
+RUN git config --global user.email "1000280000@s2i" && \
+    git config --global user.name "1000280000"
+
 # Add to passwd
 RUN uid=1000280000 && \
     gid=0 && \
