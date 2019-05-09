@@ -86,7 +86,7 @@ RUN chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
     chmod +x /usr/libexec/s2i/run && \
     chmod +x /usr/bin/rpmdev-setuptree && \
     chmod 777 /etc/passwd && \
-    chown -R 1001:1001 /opt
+    chown -R 1001:1001 /opt/app-root
 
 # This default user is created in the openshift/base-centos7 image
 USER 1001
@@ -96,7 +96,4 @@ RUN rpmdev-setuptree
 
 WORKDIR /home/openblas_tests
 
-ENTRYPOINT ["/entrypoint"]
-
-# TODO: Set the default CMD for the image
-CMD ["/usr/libexec/s2i/usage"]
+CMD ["/usr/libexec/s2i/run"]
