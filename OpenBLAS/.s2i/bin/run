@@ -6,7 +6,8 @@ AVX_FLAGS="NO_AVX=0 NO_AVX2=0 NO_AVX512=1"
 TARGET_CPU="TARGET=HASWELL DYNAMIC_ARCH=1"
 
 # The rpmbuild will be done as a user
-RPMBUILD_DIR=/home/rpmbuild
+RPMBUILD_DIR=${HOME}/rpmbuild
+rpmdev-setuptree
 
 #########################################
 #             OPENBLAS.SPEC             #
