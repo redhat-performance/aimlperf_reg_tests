@@ -85,7 +85,16 @@ RUN git clone https://pagure.io/rpmdevtools.git && \
     cd .. && \
     rm -rf rpmdevtools
 
-# Get rpmbuild
+# Configure git for root
+RUN git config --global user.email "root@s2i" && \
+    git config --global user.name "root"
+
+# Get rpmbuild, but first step is to get nspr
+RUN git clone https://github.com/servo/nspr.git && \
+    cd nspr && \
+    ./confgiure && \
+    make && \
+    make install
 RUN wget http://ftp.rpm.org/releases/rpm-4.14.x/rpm-4.14.2.1.tar.bz2 && \
     tar xvf rpm-4.14.2.1.tar.bz2 && \
     cd rpm-4.14.2.1 && \
@@ -114,7 +123,7 @@ RUN uid=1000280000 && \
     gid=0 && \
     echo "${uid}:x:${uid}:${gid}:default uid:/home/default:/bin/sh" >> /etc/passwd
 
-# Configure git
+# Configure git for user
 RUN git config --global user.email "default_user@s2i" && \
     git config --global user.name "default_user"
 
