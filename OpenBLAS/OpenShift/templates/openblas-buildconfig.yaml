@@ -27,11 +27,21 @@ objects:
     output: 
       to:
         kind: "ImageStreamTag"
-        name: "openblas-gemm-rhel7:latest"
+        name: "${IMAGESTREAM_NAME}:latest"
 - apiVersion: "v1"
   kind: "ImageStream"
   metadata:
-    name: "openblas-gemm-rhel7"
+    name: "${IMAGESTREAM_NAME}"
     namespace: "openshift-image-registry"
   spec:
-    dockerImageRepository: "image-registry.openshift-image-registry.svc:5000/image-registry"
+    dockerImageRepository: "${REGISTRY}/image-registry"
+parameters:
+- description: "ImageStream name"
+  name: "IMAGESTREAM_NAME"
+  from: '[A-Z0-9]{10}'
+  value: "openblas-rhel7"
+  required: true
+- description: "Registry route. Use `oc registry info` to get the route after exposing it."
+  name: "REGISTRY"
+  value: "image-registry.openshift-image-registry.svc:5000"
+  required: true

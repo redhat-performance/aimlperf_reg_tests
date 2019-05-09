@@ -6,10 +6,25 @@ After you've run the benchmarks, you can run the `compare_gemm_results` executab
 
 Provided below are instructions on how to build OpenBLAS with Podman or s2i. (OpenShift instructions coming soon!)
 
+## Building OpenBLAS on OpenShift AWS
+
+To build OpenBLAS on OpenShift AWS, make sure you have an OpenShift cluster you're able to use and that you have cluster admin rights. Once you've done so, expose your Docker/CRI-O registry. For example,
+
+```
+$ oc expose service image-registry -n openshift-image-registry
+```
+
+Finally,
+
+```
+$ cd OpenShift
+$ sh run_me.sh
+```
+
 
 ## Building OpenBLAS w/ s2i
 
-To build OpenBLAS with s2i, make sure you have Docker and the `s2i` command line tool installed. 
+To build OpenBLAS with the `s2i` command line tool rather than with OpenShift's s2i capabilities, make sure you have Docker and the `s2i` command line tool installed. 
 
 
 ### Installing Docker
