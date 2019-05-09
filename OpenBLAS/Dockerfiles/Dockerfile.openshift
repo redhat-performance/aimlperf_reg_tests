@@ -96,7 +96,9 @@ RUN uid=1000280000 && \
     echo "${uid}:x:${uid}:${gid}:default uid:/home/default:/bin/sh" >> /etc/passwd
 
 # Config git
-RUN cd /home/default && \
+RUN cd /home && \
+    mkdir default && \
+    cd default && \
     git config --global user.email "1000280000@s2i" && \
     git config --global user.name "1000280000"
 
