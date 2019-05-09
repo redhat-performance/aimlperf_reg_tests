@@ -20,9 +20,6 @@ RUN chmod +x /entrypoint
 # Put on port 8080
 EXPOSE 8080
 
-# Edit yum.conf
-RUN echo "exclude=*.i?86 *.i686" >> /etc/yum.conf
-
 # Install rpmbuild because we will build the package
 RUN yum -y update && \
     yum -y downgrade glibc glibc-common glibc-devel libstdc++ && \
@@ -35,6 +32,8 @@ RUN yum -y update && \
                    gcc-c++ \
                    gcc-gfortran \
                    git \
+                   glibc \
+                   glibc.i686 \
                    lapack \
                    libgfortran \
                    libgomp \
