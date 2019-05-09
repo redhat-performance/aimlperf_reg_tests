@@ -28,6 +28,7 @@ RUN yum -y update && \
     yum -y downgrade glibc glibc-common glibc-devel libstdc++ && \
     yum -y install automake \
                    blas \
+                   bzip \
                    cpp \
                    https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
                    gcc \
