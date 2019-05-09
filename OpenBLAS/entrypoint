@@ -1,4 +1,5 @@
 #!/bin/bash
+# From Subin Modeel: https://github.com/thoth-station/openblas/blob/master/entrypoint
 
 echo "ENTRYPOINT...."
 # Check whether there is a passwd entry for the container UID
@@ -9,13 +10,8 @@ uidentry=$(getent passwd $myuid)
 # If there is no passwd entry for the container UID, attempt to create one
 if [ -z "$uidentry" ] ; then
     if [ -w /etc/passwd ] ; then
-        echo "$myuid:x:$myuid:$mygid:anonymous uid:/home/$NB_USER:/bin/false" >> /etc/passwd
+        echo "$myuid:x:$myuid:$mygid:anonymous uid:/home/1001:/bin/false" >> /etc/passwd
     else
         echo "Container ENTRYPOINT failed to add passwd entry for anonymous UID"
     fi
 fi
-
-# The git_ssh_command helps the server by pass the Host key checking while connecting to github.
-export GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
-
-exec "/usr/libexec/s2i/run"

@@ -9,9 +9,8 @@ TARGET_CPU="TARGET=HASWELL DYNAMIC_ARCH=1"
 RPMBUILD_DIR=${HOME}/rpmbuild
 
 # Configure git with dummy values
-mkdir ${HOME}/.git
-git config --global user.email "root@s2i"
-git config --global user.name "root"
+git config --global user.email "user@s2i"
+git config --global user.name "user"
 
 #########################################
 #             OPENBLAS.SPEC             #
