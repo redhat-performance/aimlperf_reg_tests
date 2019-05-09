@@ -97,7 +97,7 @@ USER 1000280000
 # Add to passwd
 RUN uid=1000280000 && \
     gid=0 && \
-    echo "${uid}:x:${uid}:${gid}:default uid:/home/openblas_tests:/bin/sh" >> /etc/passwd
+    echo "${uid}:x:${uid}:${gid}:default uid:/home/default:/bin/sh" >> /etc/passwd
 
 # Set up rpmbuild dir
 RUN rpmdev-setuptree
