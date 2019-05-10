@@ -22,48 +22,27 @@ EXPOSE 8080
 
 # Install rpmbuild because we will build the package
 RUN yum -y update && \
-    yum -y downgrade glibc glibc-common glibc-devel libstdc++ && \
+    yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
     yum -y install automake \
-                   blas \
                    bzip2 \
                    cpp \
-                   https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
                    gcc \
                    gcc-c++ \
                    gcc-gfortran \
                    git \
-                   lapack \
+                   gyp \
+                   libdb-devel \
                    libgfortran \
-                   libgomp \
                    libquadmath \
                    libquadmath-devel \
                    libtool \
                    make \
-                   multilib-rpm-config \
-                   nspr \
-                   nspr-devel \
                    patch \
-                   perl-Errno \
-                   perl-Encode-devel \
                    perl \
-                   perl-devel \
                    perl-interpreter \
                    perl-libs \
-                   perl-utils \
-                   prelink \
-                   python3-rpm \
-                   rpm \
-                   rpm-build \
-                   rpm-build-libs \
-                   rpm-devel \
-                   rpm-libs \
-                   rpmlint \
-                   time \
                    wget \
-                   yum-utils \
-                   zlib \
-                   zlib-devel \
-                   --nogpgcheck  && \
+                   zlib-devel && \
     rm -rf /var/cache/yum*
 
 # Create a folder for the benchmark tests and copy the tests to the new folder
@@ -76,7 +55,8 @@ COPY OpenBLAS/compile_gemm.sh ${OPENBLAS_TESTS}
 COPY OpenBLAS/compile_compare.sh ${OPENBLAS_TESTS}
 
 # Get rpmdev-setuptree
-RUN git clone https://pagure.io/rpmdevtools.git && \
+RUN cd /tmp && \
+    git clone https://pagure.io/rpmdevtools.git && \
     cd rpmdevtools && \
     mv rpmdev-setuptree /usr/bin && \
     cd .. && \
@@ -86,18 +66,71 @@ RUN git clone https://pagure.io/rpmdevtools.git && \
 RUN git config --global user.email "root@s2i" && \
     git config --global user.name "root"
 
-# Get rpmbuild, but first step is to get nspr
-RUN git clone https://github.com/servo/nspr.git && \
-    cd nspr && \
-    ./configure --enable-64bit --prefix=/usr/local && \
+# Get rpmbuild, but first step is to get nspr and nss installed
+RUN wget https://hg.mozilla.org/projects/nspr/archive/NSPR_4_20_BRANCH.tar.gz && \
+    tar xvf NSPR_4_20_BRANCH.tar.gz && \
+    mv nspr-NSPR_4_20_BRANCH nspr && \
+    git clone https://github.com/nss-dev/nss.git && \
+    cd nss && \
+    ./build.sh && \
+    cd ../nspr && \
+    ./configure --enable-64bit && \
     make && \
-    make install
+    make install && \
+    ln -s /opt/app-root/src/nspr/config/nsinstall /opt/app-root/src/nspr/Linux3.10_x86_64_cc_glibc_PTH_64_OPT.OBJ/config/nsinstall && \
+    cd ../nss && \
+    gmake BUILD_OPT=1 USE_64=1 NSPR_INCLUDE_DIR=/usr/local/include/nspr USE_SYSTEM_ZLIB=1 ZLIB_LIBS=-lz nss_build_all && \
+    gmake BUILD_OPT=1 USE_64=1 NSPR_INCLUDE_DIR=/usr/local/include/nspr USE_SYSTEM_ZLIB=1 ZLIB_LIBS=-lz install && \
+    cd pkg/pkg-config && \
+    mv nss.pc.in nss.pc && \
+    mv nss-config.in nss-config && \
+    cd ../.. && \
+    cp lib/cryptohi/*.h /usr/include && \
+    cp lib/util/*.h /usr/include && \
+    cp lib/pk11wrap/*.h /usr/include && \
+    cp lib/certdb/*.h /usr/include && \
+    cp lib/freebl/*.h /usr/include && \
+    cp lib/freebl/ecl/*.h /usr/include && \
+    cp lib/nss/*.h /usr/include && \
+    cd /opt/app-root/src && \
+    rm -rf nss nspr dist NSPR_4_20_BRANCH.tar.gz
+
+# Install other prereqs
+RUN wget http://rpm5.org/files/popt/popt-1.16.tar.gz && \
+    tar xvf popt-1.16.tar.gz && \
+    cd popt-1.16 && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf popt-1.16 popt-1.16.tar.gz && \
+    ln -s /usr/lib64/libpopt.so.0 /usr/lib64/libpopt.so
+RUN wget https://github.com/libarchive/libarchive/releases/download/v3.3.3/libarchive-3.3.3.tar.gz && \
+    tar xvf libarchive-3.3.3.tar.gz && \
+    cd libarchive-3.3.3 && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf libarchive-3.3.3 libarchive-3.3.3.tar.gz
+RUN git clone https://github.com/file/file.git && \
+    cd file && \
+    autoreconf -f -i && \
+    ./configure --disable-silent-rules && \
+    make -j4 && \
+    make install && \
+    cd .. && \
+    rm -rf file
+
+# Now install rpmbuild
 RUN wget http://ftp.rpm.org/releases/rpm-4.14.x/rpm-4.14.2.1.tar.bz2 && \
     tar xvf rpm-4.14.2.1.tar.bz2 && \
     cd rpm-4.14.2.1 && \
-    ./configure && \
+    ./configure CPPFLAGS="-I/usr/local/include/nspr -I/usr/include -I/usr/local/include" PKG_CONFIG_PATH="/opt/app-root/src/nss/pkg/pkg-config:/usr/local/lib/pkgconfig" --without-lua && \
     make && \
-    make install
+    make install PREFIX=/usr/local && \
+    cd .. && \
+    rm -rf rpm-4.14.2.1 rpm-4.14.2.1.tar.bz2
 
 # Give user permissions to modify the 'macros' file + other files to run tests
 RUN chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
