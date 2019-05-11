@@ -58,9 +58,9 @@ while [[ -z $build_succeeded_status ]] && [[ -z $build_failed_status ]] && [[ -z
 done
 
 if [[ ! -z $build_failed_status ]]; then
-    echo "Image build FAILED, so not build job will not run."
+    echo "Image build FAILED, so build job will not run."
 elif [[ ! -z $build_stopped_status ]]; then
-    echo "Image build STOPPED, so not build job will not run."
+    echo "Image build STOPPED, so build job will not run."
 else
     oc new-app --template=openblas-gemm-build-job --param=IMAGESTREAM_NAME=$IS_NAME --param=REGISTRY=$OC_REGISTRY --param=APP_NAME=$APP_NAME --param=NAMESPACE=$NAMESPACE
 fi
