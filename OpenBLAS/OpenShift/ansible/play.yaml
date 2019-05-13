@@ -1,0 +1,15 @@
+---
+
+- hosts: localhost
+  become: yes
+  connection: local
+
+  roles:
+    
+    # This will run yum/dnf installs and install package prereqs for rpmbuild and rpmdev-setuptree
+    - role: install-prereqs
+      vars:
+        RHEL_VERSION: '{{ rhel_version | default("7") }}'
+
+    # This will install rpmdev-setuptree and rpmbuild
+    - role: install-tools

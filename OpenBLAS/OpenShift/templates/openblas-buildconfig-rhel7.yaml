@@ -23,7 +23,7 @@ objects:
     strategy: 
       type: "Docker"
       dockerStrategy:
-        dockerfilePath: "OpenBLAS/Dockerfiles/Dockerfile.openshift"
+        dockerfilePath: "OpenBLAS/Dockerfiles/Dockerfile.openshift_rhel7"
     output: 
       to:
         kind: "ImageStreamTag"

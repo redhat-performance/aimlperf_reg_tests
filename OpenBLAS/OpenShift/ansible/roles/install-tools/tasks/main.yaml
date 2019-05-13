@@ -1,0 +1,52 @@
+---
+
+- name: Make rpmdevtools directory
+  file:
+    state: directory
+    dest: '{{ TOOLS_DIR }}/rpmdevtools'
+
+- name: Clone rpmdevtools repo
+  git:
+    repo: https://pagure.io/rpmdevtools.git
+    dest: '{{ TOOLS_DIR }}/rpmdevtools'
+
+- name: Copy rpmdev-setuptree to /usr/bin
+  copy:
+    src: '{{ TOOLS_DIR }}/rpmdevtools/rpmdev-setuptree'
+    dest: /usr/bin
+
+- name: Remove rpmdevtools git folder
+  file:
+    path: '{{ TOOLS_DIR }}/rpmdevtools'
+    state: absent
+
+- name: Make rpm directory
+  file:
+    state: directory
+    dest: '{{ BUILD_DIR }}/rpm-4.14.2.1'
+
+- name: Get rpm
+  unarchive:
+    src: http://ftp.rpm.org/releases/rpm-4.14.x/rpm-4.14.2.1.tar.bz2
+    dest: '{{ TOOLS_DIR }}'
+    remote_src: yes
+
+- name: Configure rpm
+  shell: |
+    cd {{ TOOLS_DIR }}/rpm-4.14.2.1
+    ./configure CPPFLAGS="-I/usr/local/include/nspr -I/usr/include -I/usr/local/include" PKG_CONFIG_PATH="/opt/app-root/src/nss/pkg/pkg-config:/usr/local/lib/pkgconfig" --without-lua
+
+- make:
+    chdir: '{{ TOOLS_DIR }}/rpm-4.14.2.1'
+    target: all
+
+- make:
+    chdir: '{{ TOOLS_DIR }}/rpm-4.14.2.1'
+    target: install
+    params: 
+      PREFIX: /usr/local
+
+- name: Remove rpm build folder
+  file:
+    path: '{{ TOOLS_DIR }}/rpmdevtools'
+    state: absent
