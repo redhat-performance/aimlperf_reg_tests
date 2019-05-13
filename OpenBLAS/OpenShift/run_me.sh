@@ -1,17 +1,35 @@
 #!/bin/bash
 
+RHEL_VERSION=$1
+
 # Initialize vars
-IS_NAME="openblas-rhel7"
+if [[ ${RHEL_VERSION} == 7 ]]; then
+    IS_NAME="openblas-rhel7"
+    APP_NAME="openblas-gemm-s2i-app-rhel7"
+elif [[ ${RHEL_VERSION} == 8 ]]; then
+    IS_NAME="openblas-rhel8"
+    APP_NAME="openblas-gemm-s2i-app-rhel8"
+else
+    echo "Invalid version of RHEL. Choose from: {7,8}"
+    exit 1
+fi
 OC_REGISTRY=$(oc registry info)
-APP_NAME="openblas-gemm-s2i-app"
 NAMESPACE=$(oc project | cut -d" " -f3 | cut -d'"' -f2)
 
 # Load templates
-check_build_template=$(oc get templates openblas-gemm | grep NAME)
-if [[ ! -z $check_build_template ]]; then
-    oc delete -f templates/openblas-buildconfig.yaml
+if [[ ${RHEL_VERSION} == 7 ]]; then
+    check_build_template=$(oc get templates openblas-gemm-rhel7 | grep NAME)
+    if [[ ! -z $check_build_template ]]; then
+        oc delete -f templates/openblas-buildconfig-rhel7.yaml
+    fi
+    oc create -f templates/openblas-buildconfig-rhel7.yaml
+else
+    check_build_template=$(oc get templates openblas-gemm-rhel8 | grep NAME)
+    if [[ ! -z $check_build_template ]]; then
+        oc delete -f templates/openblas-buildconfig-rhel8.yaml
+    fi
+    oc create -f templates/openblas-buildconfig-rhel8.yaml
 fi
-oc create -f templates/openblas-buildconfig.yaml
 check_job_template=$(oc get templates openblas-gemm-build-job | grep NAME)
 if [[ ! -z $check_job_template ]]; then
     oc delete -f templates/openblas-build-job.yaml
@@ -19,9 +37,16 @@ fi
 oc create -f templates/openblas-build-job.yaml
 
 # Check build configs
-check_bc=$(oc get bc openblas-gemm-app | grep NAME)
-if [[ ! -z $check_bc ]]; then
-    oc delete bc openblas-gemm-app
+if [[ ${RHEL_VERSION} == 7 ]]; then
+    check_bc=$(oc get bc openblas-gemm-app-rhel7 | grep NAME)
+    if [[ ! -z $check_bc ]]; then
+        oc delete bc openblas-gemm-app-rhel7
+    fi
+else
+    check_bc=$(oc get bc openblas-gemm-app-rhel8 | grep NAME)
+    if [[ ! -z $check_bc ]]; then
+        oc delete bc openblas-gemm-app-rhel8
+    fi
 fi
 
 # Check image streams
@@ -31,12 +56,21 @@ if [[ ! -z $check_imagestream ]]; then
 fi
 
 # Build the image
-check_existing_builds=$(oc get builds | grep openblas-gemm-app)
-if [[ ! -z $check_existing_builds ]]; then
-    oc delete build openblas-gemm-app-1
+if [[ ${RHEL_VERSION} == 7 ]]; then
+    check_existing_builds=$(oc get builds | grep openblas-gemm-app-rhel7)
+    if [[ ! -z $check_existing_builds ]]; then
+        oc delete build openblas-gemm-app-rhel7-1
+    fi
+    oc new-app --template=openblas-gemm-rhel7 --param=IMAGESTREAM_NAME=$IS_NAME --param=REGISTRY=$OC_REGISTRY
+    oc start-build openblas-gemm-app-rhel7
+else
+    check_existing_builds=$(oc get builds | grep openblas-gemm-app-rhel8)
+    if [[ ! -z $check_existing_builds ]]; then
+        oc delete build openblas-gemm-app-rhel8-1
+    fi
+    oc new-app --template=openblas-gemm-rhel8 --param=IMAGESTREAM_NAME=$IS_NAME --param=REGISTRY=$OC_REGISTRY
+    oc start-build openblas-gemm-app-rhel8
 fi
-oc new-app --template=openblas-gemm --param=IMAGESTREAM_NAME=$IS_NAME --param=REGISTRY=$OC_REGISTRY
-oc start-build openblas-gemm-app
 
 # Build the app
 check_existing_jobs=$(oc get jobs | grep $APP_NAME)

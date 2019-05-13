@@ -3,13 +3,13 @@ kind: "Template"
 metadata:
   annotations:
     description: "Template to make OpenBLAS build image"
-    tags: "openblas-gemm-rhel7"
-  name: "openblas-gemm-rhel7"
+    tags: "openblas-gemm-rhel8"
+  name: "openblas-gemm-rhel8"
 objects:
 - apiVersion: "v1"
   kind: "BuildConfig"
   metadata:
-    name: "openblas-gemm-app-rhel7" 
+    name: "openblas-gemm-app-rhel8" 
   spec:
     runPolicy: "Serial" 
     triggers: 
@@ -23,7 +23,7 @@ objects:
     strategy: 
       type: "Docker"
       dockerStrategy:
-        dockerfilePath: "OpenBLAS/Dockerfiles/Dockerfile.openshift_rhel7"
+        dockerfilePath: "OpenBLAS/Dockerfiles/Dockerfile.openshift_rhel8"
     output: 
       to:
         kind: "ImageStreamTag"
@@ -39,7 +39,7 @@ parameters:
 - description: "ImageStream name"
   name: "IMAGESTREAM_NAME"
   from: '[A-Z0-9]{10}'
-  value: "openblas-rhel7"
+  value: "openblas-rhel8"
   required: true
 - description: "Registry route. Use `oc registry info` to get the route after exposing it."
   name: "REGISTRY"

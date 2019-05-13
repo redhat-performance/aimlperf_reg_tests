@@ -1,0 +1,77 @@
+FROM registry.access.redhat.com/rhel8/s2i-core
+MAINTAINER Courtney Pacheco <cpacheco@redhat.com>
+ENV LANG=en_US.utf8
+USER root
+ENV BUILDER_VERSION 1.0
+
+# This is to bypass the host key checking when cloning w/ git
+ENV GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+
+# Ansible version
+ENV ANSIBLE_GIT_VERSION=v2.7.10
+
+# Set up labels
+LABEL io.openshift.s2i.scripts-url="image:///usr/libexec/s2i"
+LABEL io.openshift.expose-services="8080:http"
+
+# Copy s2i assemble + run
+COPY OpenBLAS/.s2i/bin/ /usr/libexec/s2i
+ADD OpenBLAS/entrypoint /entrypoint
+RUN chmod +x /entrypoint
+
+# Put on port 8080
+EXPOSE 8080
+
+# Install ansible
+RUN yum -y install python36 git && \
+    ln -s /usr/bin/python3 /usr/bin/python && \
+    git clone https://github.com/ansible/ansible.git && \
+    cd ansible && \
+    git checkout tags/${ANSIBLE_GIT_VERSION} && \
+    pip3 install -r requirements.txt && \
+    python3 setup.py build && \
+    python3 setup.py install
+
+# Install prerequisites
+COPY OpenBLAS/OpenShift/ansible /opt/app-root/src/ansible
+RUN cd /opt/app-root/src/ansible && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: 8}"
+
+# Create a folder for the benchmark tests and copy the tests to the new folder
+ENV OPENBLAS_TESTS=/home/openblas_tests
+RUN mkdir -p ${OPENBLAS_TESTS}/src
+COPY OpenBLAS/src/gemm_test.c ${OPENBLAS_TESTS}/src
+COPY OpenBLAS/src/compare.c ${OPENBLAS_TESTS}/src
+COPY OpenBLAS/run_benchmarks.sh ${OPENBLAS_TESTS}
+COPY OpenBLAS/compile_gemm.sh ${OPENBLAS_TESTS}
+COPY OpenBLAS/compile_compare.sh ${OPENBLAS_TESTS}
+ 
+# Give user permissions to modify the 'macros' file + other files to run tests
+RUN chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
+    chmod +x ${OPENBLAS_TESTS}/compile_compare.sh && \
+    chmod 777 ${OPENBLAS_TESTS}/src/gemm_test.c && \
+    chmod 777 ${OPENBLAS_TESTS} && \
+    chmod 777 ${OPENBLAS_TESTS}/src && \
+    chmod 777 /usr/libexec/s2i/run && \
+    chmod +x /usr/bin/rpmdev-setuptree && \
+    chmod +x /usr/local/bin/rpmbuild && \
+    chmod 777 /etc/passwd && \
+    mkdir -p /opt/app-root/src && \
+    chmod 777 /opt/app-root/src && \
+    chmod 777 /opt/app-root
+
+# This default user is created in the openshift/base-centos7 image
+USER 1000280000
+
+# Add to passwd
+RUN uid=1000280000 && \
+    gid=0 && \
+    echo "${uid}:x:${uid}:${gid}:default uid:/home/default:/bin/sh" >> /etc/passwd
+
+# Configure git for user
+RUN git config --global user.email "default_user@s2i" && \
+    git config --global user.name "default_user"
+
+WORKDIR /home/openblas_tests
+
+CMD ["/usr/libexec/s2i/run"]

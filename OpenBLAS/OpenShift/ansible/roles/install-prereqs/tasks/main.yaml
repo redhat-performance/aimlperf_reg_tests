@@ -55,6 +55,8 @@
       - libquadmath-devel
       - libtool
       - make
+      - nspr
+      - nss
       - patch
       - perl
       - perl-interpreter
