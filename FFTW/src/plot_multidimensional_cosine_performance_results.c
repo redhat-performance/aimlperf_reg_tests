@@ -431,7 +431,8 @@ int main(int argc, char* argv[]){
             }
 
             // Store results to array
-            performance_results[performance_result_idx] = data;
+            if (performance_result_idx != -1)
+                performance_results[performance_result_idx] = data;
 
             // Clear buffer
             for (i=0; i<BUFFSIZE; i++){
