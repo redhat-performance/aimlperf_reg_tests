@@ -4,12 +4,74 @@
   become: yes
   connection: local
 
-  roles:
-    
-    # This will run yum/dnf installs and install package prereqs for rpmbuild and rpmdev-setuptree
-    - role: install-prereqs
-      vars:
-        RHEL_VERSION: '{{ rhel_version | default("7") }}'
+  vars:
+    RHEL_VERSION: '{{ rhel_version | default("7") }}'
 
-    # This will install rpmdev-setuptree and rpmbuild
-    - role: install-tools
+  tasks:
+  - name: yum update (if using RHEL 7)
+    yum: name=* state=latest
+    when: RHEL_VERSION == "7"
+
+  - name: Install EPEL (if using RHEL 7)
+    yum: pkg=https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    when: RHEL_VERSION == "7"
+
+  - name: Install yum prereqs (if using RHEL 7)
+    yum:
+      name:
+        - automake
+        - bzip2
+        - cpp
+        - gcc
+        - gcc-c++
+        - gcc-gfortran
+        - git
+        - gyp
+        - libdb-devel
+        - libgfortran
+        - libquadmath
+        - libquadmath-devel
+        - libtool
+        - make
+        - patch
+        - perl
+        - perl-interpreter
+        - perl-libs
+        - python36-setuptools
+        - wget
+        - zlib-devel
+      state: present
+    when: RHEL_VERSION == "7"
+
+  - name: dnf update (if using RHEL 8)
+    dnf: name=* state=latest
+    when: RHEL_VERSION == "8"
+
+  - name: Install dnf prereqs (if using RHEL 8)
+    dnf:
+      name:
+        - automake
+        - bzip2
+        - cpp
+        - gcc
+        - gcc-c++
+        - gcc-gfortran
+        - git
+        - gyp
+        - libdb-devel
+        - libgfortran
+        - libquadmath
+        - libquadmath-devel
+        - libtool
+        - make
+        - nspr
+        - nss
+        - patch
+        - perl
+        - perl-interpreter
+        - perl-libs
+        - python36-python-setuptools
+        - wget
+        - zlib-devel
+      state: present
+    when: RHEL_VERSION == "8"

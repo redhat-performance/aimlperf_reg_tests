@@ -23,20 +23,11 @@ RUN chmod +x /entrypoint
 # Put on port 8080
 EXPOSE 8080
 
-# Install ansible
-RUN yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-    yum -y install git python36
-RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
-    python36 get-pip.py && \
-    rm get-pip.py
-RUN git clone https://github.com/ansible/ansible.git && \
-    cd ansible && \
-    git checkout tags/${ANSIBLE_GIT_VERSION} && \
-    pip install -r requirements.txt && \
-    python36 setup.py build && \
-    python36 setup.py install
+# Install Ansible
+COPY OpenBLAS/scripts/install_ansible_from_source.sh /opt/app-root/src
+RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION}
 
-# Install prerequisites
+# Install prerequisites via Ansible
 COPY OpenBLAS/OpenShift/ansible /opt/app-root/src/ansible
 RUN cd /opt/app-root/src/ansible && \
     ansible-playbook -i hosts play.yaml
@@ -49,7 +40,12 @@ COPY OpenBLAS/src/compare.c ${OPENBLAS_TESTS}/src
 COPY OpenBLAS/run_benchmarks.sh ${OPENBLAS_TESTS}
 COPY OpenBLAS/compile_gemm.sh ${OPENBLAS_TESTS}
 COPY OpenBLAS/compile_compare.sh ${OPENBLAS_TESTS}
- 
+
+# Copy AVX flags and recommended arch scripts
+RUN mkdir -p ${OPENBLAS_TESTS}/scripts
+COPY OpenBLAS/scripts/get_avx_flags.sh ${OPENBLAS_TESTS}/scripts
+COPY OpenBLAS/scripts/get_recommended_arch.sh ${OPENBLAS_TESTS}/scripts
+
 # Give user permissions to modify the 'macros' file + other files to run tests
 RUN chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
     chmod +x ${OPENBLAS_TESTS}/compile_compare.sh && \
@@ -57,12 +53,12 @@ RUN chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
     chmod 777 ${OPENBLAS_TESTS} && \
     chmod 777 ${OPENBLAS_TESTS}/src && \
     chmod 777 /usr/libexec/s2i/run && \
-    chmod +x /usr/bin/rpmdev-setuptree && \
-    chmod +x /usr/local/bin/rpmbuild && \
     chmod 777 /etc/passwd && \
     mkdir -p /opt/app-root/src && \
     chmod 777 /opt/app-root/src && \
-    chmod 777 /opt/app-root
+    chmod 777 /opt/app-root && \
+    chmod +x ${OPENBLAS_TESTS}/scripts/get_avx_flags.sh && \
+    chmod +x ${OPENBLAS_TESTS}/scripts/get_recommended_arch.sh
 
 # This default user is created in the openshift/base-centos7 image
 USER 1000280000
@@ -76,6 +72,6 @@ RUN uid=1000280000 && \
 RUN git config --global user.email "default_user@s2i" && \
     git config --global user.name "default_user"
 
-WORKDIR /home/openblas_tests
+WORKDIR ${OPENBLAS_TESTS}
 
 CMD ["/usr/libexec/s2i/run"]

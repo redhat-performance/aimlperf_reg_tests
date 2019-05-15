@@ -1,34 +1,53 @@
 #!/bin/bash
 
+#########################################
+#               SET FLAGS               #
+#########################################
 # Set CFLAGS (these will NOT change)
-OPENBLAS_CFLAGS="-O2 -ftree-vectorize -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches %{_hardened_cflags}"
-AVX_FLAGS="NO_AVX=0 NO_AVX2=0 NO_AVX512=1"
-TARGET_CPU="TARGET=HASWELL DYNAMIC_ARCH=1"
+CFLAGS=$(rpm --eval "%{optflags}")
+COMMON="-ftree-vectorize ${CFLAGS} -fPIC"
 
-# The rpmbuild will be done as a user
-RPMBUILD_DIR=${HOME}/rpmbuild
-rpmdev-setuptree
+# Set FORTRAN flags
+FCOMMON="$COMMON -frecursive"
+
+# Set LDFLAGS
+LDFLAGS=$(rpm --eval "%{__global_ldflags}")
+
+# Set AVX flags
+AVX_FLAGS=$(sh scripts/get_avx_flags.sh)
+
+# Set TARGET_CPU flags
+MICROARCHITECTURE=$(sh scripts/get_recommended_arch.sh)
+TARGET_CPU="TARGET=${MICROARCHITECTURE} DYNAMIC_ARCH=1"
+
+#########################################
+#            GET OTHER INFO             #
+#########################################
+WITH_SYSTEM_LAPACK=$(rpm --eval "%{with system_lapack}")
+LIBDIR=$(rpm --eval "%{_libdir}")
+N_CPUS=$(lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(s\):/ {sockets=$NF}; END{print cores*sockets}')
+NMAX="NUM_THREADS=${N_CPUS}"
+
+#########################################
+#           SETUP BUILD DIR             #
+#########################################
+# Create build directory
+mkdir -p ${HOME}/build
+WORKDIR=${HOME}/build
 
 #########################################
 #             OPENBLAS.SPEC             #
 #########################################
 # Get OpenBLAS spec file and move to the SPECS folder under the rpmbuild tree
-cd /tmp
+cd ${BUILD_DIR}
 yumdownloader --source openblas
-rpm2cpio openblas*.rpm | cpio -idmv
-mv openblas.spec ${RPMBUILD_DIR}/SPECS
-mv *patch ${RPMBUILD_DIR}/SOURCES
-rm openblas*.rpm
-rm openblas*.tar.gz
+rpm2cpio openblas*.rpm | cpio -civ '*.spec'
 
 #########################################
 #           OPENBLAS PATCHES            #
 #########################################
-# We're going to be working in the SOURCES directory for rpmbuild
-cd ${RPMBUILD_DIR}/SOURCES
-
 # Get latest OpenBLAS version
-OPENBLAS_VERSION=$(cat ${RPMBUILD_DIR}/SPECS/openblas.spec | grep "Version:" | rev |  cut -d" " -f 1 | rev)
+OPENBLAS_VERSION=$(cat openblas.spec | grep "Version:" | rev |  cut -d" " -f 1 | rev)
 
 # Download patches
 wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2010.patch
@@ -41,7 +60,7 @@ wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2024.patc
 # Clone OpenBLAS git repo
 git clone https://github.com/xianyi/OpenBLAS.git
 
-# Checkout the latest OpenBLAS version and apply patches
+# Checkout the latest OpenBLAS version and apply git patches
 cd OpenBLAS
 git checkout v${OPENBLAS_VERSION}
 git am ../2010.patch
@@ -51,64 +70,25 @@ git am ../2021.patch
 git am ../2023.patch
 git am ../2024.patch
 
-# Re-tar the OpenBLAS folder
-cd ..
-mv OpenBLAS OpenBLAS-${OPENBLAS_VERSION}
-tar czvf openblas-${OPENBLAS_VERSION}.tar.gz OpenBLAS-${OPENBLAS_VERSION}
-
-# Remove patches and OpenBLAS folder (since we've tarred up the folder)
-rm 2010.patch 2018.patch 2019.patch 2021.patch 2023.patch 2024.patch
-rm -rf OpenBLAS-${OPENBLAS_VERSION}
+# Remove patches
+rm ../*.patch
 
 #########################################
-#             RPMBUILD STEPS            #
+#            BUILD OPENBLAS             #
 #########################################
-# Build OpenBLAS with rpmbuild. Note that we must set the "global compiler flags" (i.e., CFLAGS) by editing the macros file.
-# We also must set the AVX* flags (NO_AVX, NO_AVX2, and NO_AVX512), the target CPU, and the max number of threads. Also note
-# that the 64 bit packages are not built because they take up a lot of space and we just want to test the basic, non-64
-# versions.
-N_REAL_CORES=$(lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(s\):/ {sockets=$NF}; END{print cores*sockets}')
-cd ${RPMBUILD_DIR}/SPECS
 
-# Here, we set the  target architecture and make sure we have it dynamic
-sed -i "s|TARGET=\"TARGET=CORE2 DYNAMIC_ARCH=1 DYNAMIC_OLDER=1\"|TARGET=\"${TARGET_CPU}\"|" openblas.spec
+# Make threaded library
+make $TARGET_CPU USE_THREAD=1 USE_OPENMP=0 NO_STATIC=1 FC=$(which gfortran) CC=$(which gcc) COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX $AVX_FLAGS INTERFACE64=0
 
-# We're not going to build the 64-bit interfaces
-sed -i "s|%global build64 1|%global build64 0|" openblas.spec
-
-# Set environment vars
-sed -i "361 i\AVX=\"${AVX_FLAGS}\"" openblas.spec
-sed -i "s|CC=gcc|CC=/usr/bin/x86_64-redhat-linux-gcc|" openblas.spec
-sed -i "s|NMAX=\"NUM_THREADS=128\"|NMAX=\"NUM_THREADS=${N_REAL_CORES}\"|" openblas.spec
-
-# Do not build Rblas
-sed -i "/.*Rblas.*/s/^/#/" openblas.spec
-sed -i "/mkdir -p %{buildroot}%{_libdir}\/R\/lib\//s/^/#/" openblas.spec
-
-# Do not build OpenMP
-sed -i "/.*openmp.*/s/^/#/" openblas.spec
-sed -i "/.*olibname.*/s/^/#/" openblas.spec
-sed -i "/Install the OpenMP library.*/,+9 s/^/#/" openblas.spec
-sed -i "/install -D -p -m 644 openmp64.*/,+9 s/^/#/" openblas.spec
-sed -i '/.*ln -sf ${oname.*/s/^/#/' openblas.spec
-sed -i '/.*%{_libdir}\/lib%{name}o.*/s/^/#/' openblas.spec
-
-# Now build the rpms
-cd ..
-rpmbuild --define "__global_cflags ${OPENBLAS_CFLAGS}" -ba ${RPMBUILD_DIR}/SPECS/openblas.spec > openblas_build.log
-
+#########################################
+#           INSTALL OPENBLAS            #
+#########################################
 # Create custom directory tree to install openblas build artifacts to
 OPENBLAS_INSTALL_DIR=${HOME}/custom_openblas
 mkdir -p ${OPENBLAS_INSTALL_DIR}
-mkdir -p ${OPENBLAS_INSTALL_DIR}/lib64
-mkdir -p ${OPENBLAS_INSTALL_DIR}/include
 
-# Install the rpm contents to a custom dir and clean everything
-cp ${RPMBUILD_DIR}/BUILD/openblas-${OPENBLAS_VERSION}/threaded/libopenblasp* ${OPENBLAS_INSTALL_DIR}/lib64
-cp ${RPMBUILD_DIR}/BUILD/openblas-${OPENBLAS_VERSION}/threaded/*.h ${OPENBLAS_INSTALL_DIR}/include
-
-# Clean
-rpmbuild --clean ${RPMBUILD_DIR}/SPECS/openblas.spec
+# Install
+make PREFIX=${OPENBLAS_INSTALL_DIR} install
 
 #########################################
 #               BENCHMARKS              #
@@ -117,8 +97,8 @@ rpmbuild --clean ${RPMBUILD_DIR}/SPECS/openblas.spec
 cd /home/openblas_tests
 
 # Compile the code
-export LD_LIBRARY_PATH=${OPENBLAS_INSTALL_DIR}/lib64:$LD_LIBRARY_PATH
-sh compile_gemm.sh -g dgemm -I ${OPENBLAS_INSTALL_DIR}/include -L ${OPENBLAS_INSTALL_DIR}/lib64 -n openblasp
+export LD_LIBRARY_PATH=${OPENBLAS_INSTALL_DIR}/lib:$LD_LIBRARY_PATH
+sh compile_gemm.sh -g dgemm -I ${OPENBLAS_INSTALL_DIR}/include -L ${OPENBLAS_INSTALL_DIR}/lib -n openblas
 sh compile_compare.sh
 
 # Run the benchmarks and print out the results
