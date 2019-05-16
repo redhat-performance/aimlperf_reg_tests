@@ -4,7 +4,27 @@ This folder contains benchmarks that test two BLAS routines: (1.) SGEMM, and (2.
 
 After you've run the benchmarks, you can run the `compare_gemm_results` executable to compare the results you get across different files.
 
-Provided below are instructions on how to build OpenBLAS with Podman or s2i. (OpenShift instructions coming soon!)
+## Table of Contents
+
+Building OpenBLAS
+
+  * [Building OpenBLAS on Bare Metal](#building-openblas-on-bare-metal)
+  * [Building OpenBLAS on OpenShift AWS](#building-openblas-on-openshift-aws)
+  * [Building OpenBLAS w/ s2i](#building-openblas-with-s2i)
+  * [Building OpenBLAS w/ Podman](#building-openblas-with-podman)
+
+Building the Tests
+
+  * [How to Build the Tests](#how-to-build-the-tests)
+
+Running the Tests
+
+  * [How to Run the Tests](#how-to-run-the-tests)
+
+Comparing Test Performance Outputs
+
+  * [Comparing Test Results](#comparing-test-results)
+
 
 ## Building OpenBLAS on Bare Metal
 
@@ -59,7 +79,7 @@ $ sh run_me.sh
 ```
 
 
-## Building OpenBLAS w/ s2i
+## Building OpenBLAS with s2i
 
 To build OpenBLAS with the `s2i` command line tool rather than with OpenShift's s2i capabilities, make sure you have Docker and the `s2i` command line tool installed. 
 
@@ -235,7 +255,7 @@ OVERALL BEST PERFORMANCE
 ```
 
 
-## Building OpenBLAS w/ Podman
+## Building OpenBLAS with Podman
 
 To build OpenBLAS, use one of the Dockerfiles provided in this repo. The Dockerfiles tell Podman to build OpenBLAS using rpmbuild with specific parameters. You can either (1.) use `Dockerfile.autoconfig` to autoconfigure the OpenBLAS build, or (2.) use `Dockerfile` and modify the environment variables at the top.
 
