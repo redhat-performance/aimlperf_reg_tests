@@ -27,7 +27,7 @@ COPY OpenBLAS/scripts/install_ansible_from_source.sh /opt/app-root/src
 RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION}
 
 # Install prerequisites via Ansible
-COPY OpenBLAS/OpenShift/ansible /opt/app-root/src/ansible
+COPY OpenBLAS/playbooks /opt/app-root/src/ansible
 RUN cd /opt/app-root/src/ansible && \
     ln -s /usr/bin/python3.6 /usr/bin/python && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: 8}"
