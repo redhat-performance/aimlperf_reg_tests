@@ -1,0 +1,26 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  # Set global vars
+  vars:
+    BUILD_DIR: '{{ build_dir | default("${HOME}/build") }}'
+    INSTALL_DIR: '{{ install_dir | default("${HOME}/custom_openblas") }}'
+    WORK_DIR: '{{ work_dir | default("${HOME}/openblas_tests") }}'
+
+  roles:
+    # Creates necessary directories for building OpenBLAS
+    - role: setup
+
+    # Gets openblas.spec and OpenBLAS sources
+    - role: get
+
+    # Applies patches
+    - role: apply_patches
+
+    # Builds OpenBLAS
+    - role: build
+
+    # Installs OpenBLAS
+    - role: install

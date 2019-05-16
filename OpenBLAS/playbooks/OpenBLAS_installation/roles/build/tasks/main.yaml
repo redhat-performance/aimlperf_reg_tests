@@ -1,0 +1,104 @@
+---
+
+- name: Get CFLAGS
+  shell: rpm --eval '%{optflags}'
+  register: CFLAGS
+
+- debug:
+    var: CFLAGS.stdout
+
+- name: Get LDFLAGS
+  shell: rpm --eval "%{__global_ldflags}"
+  register: LDFLAGS
+
+- debug:
+    var: LDFLAGS.stdout
+
+- name: Determine if we have AVX
+  shell: |
+    avx=$(lscpu | grep 'Flags' | grep avx)
+    echo $avx
+  register: HAVE_AVX
+
+- name: Determine if we have AVX2
+  shell: |
+    avx2=$(lscpu | grep 'Flags' | grep avx2)
+    echo $avx2
+  register: HAVE_AVX2
+
+- name: Determine if we have AVX512
+  shell: |
+    avx512=$(lscpu | grep 'Flags' | grep avx512)
+    echo $avx512
+  register: HAVE_AVX512
+
+- name: Set NO_AVX flag
+  shell: if [[ -z '{{ HAVE_AVX.stdout }}' ]]; then echo 1; else echo 0; fi
+  register: NO_AVX
+
+- debug:
+    var: NO_AVX.stdout
+
+- name: Set NO_AVX2 flag
+  shell: if [[ -z '{{ HAVE_AVX2.stdout }}' ]]; then echo 1; else echo 0; fi
+  register: NO_AVX2
+
+- debug:
+    var: NO_AVX2.stdout
+
+- name: Set NO_AVX512 flag
+  shell: if [[ -z '{{ HAVE_AVX512.stdout }}' ]]; then echo 1; else echo 0; fi
+  register: NO_AVX512
+
+- debug:
+    var: NO_AVX512.stdout
+
+- name: Set COMMON_OPT
+  shell: echo "-ftree-vectorize {{ CFLAGS.stdout }} -fPIC"
+  register: COMMON_OPT
+
+- debug:
+    var: COMMON_OPT.stdout
+
+- name: Set FCOMMON_OPT
+  shell: echo "{{ COMMON_OPT.stdout }} -frecursive"
+  register: FCOMMON_OPT
+
+- debug:
+    var: FCOMMON_OPT.stdout
+
+- name: Get microarchitecture
+  shell: |
+    cd {{ WORK_DIR }}
+    sh scripts/get_recommended_arch.sh
+  register: MICROARCHITECTURE
+
+- debug:
+    var: MICROARCHITECTURE.stdout
+
+- name: Get number of CPUs
+  shell: lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(s\):/ {sockets=$NF}; END{print cores*sockets}'
+  register: N_CPUS
+
+- make:
+    chdir: '{{ BUILD_DIR }}/OpenBLAS'
+    target: all
+    params:
+      CC: gcc
+      COMMON_OPT: '{{ COMMON_OPT.stdout }}'
+      DYNAMIC_ARCH: 1
+      FC: gfortran
+      FCOMMON_OPT: '{{ FCOMMON_OPT.stdout }}'
+      INTERFACE64: 0
+      NO_AVX: '{{ NO_AVX.stdout }}'
+      NO_AVX2: '{{ NO_AVX2.stdout }}'
+      NO_AVX512: '{{ NO_AVX512.stdout }}'
+      NO_STATIC: 1
+      NUM_THREADS: '{{ N_CPUS.stdout }}'
+      TARGET: '{{ MICROARCHITECTURE.stdout }}'
+      USE_THREAD: 1
+      USE_OPENMP: 0
+  register: build_results
+
+- debug:
+    var: build_results.stdout_lines

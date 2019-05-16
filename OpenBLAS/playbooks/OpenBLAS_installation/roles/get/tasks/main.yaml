@@ -1,0 +1,49 @@
+---
+
+- name: Get OpenBLAS source rpm
+  shell: |
+    cd {{ BUILD_DIR }}
+    yumdownloader --source openblas
+
+- name: Unpack source rpm and place the spec file in '{{ BUILD_DIR }}'
+  shell: |
+    cd {{ BUILD_DIR }}
+    rpm2cpio openblas*.rpm | cpio -civ '*.spec'
+
+- find:
+    paths: '{{ BUILD_DIR }}'
+    patterns: "*.rpm"
+  register: find_output
+
+- name: Remove source rpm since we don't need it anymore
+  file:
+    state: absent
+    path: '{{ item["path"] }}'
+  with_items: '{{ find_output["files"] }}'
+
+- name: Get OpenBLAS version specified in the spec file
+  shell: | 
+    cd {{ BUILD_DIR }}
+    version=$(cat openblas.spec | grep "Version:" | rev |  cut -d " " -f 1 | rev)
+    echo "v$version"
+  register: openblas_version
+
+- name: OpenBLAS version
+  debug:
+    var: openblas_version.stdout
+
+- name: Make OpenBLAS directory
+  file:
+    state: directory
+    path: '{{ BUILD_DIR }}/OpenBLAS'
+
+- name: Get OpenBLAS from git and checkout the OpenBLAS version we just found
+  git:
+    repo: https://github.com/xianyi/OpenBLAS.git
+    version: '{{ openblas_version.stdout }}'
+    dest: '{{ BUILD_DIR }}/OpenBLAS'
+
+- name: Remove OpenBLAS spec file
+  file:
+    state: absent
+    path: '{{ BUILD_DIR }}/openblas.spec'

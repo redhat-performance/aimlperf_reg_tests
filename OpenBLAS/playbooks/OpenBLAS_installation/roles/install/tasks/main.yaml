@@ -1,0 +1,7 @@
+---
+
+- make:
+    chdir: '{{ BUILD_DIR }}/OpenBLAS'
+    target: install
+    params:
+      PREFIX: '{{ INSTALLD_DIR }}'

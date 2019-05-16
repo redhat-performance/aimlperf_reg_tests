@@ -1,0 +1,26 @@
+---
+
+- name: Create directory for patches
+  file:
+    state: directory
+    path: '{{ BUILD_DIR }}/patches'
+
+- name: Get patches
+  get_url: url={{ item }} dest={{ BUILD_DIR }}/patches
+  with_items:
+  - https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2010.patch
+  - https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2018.patch
+  - https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2019.patch
+  - https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2021.patch
+  - https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2023.patch
+  - https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2024.patch
+
+- name: Apply git patches
+  shell: |
+    cd {{ BUILD_DIR }}/OpenBLAS
+    git am ../patches/2010.patch
+    git am ../patches/2018.patch
+    git am ../patches/2019.patch
+    git am ../patches/2021.patch
+    git am ../patches/2023.patch
+    git am ../patches/2024.patch

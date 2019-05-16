@@ -1,0 +1,21 @@
+---
+
+- name: Setup build dir
+  file:
+    path: '{{ BUILD_DIR }}'
+    state: directory
+
+- name: Setup install dir
+  file:
+    path: '{{ INSTALL_DIR }}'
+    state: directory
+
+- name: Setup 'include' folder under install dir
+  file:
+    path: '{{ INSTALL_DIR }}/include'
+    state: directory
+
+- name: Setup 'lib' folder under install dir
+  file:
+    path: '{{ INSTALL_DIR }}/lib'
+    state: directory
