@@ -34,6 +34,15 @@ $ ansible-playbook -i hosts play.yaml --extra-vars="{build_dir: /path/to/build/d
 
 Whether you're building on RHEL 7 or RHEL 8, OpenBLAS will be installed to `/path/to/install/dir`. There will be two folders: `lib` and `include`. You do not need to create the install directory. The ansible playbook will do that for you.
 
+
+### Notes
+
+Below are a few notes regarding Ansible
+
+  - Run the Ansible playbooks as non-root. Running as root will most likely cause the `yumdownloader`step to **fail**
+  - If running as non-root, make sure Ansible that has permissions to create a `.ansible` folder and `.ansible/tmp` folder in `/path/to/build/dir`. You can use `mkdir -p /path/to/build/dir/.ansible/tmp` to create the folders in advance and then run `chmod -R 777 /path/to/build/dir`
+
+
 ## Building OpenBLAS on OpenShift AWS
 
 To build OpenBLAS on OpenShift AWS, make sure you have an OpenShift cluster you're able to use and that you have cluster admin rights. Once you've done so, expose your Docker/CRI-O registry. For example,
