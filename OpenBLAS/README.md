@@ -6,6 +6,34 @@ After you've run the benchmarks, you can run the `compare_gemm_results` executab
 
 Provided below are instructions on how to build OpenBLAS with Podman or s2i. (OpenShift instructions coming soon!)
 
+## Building OpenBLAS on Bare Metal
+
+To build OpenBLAS on bare metal, first install Ansible. You can install it via yum or dnf, or you can run
+
+```
+$ sh scripts/install_ansible_from_source.sh <ansible-git-version>
+```
+
+Once you've installed Ansible,
+
+```
+$ cd playbooks/package_installation
+$ ansible-playbook -i hosts play.yaml
+$ cd ../OpenBLAS_installation
+$ ansible-playbook -i hosts play.yaml --extra-vars="{build_dir: /path/to/build/dir, install_dir: /path/to/install/dir, work_dir: /path/to/aimlperf_reg_tests/OpenBLAS}"
+```
+
+Alternatively, if you want to build on RHEL 8,
+
+```
+$ cd playbooks/package_installation
+$ ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: 8}"
+$ cd ../OpenBLAS_installation
+$ ansible-playbook -i hosts play.yaml --extra-vars="{build_dir: /path/to/build/dir, install_dir: /path/to/install/dir, work_dir: /path/to/aimlperf_reg_tests/OpenBLAS}"
+```
+
+Whether you're building on RHEL 7 or RHEL 7, OpenBLAS will be installed to `/path/to/install/dir`. There will be two folders: `lib` and `include`. You do not need to create the install directory. The ansible playbook will do that for you.
+
 ## Building OpenBLAS on OpenShift AWS
 
 To build OpenBLAS on OpenShift AWS, make sure you have an OpenShift cluster you're able to use and that you have cluster admin rights. Once you've done so, expose your Docker/CRI-O registry. For example,
