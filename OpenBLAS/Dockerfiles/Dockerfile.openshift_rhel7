@@ -24,13 +24,19 @@ RUN chmod +x /entrypoint
 EXPOSE 8080
 
 # Install Ansible
-COPY OpenBLAS/scripts/install_ansible_from_source.sh /opt/app-root/src
-RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION}
+COPY OpenBLAS/scripts/install_ansible_from_source.sh ${HOME}
+RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
+    rm install_ansible_from_source.sh
 
 # Install prerequisites via Ansible
-COPY OpenBLAS/playbooks/package_installation /opt/app-root/src/ansible
-RUN cd /opt/app-root/src/ansible && \
-    ansible-playbook -i hosts play.yaml
+COPY OpenBLAS/playbooks/package_installation ${HOME}
+RUN cd ${HOME} && \
+    ansible-playbook -i hosts play.yaml && \
+    rm -rf packages_playbook
+
+# Copy OpenBLAS installation playbook
+RUN mkdir ${HOME}/openblas_playbook
+COPY OpenBLAS/playbooks/OpenBLAS_installation ${HOME}/openblas_playbook
 
 # Create a folder for the benchmark tests and copy the tests to the new folder
 ENV OPENBLAS_TESTS=/home/openblas_tests
@@ -43,7 +49,6 @@ COPY OpenBLAS/compile_compare.sh ${OPENBLAS_TESTS}
 
 # Copy AVX flags and recommended arch scripts
 RUN mkdir -p ${OPENBLAS_TESTS}/scripts
-COPY OpenBLAS/scripts/get_avx_flags.sh ${OPENBLAS_TESTS}/scripts
 COPY OpenBLAS/scripts/get_recommended_arch.sh ${OPENBLAS_TESTS}/scripts
 
 # Give user permissions to modify the 'macros' file + other files to run tests
@@ -54,10 +59,11 @@ RUN chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
     chmod 777 ${OPENBLAS_TESTS}/src && \
     chmod 777 /usr/libexec/s2i/run && \
     chmod 777 /etc/passwd && \
-    mkdir -p /opt/app-root/src && \
+    mkdir -p /opt/app-root/src/.ansible/tmp && \
+    chmod 777 /opt/app-root/src/.ansible/tmp && \
+    chmod 777 /opt/app-root/src/.ansible && \
     chmod 777 /opt/app-root/src && \
     chmod 777 /opt/app-root && \
-    chmod +x ${OPENBLAS_TESTS}/scripts/get_avx_flags.sh && \
     chmod +x ${OPENBLAS_TESTS}/scripts/get_recommended_arch.sh
 
 # This default user is created in the openshift/base-centos7 image

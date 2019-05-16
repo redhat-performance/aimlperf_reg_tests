@@ -52,6 +52,7 @@
       name:
         - automake
         - bzip2
+        - cpio
         - cpp
         - gcc
         - gcc-c++
@@ -72,6 +73,7 @@
         - perl-libs
         - python36-python-setuptools
         - wget
+        - yum-utils
         - zlib-devel
       state: present
     when: RHEL_VERSION == "8"

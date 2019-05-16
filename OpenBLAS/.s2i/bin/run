@@ -1,100 +1,19 @@
 #!/bin/bash
 
 #########################################
-#               SET FLAGS               #
+#      BUILD AND INSTALL OPENBLAS       #
 #########################################
-# Set CFLAGS (these will NOT change)
-CFLAGS=$(rpm --eval "%{optflags}")
-COMMON="-ftree-vectorize ${CFLAGS} -fPIC"
-
-# Set FORTRAN flags
-FCOMMON="$COMMON -frecursive"
-
-# Set LDFLAGS
-LDFLAGS=$(rpm --eval "%{__global_ldflags}")
-
-# Set AVX flags
-AVX_FLAGS=$(sh scripts/get_avx_flags.sh)
-
-# Set TARGET_CPU flags
-MICROARCHITECTURE=$(sh scripts/get_recommended_arch.sh)
-TARGET_CPU="TARGET=${MICROARCHITECTURE} DYNAMIC_ARCH=1"
-
-#########################################
-#            GET OTHER INFO             #
-#########################################
-WITH_SYSTEM_LAPACK=$(rpm --eval "%{with system_lapack}")
-LIBDIR=$(rpm --eval "%{_libdir}")
-N_CPUS=$(lscpu | awk '/^Core\(s\) per socket:/ {cores=$NF}; /^Socket\(s\):/ {sockets=$NF}; END{print cores*sockets}')
-NMAX="NUM_THREADS=${N_CPUS}"
-
-#########################################
-#           SETUP BUILD DIR             #
-#########################################
-# Create build directory
-mkdir -p ${HOME}/build
-WORKDIR=${HOME}/build
-
-#########################################
-#             OPENBLAS.SPEC             #
-#########################################
-# Get OpenBLAS spec file and move to the SPECS folder under the rpmbuild tree
-cd ${BUILD_DIR}
-yumdownloader --source openblas
-rpm2cpio openblas*.rpm | cpio -civ '*.spec'
-
-#########################################
-#           OPENBLAS PATCHES            #
-#########################################
-# Get latest OpenBLAS version
-OPENBLAS_VERSION=$(cat openblas.spec | grep "Version:" | rev |  cut -d" " -f 1 | rev)
-
-# Download patches
-wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2010.patch
-wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2018.patch
-wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2019.patch
-wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2021.patch
-wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2023.patch
-wget https://patch-diff.githubusercontent.com/raw/xianyi/OpenBLAS/pull/2024.patch
-
-# Clone OpenBLAS git repo
-git clone https://github.com/xianyi/OpenBLAS.git
-
-# Checkout the latest OpenBLAS version and apply git patches
-cd OpenBLAS
-git checkout v${OPENBLAS_VERSION}
-git am ../2010.patch
-git am ../2018.patch
-git am ../2019.patch
-git am ../2021.patch
-git am ../2023.patch
-git am ../2024.patch
-
-# Remove patches
-rm ../*.patch
-
-#########################################
-#            BUILD OPENBLAS             #
-#########################################
-
-# Make threaded library
-make $TARGET_CPU USE_THREAD=1 USE_OPENMP=0 NO_STATIC=1 FC=$(which gfortran) CC=$(which gcc) COMMON_OPT="$COMMON" FCOMMON_OPT="$FCOMMON" $NMAX $AVX_FLAGS INTERFACE64=0
-
-#########################################
-#           INSTALL OPENBLAS            #
-#########################################
-# Create custom directory tree to install openblas build artifacts to
 OPENBLAS_INSTALL_DIR=${HOME}/custom_openblas
-mkdir -p ${OPENBLAS_INSTALL_DIR}
-
-# Install
-make PREFIX=${OPENBLAS_INSTALL_DIR} install
+OPENBLAS_BUILD_DIR=${HOME}/build
+WORK_DIR=/home/openblas_tests
+cd ${HOME}/openblas_playbook
+ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: ${OPENBLAS_INSTALL_DIR}, build_dir: ${OPENBLAS_BUILD_DIR}, work_dir: ${WORK_DIR}}"
 
 #########################################
 #               BENCHMARKS              #
 #########################################
 # All tests were saved to /home/openblas_tests
-cd /home/openblas_tests
+cd ${WORK_DIR}
 
 # Compile the code
 export LD_LIBRARY_PATH=${OPENBLAS_INSTALL_DIR}/lib:$LD_LIBRARY_PATH
