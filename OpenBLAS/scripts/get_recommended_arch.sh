@@ -5,7 +5,7 @@
 grep_arch_str=$(gcc -march=native -Q --help=target|grep march)
 arch=$(echo $grep_arch_str | cut -d " " -f 2)
 
-if [[ "$arch" == "haswell" || "$arch" == broadwell ]]; then
+if [[ "$arch" == "haswell" || "$arch" == "broadwell" || "$arch" == "core-avx2" ]]; then
     echo "HASWELL"
 
 elif [[ "$arch" == "ivybridge" || "$arch" == "sandybridge" ]]; then
