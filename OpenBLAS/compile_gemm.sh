@@ -7,13 +7,16 @@ usage() {
     echo "  -I  Path to OpenBLAS include files"
     echo "  -L  Path to OpenBLAS libs"
     echo "  -n  OpenBLAS lib itself. e.g., \"openblasp\""
+    echo "  -M  Dimension M"
+    echo "  -N  Dimension N"
+    echo "  -K  Dimension K"
     echo ""
     echo "  OPTIONAL:"
     echo "  -c  Path to cblas.h. By default, this is /path/to/openblas/include/cblas.h. Otherwise, you can use something such as /usr/include/openblas/cblas.h"
     exit
 }
 
-options=":hg:I:L:n:"
+options=":hg:I:L:n:c:M:N:K:"
 while getopts "$options" x
 do
     case "$x" in
@@ -34,6 +37,15 @@ do
           ;;
       c)
           cblas_path=${OPTARG}
+          ;;
+      M)
+          dim_M=${OPTARG}
+          ;;
+      N)
+          dim_N=${OPTARG}
+          ;;
+      K)
+          dim_K=${OPTARG}
           ;;
       *)  
           usage
@@ -73,13 +85,26 @@ if [[ -z "$cblas_path" ]]; then
     cblas_path="$openblas_include_path/cblas.h"
 fi
 
+if [[ -z "$dim_M" ]]; then
+    echo "ERROR. Missing value for dimension M."
+    exit 1
+fi
+if [[ -z "$dim_N" ]]; then
+    echo "ERROR. Missing value for dimension N."
+    exit 1
+fi
+if [[ -z "$dim_K" ]]; then
+    echo "ERROR. Missing value for dimension K."
+    exit 1
+fi
+
 # Modify the location to cblas.h within the 
 
 # Compile gemm_test.c based on user inputs
 if [[ "$gemm_type" == "sgemm" ]]; then
-    gcc -DSGEMM src/gemm_test.c -o sgemm_test -include$cblas_path -L$openblas_lib_path -I$openblas_include_path -l$openblas_lib_name -mcmodel=large -lm
+    gcc -DSGEMM src/gemm_test.c -o sgemm_test -include$cblas_path -L$openblas_lib_path -I$openblas_include_path -l$openblas_lib_name -mcmodel=large -lm -Ddim_M=$dim_M -Ddim_N=$dim_N -Ddim_K=$dim_K
 elif [[ "$gemm_type" == "dgemm" ]]; then
-    gcc -DDGEMM src/gemm_test.c -o dgemm_test -include$cblas_path -L$openblas_lib_path -I$openblas_include_path -l$openblas_lib_name -mcmodel=large -lm
+    gcc -DDGEMM src/gemm_test.c -o dgemm_test -include$cblas_path -L$openblas_lib_path -I$openblas_include_path -l$openblas_lib_name -mcmodel=large -lm -Ddim_M=$dim_M -Ddim_N=$dim_N -Ddim_K=$dim_K
 else
     echo "ERROR. Invalid gemm type $gemm_type. Please choose from: \"sgemm\" or \"dgemm\""
     exit 1

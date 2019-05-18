@@ -20,9 +20,9 @@ void openblas_set_num_threads_(int* num_threads){
 
 /***************************************************/
 // Define m, n, and k. [A = (m x k) matrix, B = (k x n) matrix]
-#define M 16000
-#define N 16000
-#define K 16000
+//#define M 16000
+//#define N 16000
+//#define K 16000
 
 // Define alpha and beta. [We compute alpha * A * B + beta * C]
 #define ALPHA 0.1
@@ -30,13 +30,13 @@ void openblas_set_num_threads_(int* num_threads){
 
 // Initialize matrices such that c = A * B
 #ifdef SGEMM
-static float a[M * K];
-static float b[K * N];
-static float c[M * N];
+static float a[dim_M * dim_K];
+static float b[dim_K * dim_N];
+static float c[dim_M * dim_N];
 #elif DGEMM
-static double a[M * K];
-static double b[K * N];
-static double c[M * N];
+static double a[dim_M * dim_K];
+static double b[dim_K * dim_N];
+static double c[dim_M * dim_N];
 #endif
 
 /***************************************************/
@@ -185,15 +185,15 @@ int main(int argc, char *argv[]){
         printf("Using sgemm with %d threads and %d iterations.\n", nthreads, num_iters);
 
         // Initialize arrays 'a' and 'b' to random floats
-        fill_float_arr(a, M * K);
-        fill_float_arr(b, K * N);
+        fill_float_arr(a, dim_M * dim_K);
+        fill_float_arr(b, dim_K * dim_N);
 #elif DGEMM
         // Let user know they're using SGEMM
         printf("Using dgemm with %d threads and %d iterations.\n", nthreads, num_iters);
 
         // Initialize arrays 'a' and 'b' to random doubles
-        fill_double_arr(a, M * K);
-        fill_double_arr(b, K * N);
+        fill_double_arr(a, dim_M * dim_K);
+        fill_double_arr(b, dim_K * dim_N);
 #else
         fprintf(stderr, "gemm type not defined. Please use -D when compiling this code to set gemm type. Either -DSGEMM or -DDGEMM\n");
         exit(0);
@@ -201,14 +201,14 @@ int main(int argc, char *argv[]){
 
     // Initialize arr 'c' to zeros
     int i;
-    for (i=0; i<(M*N); i++){
+    for (i=0; i<(dim_M*dim_N); i++){
         c[i] = 0.0;
     }
 
     // Set LDA, LDB, and LDC
-    int LDA = M;
-    int LDB = K;
-    int LDC = M;
+    int LDA = dim_M;
+    int LDB = dim_K;
+    int LDC = dim_M;
 
     // Compute sgemm while getting execution time
     struct timeval start, stop, result;
@@ -227,9 +227,9 @@ int main(int argc, char *argv[]){
             cblas_sgemm(CblasColMajor,
                         CblasNoTrans,
                         CblasNoTrans,
-                        M,
-                        N,
-                        K,
+                        dim_M,
+                        dim_N,
+                        dim_K,
                         ALPHA,
                         a,
                         LDA,
@@ -265,9 +265,9 @@ int main(int argc, char *argv[]){
             cblas_dgemm(CblasColMajor,
                         CblasNoTrans,
                         CblasNoTrans,
-                        M,
-                        N,
-                        K,
+                        dim_M,
+                        dim_N,
+                        dim_K,
                         ALPHA,
                         a,
                         LDA,
@@ -298,7 +298,7 @@ int main(int argc, char *argv[]){
     double average_execution_time_sec = total_execution_time_sec / num_iters;
 
     // Compute GFlops
-    double num_ops = (2.0 * M * N * K) / (1e9);
+    double num_ops = (2.0 * dim_M * dim_N * dim_K) / (1e9);
     double gflops_approx = num_ops / average_execution_time_sec;
 
     // Compute standard deviation
@@ -396,9 +396,9 @@ int main(int argc, char *argv[]){
     fprintf(tmp_gemm_JSON_doc, "            \"threads\": %d,\n", nthreads);
     fprintf(tmp_gemm_JSON_doc, "            \"matrix_params\": {\n");
     fprintf(tmp_gemm_JSON_doc, "                \"dims\": {\n");
-    fprintf(tmp_gemm_JSON_doc, "                    \"matrix_A\": [%d,%d],\n", M, K);
-    fprintf(tmp_gemm_JSON_doc, "                    \"matrix_B\": [%d,%d],\n", K, N);
-    fprintf(tmp_gemm_JSON_doc, "                    \"matrix_C\": [%d,%d]\n", M, N);
+    fprintf(tmp_gemm_JSON_doc, "                    \"matrix_A\": [%d,%d],\n", dim_M, dim_K);
+    fprintf(tmp_gemm_JSON_doc, "                    \"matrix_B\": [%d,%d],\n", dim_K, dim_N);
+    fprintf(tmp_gemm_JSON_doc, "                    \"matrix_C\": [%d,%d]\n", dim_M, dim_N);
     fprintf(tmp_gemm_JSON_doc, "                },\n");
     fprintf(tmp_gemm_JSON_doc, "                \"scalar_values\": {\n");
     fprintf(tmp_gemm_JSON_doc, "                    \"alpha\": %0.2f,\n", ALPHA);
