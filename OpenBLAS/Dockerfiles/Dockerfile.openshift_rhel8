@@ -16,8 +16,6 @@ LABEL io.openshift.expose-services="8080:http"
 
 # Copy s2i assemble + run
 COPY OpenBLAS/.s2i/bin/ /usr/libexec/s2i
-ADD OpenBLAS/entrypoint /entrypoint
-RUN chmod +x /entrypoint
 
 # Put on port 8080
 EXPOSE 8080

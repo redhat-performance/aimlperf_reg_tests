@@ -17,7 +17,7 @@ cd ${WORK_DIR}
 
 # Compile the code
 export LD_LIBRARY_PATH=${OPENBLAS_INSTALL_DIR}/lib:$LD_LIBRARY_PATH
-sh compile_gemm.sh -g dgemm -I ${OPENBLAS_INSTALL_DIR}/include -L ${OPENBLAS_INSTALL_DIR}/lib -n openblas
+sh compile_gemm.sh -g dgemm -I ${OPENBLAS_INSTALL_DIR}/include -L ${OPENBLAS_INSTALL_DIR}/lib -n openblas -M 16000 -N 16000 -K 16000
 sh compile_compare.sh
 
 # Run the benchmarks and print out the results
