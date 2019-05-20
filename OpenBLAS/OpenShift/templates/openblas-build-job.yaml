@@ -22,7 +22,7 @@ objects:
         containers:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
-          command: ["/entrypoint"]
+          command: ["/usr/libexec/s2i/run"]
         restartPolicy: "Never"
 parameters:
 - description: "ImageStream name"
