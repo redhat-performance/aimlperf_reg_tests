@@ -56,7 +56,7 @@ RUN chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
     chmod 777 ${OPENBLAS_TESTS} && \
     chmod 777 ${OPENBLAS_TESTS}/src && \
     chmod 777 /usr/libexec/s2i/run && \
-    chmod 777 /etc/passwd && \
+    chmod g=u /etc/passwd /etc/group && \
     mkdir -p /opt/app-root/src/.ansible/tmp && \
     chmod 777 /opt/app-root/src/.ansible/tmp && \
     chmod 777 /opt/app-root/src/.ansible && \

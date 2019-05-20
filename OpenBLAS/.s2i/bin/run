@@ -4,6 +4,11 @@
 uid=$(id -u)
 gid=$(id -g)
 echo "${uid}:x:${uid}:${gid}:1001 uid:/home/default:/bin/sh" >> /etc/passwd
+echo "${uid}:x:$(id -G | cut -d' ' -f 2)" >> /etc/group
+
+# Configure git
+git config --global user.name user
+git config --global user.email user@openshift-s2i
 
 #########################################
 #      BUILD AND INSTALL OPENBLAS       #
