@@ -65,16 +65,7 @@ RUN chmod +x ${OPENBLAS_TESTS}/compile_gemm.sh && \
     chmod +x ${OPENBLAS_TESTS}/scripts/get_recommended_arch.sh
 
 # This default user is created in the openshift/base-centos7 image
-USER 1000280000
-
-# Add to passwd
-RUN uid=1000280000 && \
-    gid=0 && \
-    echo "${uid}:x:${uid}:${gid}:default uid:/home/default:/bin/sh" >> /etc/passwd
-
-# Configure git for user
-RUN git config --global user.email "default_user@s2i" && \
-    git config --global user.name "default_user"
+USER 1001
 
 WORKDIR /home/openblas_tests
 

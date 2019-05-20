@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Add user to /etc/passwd
+uid=$(id -u)
+gid=$(id -g)
+echo "${uid}:x:${uid}:${gid}:1001 uid:/home/default:/bin/sh" >> /etc/passwd
+
 #########################################
 #      BUILD AND INSTALL OPENBLAS       #
 #########################################
