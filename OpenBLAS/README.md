@@ -75,9 +75,16 @@ Finally,
 
 ```
 $ cd OpenShift
-$ sh run_me.sh
+$ sh run_me.sh <rhel-main-version>
 ```
 
+e.g.,
+
+```
+$ sh run_me.sh 7
+```
+
+Current options are `7` and `8`.
 
 ## Building OpenBLAS with s2i
 
