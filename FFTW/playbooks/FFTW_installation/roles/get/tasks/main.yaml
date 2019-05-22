@@ -1,0 +1,93 @@
+---
+
+# The following commands are for RHEL 7 only, since FFTW in RHEL 7 is fftw-2.x.y and FFTW in RHEL 8 is fftw-3.x.y
+
+################################################
+#                    RHEL 7                    #
+################################################
+- name: If using RHEL 7, get FFTW2 source rpm
+  shell: |
+    cd {{ BUILD_DIR }}
+    yumdownloader --source fftw2
+  when: RHEL_VERSION == "7"
+
+- name: Unpack source rpm and place the spec file in '{{ BUILD_DIR }}'
+  shell: |
+    cd {{ BUILD_DIR }}
+    rpm2cpio fftw*.rpm | cpio -civ '*.spec'
+
+- find:
+    paths: '{{ BUILD_DIR }}'
+    patterns: '*.rpm'
+  register: find_output
+
+- name: Remove source rpm since we don't need it anymore
+  file:
+    state: absent
+    path: '{{ item["path"] }}'
+  with_items: '{{ find_output["files"] }}'
+
+- name: If using RHEL 7, get FFTW2 version specified in the spec file
+  shell: cd {{ BUILD_DIR }} && cat fftw2.spec | grep "Version:" | rev | cut -d " " -f 1 | rev
+  register: fftw2_version
+  when: RHEL_VERSION == "7"
+
+- name: For RHEL 7 only -- FFTW2 version
+  debug:
+    var: fftw2_version.stdout
+  when: RHEL_VERSION == "7"
+
+# There is an FFTW tar file that comes with the source rpm, but we want the original source
+- name: For RHEL 7, get FFTW2 from fftw.org
+  unarchive:
+    src: 'http://fftw.org/fftw-{{ fftw2_version.stdout }}.tar.gz'
+    dest: '{{ BUILD_DIR }}'
+    remote_src: yes
+  when: RHEL_VERSION == "7"
+
+- name: If using RHEL 7, Remove FFTW2 spec file
+  file:
+    state: absent
+    path: '{{ BUILD_DIR }}/fftw2.spec'
+  when: RHEL_VERSION == "7"
+
+- name: Rename fftw-2.x.y to FFTW
+  command: mv {{ BUILD_DIR }}/fftw-{{ fftw2_version.stdout }} {{ BUILD_DIR }}/FFTW
+  when: RHEL_VERSION == "7"
+
+################################################
+#                    RHEL 8                    #
+################################################
+- name: If using RHEL 8, get FFTW3 source rpm
+  shell: |
+    cd {{ BUILD_DIR }}
+    yumdownloader --source fftw
+  when: RHEL_VERSION == "8"
+
+- name: If using RHEL 8, Remove FFTW3 spec file
+  file:
+    state: absent
+    path: '{{ BUILD_DIR }}/fftw.spec'
+  when: RHEL_VERSION == "7"
+
+- name: If using RHEL 8, get FFTW3 version specified in the spec file
+  shell: cd {{ BUILD_DIR }} && cat fftw.spec | grep "Version:" | rev | cut -d " " -f 1 | rev
+  register: fftw3_version
+  when: RHEL_VERSION == "8"
+
+- name: For RHEL 8 only -- FFTW3 version
+  debug:
+    var: fftw3_version.stdout
+  when: RHEL_VERSION == "8"
+
+# There is an FFTW tar file that comes with the source rpm, but we want the original source
+- name: For RHEL 8, get FFTW3 from fftw.org
+  unarchive:
+    src: 'http://fftw.org/fftw-{{ fftw3_version.stdout }}.tar.gz'
+    dest: '{{ BUILD_DIR }}'
+    remote_src: yes
+  when: RHEL_VERSION == "8"
+
+- name: Rename fftw-3.x.y to FFTW
+  command: mv {{ BUILD_DIR }}/fftw-{{ fftw3_version.stdout }} {{ BUILD_DIR }}/FFTW
+  when: RHEL_VERSION == "8"

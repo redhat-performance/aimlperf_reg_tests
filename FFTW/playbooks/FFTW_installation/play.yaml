@@ -1,0 +1,23 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  # Set global vars
+  vars:
+    BUILD_DIR: '{{ build_dir | default("${HOME}/build") }}'
+    INSTALL_DIR: '{{ install_dir | default("${HOME}/custom_fftw") }}'
+    RHEL_VERSION: '{{ rhel_version | default("7") }}'
+
+  roles:
+    # Creates necessary directories for building and installing FFTW
+    - role: setup
+
+    # Gets fftw.spec and FFTW sources
+    - role: get
+
+    # Builds FFTW
+    - role: build
+
+    # Installs FFTW
+    - role: install

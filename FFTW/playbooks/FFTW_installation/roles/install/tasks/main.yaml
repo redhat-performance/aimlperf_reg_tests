@@ -1,0 +1,45 @@
+---
+
+- make:
+    chdir: '{{ BUILD_DIR }}/FFTW'
+    target: install
+    params:
+      DESTDIR: '{{ INSTALL_DIR }}'
+
+- find:
+    paths: '{{ INSTALL_DIR }}/usr/local/include'
+    patterns: '*.h'
+  register: find_headers
+
+- name: Reorganize header files location
+  command: mv '{{ item["path"] }}' '{{ INSTALL_DIR }}/include'
+  with_items: '{{ find_headers["files"] }}'
+
+- find:
+    paths: '{{ INSTALL_DIR }}/usr/local/lib'
+    patterns: '*.so*'
+  register: find_libs_so_versioned
+
+- find:
+    paths: '{{ INSTALL_DIR }}/usr/local/lib'
+    patterns: '*.a'
+  register: find_libs_a
+
+- name: Reorganize shared object libs location
+  command: mv '{{ item["path"] }}' '{{ INSTALL_DIR }}/lib'
+  with_items: '{{ find_libs_so_versioned["files"] }}'
+
+- name: Reorganize static object libs location
+  command: mv '{{ item["path"] }}' '{{ INSTALL_DIR }}/lib'
+  with_items: '{{ find_libs_a["files"] }}'
+
+- name: Reorganize symlink for libfftw
+  command: mv '{{ INSTALL_DIR }}/usr/local/lib/libfftw.so' '{{ INSTALL_DIR }}/lib'
+
+- name: Reorganize symlink for librfftw
+  command: mv '{{ INSTALL_DIR }}/usr/local/lib/librfftw.so' '{{ INSTALL_DIR }}/lib'
+
+- name: Remove {{ INSTALL_DIR }}/usr
+  file:
+    path: '{{ INSTALL_DIR }}/usr'
+    state: absent

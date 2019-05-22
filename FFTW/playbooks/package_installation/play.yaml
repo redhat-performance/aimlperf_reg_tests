@@ -1,0 +1,63 @@
+---
+
+- hosts: localhost
+  become: yes
+  connection: local
+
+  vars:
+    RHEL_VERSION: '{{ rhel_version | default("7") }}'
+
+  tasks:
+  - name: yum update (if using RHEL 7)
+    yum: name=* state=latest
+    when: RHEL_VERSION == "7"
+
+  - name: Install EPEL (if using RHEL 7)
+    yum: pkg=https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    when: RHEL_VERSION == "7"
+
+  - name: Install yum prereqs (if using RHEL 7)
+    yum:
+      name:
+        - bc
+        - binutils
+        - cpp
+        - diffutils
+        - gcc
+        - gcc-c++
+        - gcc-gfortran
+        - libgomp
+        - libquadmath
+        - libquadmath-devel
+        - libtool
+        - make
+        - mpich-devel
+        - patch
+        - yum-utils
+      state: present
+    when: RHEL_VERSION == "7"
+
+  - name: dnf update (if using RHEL 8)
+    dnf: name=* state=latest
+    when: RHEL_VERSION == "8"
+
+  - name: Install dnf prereqs (if using RHEL 8)
+    dnf:
+      name:
+        - bc
+        - binutils
+        - cpp
+        - diffutils
+        - gcc
+        - gcc-c++
+        - gcc-gfortran
+        - libgomp
+        - libquadmath
+        - libquadmath-devel
+        - libtool
+        - make
+        - mpich-devel
+        - patch
+        - yum-utils
+      state: present
+    when: RHEL_VERSION == "8"

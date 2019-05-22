@@ -1,0 +1,62 @@
+---
+
+- name: Get CFLAGS
+  command: rpm --eval '%{optflags}'
+  args:
+    warn: false
+  register: CFLAGS
+
+- debug:
+    var: CFLAGS.stdout
+
+- name: Determine if we have AVX
+  shell: |
+    avx=$(lscpu | grep 'Flags' | grep avx)
+    echo $avx
+  register: HAVE_AVX
+
+- name: Determine if we have AVX2
+  shell: |
+    avx2=$(lscpu | grep 'Flags' | grep avx2)
+    echo $avx2
+  register: HAVE_AVX2
+
+- name: Determine if we have AVX512
+  shell: |
+    avx512=$(lscpu | grep 'Flags' | grep avx512)
+    echo $avx512
+  register: HAVE_AVX512
+
+- name: Set ENABLE_AVX flag
+  shell: if [[ ! -z '{{ HAVE_AVX.stdout }}' ]]; then echo "--enable-avx"; else echo "--disable-avx"; fi
+  register: ENABLE_AVX
+
+- debug:
+    var: ENABLE_AVX.stdout
+
+- name: Set ENABLE_AVX2 flag
+  shell: if [[ ! -z '{{ HAVE_AVX2.stdout }}' ]]; then echo "--enable-avx2"; else echo "--disable-avx2"; fi
+  register: ENABLE_AVX2
+
+- debug:
+    var: ENABLE_AVX2.stdout
+
+- name: Set ENABLE_AVX512 flag
+  shell: if [[ ! -z '{{ HAVE_AVX512.stdout }}' ]]; then echo "--enable-avx512"; else echo "--disable-avx512"; fi
+  register: ENABLE_AVX512
+
+- debug:
+    var: ENABLE_AVX512.stdout
+
+- name: Configure FFTW
+  shell: |
+    cd {{ BUILD_DIR }}/FFTW
+    ./configure CC=gcc "CFLAGS={{ CFLAGS.stdout }}" {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} --enable-sse2 --enable-shared
+
+- make:
+    chdir: '{{ BUILD_DIR }}/FFTW'
+    target: all
+  register: build_results
+
+- debug:
+    var: build_results.stdout_lines

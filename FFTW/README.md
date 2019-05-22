@@ -4,7 +4,33 @@ This folder contains regression tests to assess the performance of FFTW's forwar
 
 ## Building FFTW
 
-To build FFTW, either use Podman to build the Dockerfile under the "Dockerfiles" folder, or run the scripts in the "installation" folder yourself. Both methods utilize rpmbuild to build the library.
+### Bare Metal
+
+To build FFTW on bare metal, first install Ansible. You can install it via yum or dnf, or you can run
+
+```
+$ sh scripts/install_ansible_from_source.sh <ansible-git-version>
+```
+
+Once you've installed Ansible,
+
+```
+$ cd playbooks/package_installation
+$ ansible-playbook -i hosts play.yaml
+$ cd ../FFTW_installation
+$ ansible-playbook -i hosts play.yaml --extra-vars="{build_dir: /path/to/build/dir, install_dir: /path/to/install/dir}"
+```
+
+Alternatively, if you want to build on RHEL 8,
+
+```
+$ cd playbooks/package_installation
+$ ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: 8}"
+$ cd ../FFTW_installation
+$ ansible-playbook -i hosts play.yaml --extra-vars="{build_dir: /path/to/build/dir, install_dir: /path/to/install/dir"
+```
+
+Whether you're building on RHEL 7 or RHEL 8, FFTW will be installed to `/path/to/install/dir`. There will be two folders: `lib` and `include`. You do not need to create the install directory. The ansible playbook will do that for you.
 
 ### Podman
 
