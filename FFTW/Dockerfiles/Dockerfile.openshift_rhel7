@@ -29,7 +29,7 @@ RUN cd ${HOME} && \
     rm -rf packages_playbook
 
 # Copy OpenBLAS installation playbook
-RUN mkdir ${HOME}/fftw_playbook
+RUN mkdir ${HOME}/FFTW_playbook
 COPY FFTW/playbooks/FFTW_installation ${HOME}/FFTW_playbook
 
 # Create a folder for the benchmark tests and copy the tests to the new folder
@@ -53,6 +53,9 @@ RUN chmod +x ${FFTW_TESTS}/run_benchmarks.sh && \
     chmod 777 /opt/app-root/src/.ansible && \
     chmod 777 /opt/app-root/src && \
     chmod 777 /opt/app-root
+
+# Set Ansible remote tmp
+RUN echo "remote_tmp = ${HOME}/.ansible/tmp" > ${HOME}/FFTW_playbook/ansible.cfg
 
 # This default user is created in the openshift/base-centos7 image
 USER 1001
