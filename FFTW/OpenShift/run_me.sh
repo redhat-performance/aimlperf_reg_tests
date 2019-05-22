@@ -20,13 +20,13 @@ NAMESPACE=$(oc project | cut -d" " -f3 | cut -d'"' -f2)
 
 # Load templates
 if [[ ${RHEL_VERSION} == 7 ]]; then
-    check_build_template=$(oc get templates fftw-rhel7 | grep NAME)
+    check_build_template=$(oc get templates fftw-build-image-rhel7 | grep NAME)
     if [[ ! -z $check_build_template ]]; then
         oc delete -f templates/fftw-buildconfig-rhel7.yaml
     fi
     oc create -f templates/fftw-buildconfig-rhel7.yaml
 else
-    check_build_template=$(oc get templates fftw-rhel8 | grep NAME)
+    check_build_template=$(oc get templates fftw-build-image-rhel8 | grep NAME)
     if [[ ! -z $check_build_template ]]; then
         oc delete -f templates/fftw-buildconfig-rhel8.yaml
     fi
@@ -40,14 +40,14 @@ oc create -f templates/fftw-build-job.yaml
 
 # Check build configs
 if [[ ${RHEL_VERSION} == 7 ]]; then
-    check_bc=$(oc get bc fftw-app-rhel7 | grep NAME)
+    check_bc=$(oc get bc fftw-build-image-rhel7 | grep NAME)
     if [[ ! -z $check_bc ]]; then
-        oc delete bc fftw-app-rhel7
+        oc delete bc fftw-build-image-rhel7
     fi
 else
-    check_bc=$(oc get bc fftw-app-rhel8 | grep NAME)
+    check_bc=$(oc get bc fftw-build-image-rhel8 | grep NAME)
     if [[ ! -z $check_bc ]]; then
-        oc delete bc fftw-app-rhel8
+        oc delete bc fftw-build-image-rhel8
     fi
 fi
 
@@ -59,19 +59,19 @@ fi
 
 # Build the image
 if [[ ${RHEL_VERSION} == 7 ]]; then
-    check_existing_builds=$(oc get builds | grep fftw-app-rhel7)
+    check_existing_builds=$(oc get builds | grep fftw-build-image-rhel7)
     if [[ ! -z $check_existing_builds ]]; then
-        oc delete build fftw-app-rhel7-1
+        oc delete build fftw-build-image-rhel7-1
     fi
     oc new-app --template=fftw-build-image-rhel7 --param=IMAGESTREAM_NAME=$IS_NAME --param=REGISTRY=$OC_REGISTRY
-    oc start-build fftw-app-rhel7
+    oc start-build fftw-build-image-rhel7
 else
-    check_existing_builds=$(oc get builds | grep fftw-app-rhel8)
+    check_existing_builds=$(oc get builds | grep fftw-build-image-rhel8)
     if [[ ! -z $check_existing_builds ]]; then
-        oc delete build fftw-app-rhel8-1
+        oc delete build fftw-build-image-rhel8-1
     fi
     oc new-app --template=fftw-build-image-rhel8 --param=IMAGESTREAM_NAME=$IS_NAME --param=REGISTRY=$OC_REGISTRY
-    oc start-build fftw-app-rhel8
+    oc start-build fftw-build-image-rhel8
 fi
 
 # Build the app
