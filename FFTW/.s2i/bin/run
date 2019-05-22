@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Add user to /etc/passwd
+uid=$(id -u)
+gid=$(id -g)
+echo "${uid}:x:${uid}:${gid}:1001 uid:/home/default:/bin/sh" >> /etc/passwd
+echo "${uid}:x:$(id -G | cut -d' ' -f 2)" >> /etc/group
+
+# Configure git
+git config --global user.name user
+git config --global user.email user@openshift-s2i
+
+#########################################
+#        BUILD AND INSTALL FFTW         #
+#########################################
+FFTW_INSTALL_DIR=${HOME}/custom_fftw
+FFTW_BUILD_DIR=${HOME}/build
+WORK_DIR=/home/fftw_tests
+cd ${HOME}/FFTW_playbook
+ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: ${FFTW_INSTALL_DIR}, build_dir: ${FFTW_BUILD_DIR}}"
+
+#########################################
+#               BENCHMARKS              #
+#########################################
+# All tests were saved to /home/FFTW_tests
+cd ${WORK_DIR}
+
+# Compile the code
+export LD_LIBRARY_PATH=${FFTW_INSTALL_DIR}/lib:$LD_LIBRARY_PATH
+sh compile_benchmark_code.sh
+
+# Execute the tests
+sh run_benchmarks.sh -e nd_cosine_ffts -i 5 -r 2 -f 0.001 -d "3000 3000" -j "fftw_cosine_performance_results.json"
+
+# cat the results
+cat fftw_cosine_performance_results.json
