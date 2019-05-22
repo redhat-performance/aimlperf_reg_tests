@@ -20,7 +20,16 @@
 #include <time.h>
 #include <sys/time.h>
 #include <math.h>
+#ifdef FFTW3
 #include <fftw3.h>
+#else
+#include <fftw.h>
+#include <fftw_threads.h>
+#include <rfftw.h>
+#include <rfftw_threads.h>
+#define fftw_init_threads() fftw_threads_init()
+#define fftw_destroy_plan(fftwnd_plan) fftwnd_destroy_plan(fftwnd_plan)
+#endif
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
@@ -141,7 +150,11 @@ int main(int argc, char* argv[]){
 
     // Set threading
     fftw_init_threads();
+#ifdef FFTW3
+    // For FFTW3 only, we can use fftw_plan_with_nthreads(nthreads) rather than passing in the number of
+    // threads each time we execute a transform
     fftw_plan_with_nthreads(nthreads);
+#endif
 
     // Allocate memory for cosine data
     double *cosine = (double*)malloc(n_total * sizeof(double));
@@ -149,8 +162,10 @@ int main(int argc, char* argv[]){
     // Fill N-dimensional cosine matrix
     generate_cosine_data(cosine, fs, rank, n, n_total);
 
+#ifdef FFTW3
     // Set time limit so that FFTW doesn't spend too much time trying to figure out the "best" algorithm.
     fftw_set_timelimit(TIMELIMIT);
+#endif
 
     // Initialize real-to-complex cosine input and output
     double *cosine_original = (double*)fftw_malloc(n_total * sizeof(double));
@@ -170,8 +185,13 @@ int main(int argc, char* argv[]){
     // Iterate
     for (j=0; j<niters; j++){
         // Create FFTW plans
+#ifdef FFTW3
         fftw_plan forward_cos_dft_plan = fftw_plan_dft_r2c(rank, n, cosine_original, cosine_complex, flags);
         fftw_plan backward_cos_dft_plan = fftw_plan_dft_c2r(rank, n, cosine_complex, cosine_back, flags);
+#else
+        rfftwnd_plan forward_cos_dft_plan = rfftwnd_create_plan(rank, n, FFTW_REAL_TO_COMPLEX, flags);
+        rfftwnd_plan backward_cos_dft_plan = rfftwnd_create_plan(rank, n, FFTW_COMPLEX_TO_REAL, flags);
+#endif
 
         // Fill input cosine array (this MUST be done after the fftw plans are created)
         for (i=0; i<n_total; i++)
@@ -179,7 +199,11 @@ int main(int argc, char* argv[]){
 
         // Execute Forward DFT and capture performance time
         gettimeofday(&forward_dft_start, NULL); //start clock
+#ifdef FFTW3
         fftw_execute(forward_cos_dft_plan);
+#else
+        rfftwnd_threads_one_real_to_complex(nthreads, forward_cos_dft_plan, cosine_original, cosine_complex);
+#endif
         gettimeofday(&forward_dft_stop, NULL); //stop clock
         forward_dft_execution_time_us = (forward_dft_stop.tv_sec - forward_dft_start.tv_sec) * (1e6); //sec to us
         forward_dft_execution_time_us += (forward_dft_stop.tv_usec - forward_dft_start.tv_usec);
@@ -188,7 +212,11 @@ int main(int argc, char* argv[]){
 
         // Execute Backward DFT and capture performance time
         gettimeofday(&backward_dft_start, NULL); //start clock
+#ifdef FFTW3
         fftw_execute(backward_cos_dft_plan);
+#else
+        rfftwnd_threads_one_complex_to_real(nthreads, backward_cos_dft_plan, cosine_complex, cosine_back);
+#endif
         gettimeofday(&backward_dft_stop, NULL); //stop clock
         backward_dft_execution_time_us = (backward_dft_stop.tv_sec - backward_dft_start.tv_sec) * (1e6);// sec to us
         backward_dft_execution_time_us += (backward_dft_stop.tv_usec - backward_dft_start.tv_usec);
@@ -208,8 +236,10 @@ int main(int argc, char* argv[]){
     fftw_free(cosine_original);
     fftw_free(cosine_complex);
 
+#ifdef FFTW3
     // Handle threading
     fftw_cleanup_threads();
+#endif
 
     // Get average times
     double average_forward_dft_exec_time_us = total_f_dft_exec_time_us / niters;
