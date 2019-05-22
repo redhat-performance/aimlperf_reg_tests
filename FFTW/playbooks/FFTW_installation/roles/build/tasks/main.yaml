@@ -51,7 +51,7 @@
 - name: Configure FFTW
   shell: |
     cd {{ BUILD_DIR }}/FFTW
-    ./configure CC=gcc "CFLAGS={{ CFLAGS.stdout }}" {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} --enable-sse2 --enable-shared
+    ./configure CC=gcc "CFLAGS={{ CFLAGS.stdout }}" {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} --enable-sse2 --enable-shared --enable-threads
 
 - make:
     chdir: '{{ BUILD_DIR }}/FFTW'
