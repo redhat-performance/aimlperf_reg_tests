@@ -55,7 +55,7 @@ RUN chmod +x ${FFTW_TESTS}/run_benchmarks.sh && \
     chmod 777 /opt/app-root
 
 # Set Ansible remote tmp
-RUN echo "remote_tmp = ${HOME}/.ansible/tmp" > ${HOME}/FFTW_playbook/ansible.cfg
+RUN echo "remote_tmp = ${HOME}/.ansible/tmp" >> ${HOME}/FFTW_playbook/ansible.cfg
 
 # This default user is created in the openshift/base-centos7 image
 USER 1001
