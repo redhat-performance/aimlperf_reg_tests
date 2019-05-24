@@ -3,7 +3,7 @@
 # Add user to /etc/passwd
 uid=$(id -u)
 gid=$(id -g)
-echo "${uid}:x:${uid}:${gid}:1001 uid:/home/default:/bin/sh" >> /etc/passwd
+echo "${uid}:x:${uid}:${gid}:1001 uid:${HOME}:/bin/sh" >> /etc/passwd
 echo "${uid}:x:$(id -G | cut -d' ' -f 2)" >> /etc/group
 
 # Configure git
