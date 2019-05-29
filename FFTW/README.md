@@ -52,6 +52,10 @@ $ podman build -f Dockerfiles/Dockerfile.rpmbuild_regression_tests --security-op
 
 This seccomp file was written by w1ndy to avoid the need to use `--privileged` with `numactl`: https://gist.github.com/w1ndy/4aee49aa3a608c977a858542ed5f1ee5
 
+### OpenShift on AWS
+
+To build on OpenShift with AWS, please view the `README.md` file in the `OpenShift` folder to get started.
+
 ### Installation Scripts
 
 If you would like to use the installation scripts, you can run either `build.sh` or `install.sh` to build the library, but of course `install.sh` will also install the generated rpms for you. See
