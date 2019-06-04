@@ -25,8 +25,7 @@ objects:
           command: ["/usr/libexec/s2i/run"]
         restartPolicy: "Never"
         nodeSelector:
-          feature.node.kubernetes.io/cpuid-AVX: "${USE_AVX}"
-          feature.node.kubernetes.io/cpuid-AVX2: "${USE_AVX2}"
+          beta.kubernetes.io/instance-type: "${INSTANCE_TYPE}"
 parameters:
 - description: "ImageStream name"
   name: "IMAGESTREAM_NAME"
@@ -55,3 +54,7 @@ parameters:
   name: "USE_AVX2"
   from: '[A-Z]{5}'
   value: "true"
+- description: "AWS instance type"
+  name: "INSTANCE_TYPE"
+  value: "m4.4xlarge"
+  

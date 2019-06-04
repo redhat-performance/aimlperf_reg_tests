@@ -29,8 +29,7 @@ objects:
         kind: "ImageStreamTag"
         name: "${IMAGESTREAM_NAME}:latest"
     nodeSelector:
-      feature.node.kubernetes.io/cpuid-AVX: "${USE_AVX}"
-      feature.node.kubernetes.io/cpuid-AVX2: "${USE_AVX2}"
+      beta.kubernetes.io/instance-type: "${INSTANCE_TYPE}"
 - apiVersion: "v1"
   kind: "ImageStream"
   metadata:
@@ -54,5 +53,8 @@ parameters:
   value: "true"
 - description: "Use AVX2 -- true or false"
   name: "USE_AVX2"
-  from: '[A-Z]{5}'
+  from: '[A-Z]{5}'  
+- description: "AWS instance type"
+  name: "INSTANCE_TYPE"
+  value: "m4.4xlarge"
   

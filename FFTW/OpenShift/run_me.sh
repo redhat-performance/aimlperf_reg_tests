@@ -74,7 +74,7 @@ oc create -f ${build_job_path}
 # Check build configs
 check_bc=$(oc get bc ${build_image_template_name} | grep NAME)
 if [[ ! -z $check_bc ]]; then
-oc delete bc ${build_image_template_namE}
+    oc delete bc ${build_image_template_name}
 fi
 
 # Check image streams
