@@ -28,6 +28,7 @@ RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
 # Install prerequisites via Ansible
 COPY FFTW/playbooks/package_installation ${HOME}
 RUN cd ${HOME} && \
+    ln -s /usr/bin/python3.6 /usr/bin/python && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: 8}" && \
     rm -rf packages_playbook
 
