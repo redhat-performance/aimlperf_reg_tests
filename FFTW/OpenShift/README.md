@@ -3,13 +3,13 @@
 This folder contains files used for launching the FFTW multidimensional cosine app in OpenShift on AWS. To run, first make sure you've set up an OpenShift AWS instance and exposed your image registry (Docker, CRI-O, etc.). Then run:
 
 ```
-$ sh run_me.sh [RHEL-version] [nfd] [true/false] [true/false]
+$ sh run_me.sh -v <rhel_version>
 ```
 
 e.g.,
 
 ```
-$ sh run_me.sh 7
+$ sh run_me.sh -v 7
 ```
 
 The above command will load the templates from the `templates` folder into your OpenShift AWS instance, create a build image special for the OpenBLAS code in this repo, and run the gemm app.
@@ -21,7 +21,7 @@ You can run `run_me.sh` multiple times if you want. It is safe to do so, as it c
 Note that if you want to build using [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery/) make sure you have it installed prior to running the following command:
 
 ```
-$ sh run_me.sh 7 nfd <instance-type>
+$ sh run_me.sh -v 7 -n -i <instance-type> [optional args]
 ```
 
 This command calls for NFD to be used when building and running the FFTW benchmark app. Replace `<instance-type>` with the AWS instance type you want to use (e.g., m4.4xlarge, m4.large, etc.).
