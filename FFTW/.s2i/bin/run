@@ -17,7 +17,7 @@ FFTW_INSTALL_DIR=${HOME}/custom_fftw
 FFTW_BUILD_DIR=${HOME}/build
 WORK_DIR=/home/fftw_tests
 cd ${HOME}/FFTW_playbook
-ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: ${FFTW_INSTALL_DIR}, build_dir: ${FFTW_BUILD_DIR}}"
+ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: ${FFTW_INSTALL_DIR}, build_dir: ${FFTW_BUILD_DIR}, rhel_version: ${RHEL_VERSION}}"
 
 #########################################
 #               BENCHMARKS              #
