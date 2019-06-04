@@ -25,3 +25,5 @@ $ sh run_me.sh 7 nfd true true
 ```
 
 This command calls for NFD to be used when building and running the FFTW benchmark app. The `true` and `true` inputs represent whether to use AVX or AVX2, respectively. You do not need to pass in `nfd` if you don't want to use NFD, but note that you cannot specify AVX or AVX2 without using NFD!
+
+If you wish to create a MachineSet and run the pod on a node with a specific instance type, use `scripts/create_machineset.sh`.
