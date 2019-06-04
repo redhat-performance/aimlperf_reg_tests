@@ -108,7 +108,9 @@ echo "Checking build status..."
 while [[ -z $build_succeeded_status ]] && [[ -z $build_failed_status ]] && [[ -z $build_stopped_status ]] && [[ -z $build_completed_status ]]; do
     sleep 10
     echo "Build is still running"
-    oc_build_status=$(oc status | grep build)
+    oc status > statuses.txt 
+    grep -i -A 2 "bc/fftw-nfd-build-image-rhel7" statuses.txt
+    oc_build_status=$(grep -i -A 2 "bc/${build_image_template_name}" statuses.txt)
     build_succeeded_status=$(echo $oc_build_status | grep build | grep succeeded)
     build_completed_status=$(echo $oc_build_status | grep build | grep completed)
     build_failed_status=$(echo $oc_build_status | grep build | grep failed)
@@ -124,3 +126,5 @@ elif [[ "${NFD}" == "nfd" ]]; then
 else
     oc new-app --template=$build_job_name --param=IMAGESTREAM_NAME=$IS_NAME --param=REGISTRY=$OC_REGISTRY --param=APP_NAME=$APP_NAME --param=NAMESPACE=$NAMESPACE
 fi
+
+rm statuses.txt
