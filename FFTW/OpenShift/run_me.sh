@@ -41,10 +41,8 @@ if [[ ${RHEL_VERSION} == 7 ]]; then
     IS_NAME="fftw-rhel7"
     APP_NAME="fftw-app-rhel7"
 elif [[ ${RHEL_VERSION} == 8 ]]; then
-    echo "RHEL 8 is not implemented at this time"
-    exit 1
-    #IS_NAME="fftw-rhel8"
-    #APP_NAME="fftw-app-rhel8"
+    IS_NAME="fftw-rhel8"
+    APP_NAME="fftw-app-rhel8"
 else
     echo "Invalid version of RHEL. Choose from: {7,8}"
     exit 1

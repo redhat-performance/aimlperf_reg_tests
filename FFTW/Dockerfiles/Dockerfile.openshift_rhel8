@@ -1,0 +1,68 @@
+FROM registry.access.redhat.com/rhel8/s2i-core
+MAINTAINER Courtney Pacheco <cpacheco@redhat.com>
+ENV LANG=en_US.utf8
+USER root
+ENV BUILDER_VERSION 1.0
+
+# Ansible version
+ENV ANSIBLE_GIT_VERSION=v2.7.10
+
+# RHEL version
+ENV RHEL_VERSION=8
+
+# Set up labels
+LABEL io.openshift.s2i.scripts-url="image:///usr/libexec/s2i"
+LABEL io.openshift.expose-services="8080:http"
+
+# Copy s2i assemble + run
+COPY FFTW/.s2i/bin/ /usr/libexec/s2i
+
+# Put on port 8080
+EXPOSE 8080
+
+# Install Ansible
+COPY FFTW/scripts/install_ansible_from_source.sh ${HOME}
+RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
+    rm install_ansible_from_source.sh
+
+# Install prerequisites via Ansible
+COPY FFTW/playbooks/package_installation ${HOME}
+RUN cd ${HOME} && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: 8}" && \
+    rm -rf packages_playbook
+
+# Copy OpenBLAS installation playbook
+RUN mkdir ${HOME}/FFTW_playbook
+COPY FFTW/playbooks/FFTW_installation ${HOME}/FFTW_playbook
+
+# Create a folder for the benchmark tests and copy the tests to the new folder
+ENV FFTW_TESTS=/home/fftw_tests
+RUN mkdir -p ${FFTW_TESTS}/src
+COPY FFTW/src/multidimensional_cosine_dft.c ${FFTW_TESTS}/src
+COPY FFTW/src/guru_real_2D_dft_fftw_malloc.c ${FFTW_TESTS}/src
+COPY FFTW/src/plot_multidimensional_cosine_performance_results.c ${FFTW_TESTS}/src
+COPY FFTW/run_benchmarks.sh ${FFTW_TESTS}
+COPY FFTW/compile_benchmark_code.sh ${FFTW_TESTS}
+
+# Give user permissions to modify the 'macros' file + other files to run tests
+RUN chmod +x ${FFTW_TESTS}/run_benchmarks.sh && \
+    chmod +x ${FFTW_TESTS}/compile_benchmark_code.sh && \
+    chmod 777 ${FFTW_TESTS} && \
+    chmod 777 ${FFTW_TESTS}/src && \
+    chmod 777 /usr/libexec/s2i/run && \
+    chmod g=u /etc/passwd /etc/group && \
+    mkdir -p /opt/app-root/src/.ansible/tmp && \
+    chmod 777 /opt/app-root/src/.ansible/tmp && \
+    chmod 777 /opt/app-root/src/.ansible && \
+    chmod 777 /opt/app-root/src && \
+    chmod 777 /opt/app-root
+
+# Set Ansible remote tmp
+RUN echo "remote_tmp = ${HOME}/.ansible/tmp" >> ${HOME}/FFTW_playbook/ansible.cfg
+
+# This default user is created in the openshift/base-centos7 image
+USER 1001
+
+WORKDIR ${FFTW_TESTS}
+
+CMD ["/usr/libexec/s2i/usage"]
