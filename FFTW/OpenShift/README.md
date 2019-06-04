@@ -21,9 +21,9 @@ You can run `run_me.sh` multiple times if you want. It is safe to do so, as it c
 Note that if you want to build using [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery/) make sure you have it installed prior to running the following command:
 
 ```
-$ sh run_me.sh 7 nfd true true
+$ sh run_me.sh 7 nfd <instance-type>
 ```
 
-This command calls for NFD to be used when building and running the FFTW benchmark app. The `true` and `true` inputs represent whether to use AVX or AVX2, respectively. You do not need to pass in `nfd` if you don't want to use NFD, but note that you cannot specify AVX or AVX2 without using NFD!
+This command calls for NFD to be used when building and running the FFTW benchmark app. Replace `<instance-type>` with the AWS instance type you want to use (e.g., m4.4xlarge, m4.large, etc.).
 
 If you wish to create a MachineSet and run the pod on a node with a specific instance type, use `scripts/create_machineset.sh`.

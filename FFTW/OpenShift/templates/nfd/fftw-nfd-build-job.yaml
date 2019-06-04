@@ -46,14 +46,6 @@ parameters:
   from: '[A-Z0-9]{15}'
   value: "fftw"
   required: true
-- description: "Use AVX -- true or false"
-  name: "USE_AVX"
-  from: '[A-Z]{5}'
-  value: "true"
-- description: "Use AVX2 -- true or false"
-  name: "USE_AVX2"
-  from: '[A-Z]{5}'
-  value: "true"
 - description: "AWS instance type"
   name: "INSTANCE_TYPE"
   value: "m4.4xlarge"
