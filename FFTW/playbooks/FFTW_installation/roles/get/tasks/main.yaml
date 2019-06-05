@@ -15,17 +15,20 @@
   shell: |
     cd {{ BUILD_DIR }}
     rpm2cpio fftw*.rpm | cpio -civ '*.spec'
+  when: RHEL_VERSION == "7"
 
 - find:
     paths: '{{ BUILD_DIR }}'
     patterns: '*.rpm'
   register: find_output
+  when: RHEL_VERSION == "7"
 
 - name: Remove source rpm since we don't need it anymore
   file:
     state: absent
     path: '{{ item["path"] }}'
   with_items: '{{ find_output["files"] }}'
+  when: RHEL_VERSION == "7"
 
 - name: If using RHEL 7, get FFTW2 version specified in the spec file
   shell: cd {{ BUILD_DIR }} && cat fftw2.spec | grep "Version:" | rev | cut -d " " -f 1 | rev
@@ -64,11 +67,23 @@
     yumdownloader --source fftw
   when: RHEL_VERSION == "8"
 
+- name: If using RHEL 8, unpack source rpm and place the spec file in '{{ BUILD_DIR }}'
+  shell: |
+    cd {{ BUILD_DIR }}
+    rpm2cpio fftw*.rpm | cpio -civ '*.spec'
+  when: RHEL_VERSION == "8"
+
+- find:
+    paths: '{{ BUILD_DIR }}'
+    patterns: '*.rpm'
+  register: find_output
+  when: RHEL_VERSION == "8"
+
 - name: If using RHEL 8, Remove FFTW3 spec file
   file:
     state: absent
     path: '{{ BUILD_DIR }}/fftw.spec'
-  when: RHEL_VERSION == "7"
+  when: RHEL_VERSION == "8"
 
 - name: If using RHEL 8, get FFTW3 version specified in the spec file
   shell: cd {{ BUILD_DIR }} && cat fftw.spec | grep "Version:" | rev | cut -d " " -f 1 | rev
