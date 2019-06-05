@@ -45,6 +45,7 @@
       name:
         - bc
         - binutils
+        - cpio
         - cpp
         - diffutils
         - gcc

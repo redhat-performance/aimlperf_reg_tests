@@ -27,7 +27,11 @@ cd ${WORK_DIR}
 
 # Compile the code
 export LD_LIBRARY_PATH=${FFTW_INSTALL_DIR}/lib:$LD_LIBRARY_PATH
-gcc -O  src/multidimensional_cosine_dft.c -mcmodel=large -shared-libgcc -Wall -o nd_cosine_ffts -I/usr/include -I${FFTW_INSTALL_DIR}/include -L${FFTW_INSTALL_DIR}/lib -lfftw -lfftw_threads -lrfftw -lrfftw_threads -lm -lpthread -std=gnu11
+if [[ ${RHEL_VERSION} == 7 ]]; then
+    gcc -O  src/multidimensional_cosine_dft.c -mcmodel=large -shared-libgcc -Wall -o nd_cosine_ffts -I/usr/include -I${FFTW_INSTALL_DIR}/include -L${FFTW_INSTALL_DIR}/lib -lfftw -lfftw_threads -lrfftw -lrfftw_threads -lm -lpthread -std=gnu11
+else
+    gcc -O  src/multidimensional_cosine_dft.c -mcmodel=large -shared-libgcc -Wall -o nd_cosine_ffts -I/usr/include -I${FFTW_INSTALL_DIR}/include -L${FFTW_INSTALL_DIR}/lib -lfftw -lfftw_threads -lrfftw -lrfftw_threads -lm -lpthread -std=gnu11 -DFFTW3
+fi
 
 # Execute the tests
 sh run_benchmarks.sh -e nd_cosine_ffts -i 5 -r 2 -f 0.001 -d "3000 3000" -j "fftw_cosine_performance_results.json"
