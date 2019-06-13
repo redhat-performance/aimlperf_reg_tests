@@ -77,10 +77,14 @@ fi
 
 # Initialize vars
 if [[ -z ${IS_NAME} ]]; then
-    if [[ ${RHEL_VERSION} == 7 ]]; then
+    if [[ ${RHEL_VERSION} == 7 ]] && [[ ! -z ${AVX} ]]; then
         IS_NAME="fftw-rhel7-${AVX}"
-    else
+    elif [[ ${RHEL_VERSION} == 7 ]] && [[ -z ${AVX} ]]; then
+        IS_NAME="fftw-rhel7"
+    elif [[ ${RHEL_VERSION} == 8 ]] && [[ ! -z ${AVX} ]]; then
         IS_NAME="fftw-rhel8-${AVX}"
+    else
+        IS_NAME="fftw-rhel8"
     fi
 fi
 if [[ -z ${APP_NAME} ]]; then
