@@ -3,13 +3,13 @@ kind: "Template"
 metadata:
   annotations:
     description: "Template to make OpenBLAS build image"
-    tags: "fftw-nfd-build-image-rhel7"
-  name: "fftw-nfd-build-image-rhel7"
+    tags: "fftw-nfd-build-image-rhel8"
+  name: "fftw-nfd-build-image-rhel8"
 objects:
 - apiVersion: "v1"
   kind: "BuildConfig"
   metadata:
-    name: "fftw-nfd-build-image-rhel7" 
+    name: "fftw-nfd-build-image-rhel8" 
   spec:
     runPolicy: "Serial" 
     triggers: 
@@ -23,7 +23,7 @@ objects:
     strategy: 
       type: "Docker"
       dockerStrategy:
-        dockerfilePath: "FFTW/Dockerfiles/Dockerfile.openshift_rhel7"
+        dockerfilePath: "FFTW/Dockerfiles/Dockerfile.openshift_rhel8"
     output: 
       to:
         kind: "ImageStreamTag"

@@ -2,14 +2,14 @@ apiVersion: "v1"
 kind: "Template"
 metadata:
   annotations:
-    description: "Template to make OpenBLAS build image"
-    tags: "fftw-nfd-build-image-rhel8"
-  name: "fftw-nfd-build-image-rhel8"
+    description: "Template to make a no-AVX OpenBLAS build image"
+    tags: "fftw-no-avx-nfd-build-image-rhel8"
+  name: "fftw-no-avx-nfd-build-image-rhel8"
 objects:
 - apiVersion: "v1"
   kind: "BuildConfig"
   metadata:
-    name: "fftw-nfd-build-image-rhel8" 
+    name: "fftw-no-avx-nfd-build-image-rhel8" 
   spec:
     runPolicy: "Serial" 
     triggers: 
@@ -28,8 +28,15 @@ objects:
       to:
         kind: "ImageStreamTag"
         name: "${IMAGESTREAM_NAME}:latest"
-    nodeSelector:
-      beta.kubernetes.io/instance-type: "${INSTANCE_TYPE}"
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "feature.node.kubernetes.io/cpuid-AVX"
+              operator: "DoesNotExist"
+              values:
+              - "true"
 - apiVersion: "v1"
   kind: "ImageStream"
   metadata:
@@ -41,20 +48,9 @@ parameters:
 - description: "ImageStream name"
   name: "IMAGESTREAM_NAME"
   from: '[A-Z0-9]{10}'
-  value: "fftw-rhel7"
+  value: "fftw-rhel8-no-avx"
   required: true
 - description: "Registry route. Use `oc registry info` to get the route after exposing it."
   name: "REGISTRY"
   value: "image-registry.openshift-image-registry.svc:5000"
   required: true
-- description: "Use AVX -- true or false"
-  name: "USE_AVX"
-  from: '[A-Z]{5}'
-  value: "true"
-- description: "Use AVX2 -- true or false"
-  name: "USE_AVX2"
-  from: '[A-Z]{5}'  
-- description: "AWS instance type"
-  name: "INSTANCE_TYPE"
-  value: "m4.4xlarge"
-  

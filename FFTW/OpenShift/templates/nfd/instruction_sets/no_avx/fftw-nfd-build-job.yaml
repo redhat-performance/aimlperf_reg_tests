@@ -2,9 +2,9 @@ apiVersion: "v1"
 kind: "Template"
 metadata:
   annotations:
-    description: "Template to run FFTW build job"
-    tags: "fftw-nfd-build-job"
-  name: "fftw-nfd-build-job"
+    description: "Template to run a no-AVX FFTW build job"
+    tags: "fftw-no-avx-nfd-build-job"
+  name: "fftw-no-avx-nfd-build-job"
 objects:
 - apiVersion: "batch/v1"
   kind: "Job"
@@ -24,18 +24,23 @@ objects:
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
         restartPolicy: "Never"
-        nodeSelector:
-          beta.kubernetes.io/instance-type: "${INSTANCE_TYPE}"
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: "feature.node.kubernetes.io/cpuid-AVX"
+                  operator: "DoesNotExist"
 parameters:
 - description: "ImageStream name"
   name: "IMAGESTREAM_NAME"
   from: '[A-Z0-9]{10}'
-  value: "fftw-rhel7"
+  value: "fftw-rhel7-no-avx"
   required: true 
 - description: "FFTW app name"
   name: "APP_NAME"
   from: '[A-Z0-9]{20}'
-  value: "fftw-app"
+  value: "fftw-app-no-avx"
   required: true
 - description: "Registry route. Use `oc registry info` to get the route after exposing it."
   name: "REGISTRY"
@@ -44,9 +49,5 @@ parameters:
 - description: "Current project (i.e., namespace)"
   name: "NAMESPACE"
   from: '[A-Z0-9]{15}'
-  value: "fftw"
+  value: "openshift-image-registry"
   required: true
-- description: "AWS instance type"
-  name: "INSTANCE_TYPE"
-  value: "m4.4xlarge"
-  

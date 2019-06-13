@@ -18,12 +18,17 @@ By default, your OpenShift image will be named `fftw-rhel7` and will be saved to
 
 You can run `run_me.sh` multiple times if you want. It is safe to do so, as it cleans up the environment every time you want to start a new build.
 
-Note that if you want to build using [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery/) make sure you have it installed prior to running the following command:
+Note that if you want to build using [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery/) make sure you have it installed prior to running one of the the following commands:
 
 ```
 $ sh run_me.sh -v 7 -n -i <instance-type> [optional args]
 ```
+or
 
-This command calls for NFD to be used when building and running the FFTW benchmark app. Replace `<instance-type>` with the AWS instance type you want to use (e.g., m4.4xlarge, m4.large, etc.).
+```
+$ sh run_me.sh -v 7 -n -x <avx-instruction-set-name> [optional args]
+```
+
+Using the `-n` option calls for NFD to be used when building and running the FFTW benchmark app. Replace `<instance-type>` with the AWS instance type you want to use (e.g., m4.4xlarge, m4.large, etc.), or `<avx-instruction-set-name>` with the AVX instructions you want to use (either `no_avx`, `avx`, `avx2`, or `avx512`). Note that you cannot use both an instance type and AVX instructions at the same time.
 
 If you wish to create a MachineSet and run the pod on a node with a specific instance type, use `scripts/create_machineset.sh`.

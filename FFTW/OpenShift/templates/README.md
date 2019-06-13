@@ -18,9 +18,9 @@ This yaml file contains a template used for calling S2I. It has two parameters: 
 
 ### fftw-nfd-buildconfig\_rhel7.yaml and fftw-nfd-buildconfig\_rhel8.yaml
 
-These files are the same as `standard/fftw-buildconfig_rhel7.yaml` and `standard/fftw-buildconfig_rhel8.yaml`, except they have an added `nodeSelector` feature to choose whether to build on a node with AVX/AVX2. (Note: requires NFD to be installed on your cluster!)
+These files are the same as `standard/fftw-buildconfig_rhel7.yaml` and `standard/fftw-buildconfig_rhel8.yaml`, except they have an added `nodeSelectorTerms` feature to choose whether to build on a node with AVX/AVX2/AVX512. (Note: requires NFD to be installed on your cluster!) There are `fftw-buildconfig_rhel7.yaml` and `fftw-buildconfig_rhel8.yaml` for each AVX instruction set, including "No AVX."
 
 
 ### fftw-nfd-build-job.yaml
 
-This file is the same as `standard/fftw-build-job.yaml`, except with the added `nodeSelector` feature, much like `nfd/fftw-nfd-buildconfig_rhel7.yaml` and `nfd/fftw-nfd-buildconfig_rhel8.yaml`.
+This file is the same as `standard/fftw-build-job.yaml`, except with the added `nodeSelectorTerms` feature, much like `nfd/fftw-nfd-buildconfig_rhel7.yaml` and `nfd/fftw-nfd-buildconfig_rhel8.yaml`. Similar to above, this file exists for each AVX instruction set, including "No AVX."
