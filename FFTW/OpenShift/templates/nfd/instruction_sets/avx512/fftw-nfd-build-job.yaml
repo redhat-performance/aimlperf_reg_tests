@@ -27,23 +27,19 @@ objects:
         affinity:
           nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
-            - nodeSelectorTerms:
+              nodeSelectorTerms:
               - matchExpressions:
                 - key: "feature.node.kubernetes.io/cpuid-AVX512BW"
                   operator: "Exists"
-            - nodeSelectorTerms:
               - matchExpressions:
                 - key: "feature.node.kubernetes.io/cpuid-AVX512CD"
                   operator: "Exists"
-            - nodeSelectorTerms:
               - matchExpressions:
                 - key: "feature.node.kubernetes.io/cpuid-AVX512DQ"
                   operator: "Exists"
-            - nodeSelectorTerms:
               - matchExpressions:
                 - key: "feature.node.kubernetes.io/cpuid-AVX512F"
                   operator: "Exists"
-            - nodeSelectorTerms:
               - matchExpressions:
                 - key: "feature.node.kubernetes.io/cpuid-AVX512VL"
                   operator: "Exists"
