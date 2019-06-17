@@ -3,8 +3,8 @@ kind: "Template"
 metadata:
   annotations:
     description: "Template to run FFTW AVX512 build job"
-    tags: "fftw-nfd-avx512-build-job"
-  name: "fftw-nfd-avx512-build-job"
+    tags: "fftw-avx512-nfd-build-job"
+  name: "fftw-avx512-nfd-build-job"
 objects:
 - apiVersion: "batch/v1"
   kind: "Job"
