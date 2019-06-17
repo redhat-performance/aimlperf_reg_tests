@@ -87,7 +87,7 @@ if [[ -z ${AVAILABILITY_ZONE} ]]; then
 fi
 
 # Check if availability zone is valid
-availability_zone_options=($(aws ec2 describe-availability-zones | cut -d$'\t' -f 5))
+availability_zone_options=($(aws ec2 describe-availability-zones | grep "ZoneName" | cut -d':' -f 2 | cut -d'"' -f 2))
 valid_zone=0
 for zone in "${availability_zone_options[@]}"; do
     if [[ ${AVAILABILITY_ZONE} == $zone ]]; then
