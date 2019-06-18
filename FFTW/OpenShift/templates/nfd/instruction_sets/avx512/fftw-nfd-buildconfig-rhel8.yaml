@@ -2,7 +2,7 @@ apiVersion: "v1"
 kind: "Template"
 metadata:
   annotations:
-    description: "Template to make OpenBLAS AVX512 build image"
+    description: "Template to make an FFTW AVX512 build image"
     tags: "fftw-nfd-avx512-build-image-rhel8"
   name: "fftw-nfd-avx512-build-image-rhel8"
 objects:
