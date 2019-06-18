@@ -1,6 +1,6 @@
 # Template Files
 
-The contents of this folder are intended to be used for launching the OpenBLAS benchmark app in OpenShift on AWS, but you may also use it for a non-AWS OpenShift instance.
+The contents of this folder are intended to be used for launching the FFTW benchmark app in OpenShift on AWS, but you may also use it for a non-AWS OpenShift instance.
 
 The "standard" folder contains templates necessary for launching a basic FFTW image and build job, while the "nfd" folder contains necessary templates for launching an FFTW image and build job using [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery). To install Node Feature Discovery (NFD) on your OpenShift cluster, see https://github.com/openshift/cluster-nfd-operator.
 
@@ -12,7 +12,7 @@ These yaml files contain templates used for creating a BuildConfig and ImageStre
 
 ### fftw-build-job.yaml
 
-This yaml file contains a template used for calling S2I. It has two parameters: (1.) `IMAGESTREAM_NAME`, (2.) `REGISTRY`, (3.) `APP_NAME`, and (4.) `NAMESPACE`. The first two parameters in this template are the same as the two parameters in the previous template. The third parameter is the name of your app (e.g., `openblas-gemm-s2i-app`) and the fourth parameter is the OpenShift namespace/project you're working on (see `oc project`).
+This yaml file contains a template used for calling S2I. It has two parameters: (1.) `IMAGESTREAM_NAME`, (2.) `REGISTRY`, (3.) `APP_NAME`, and (4.) `NAMESPACE`. The first two parameters in this template are the same as the two parameters in the previous template. The third parameter is the name of your app (e.g., `fftw-gemm-s2i-app`) and the fourth parameter is the OpenShift namespace/project you're working on (see `oc project`).
 
 ## "NFD" Folder Files
 
