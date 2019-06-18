@@ -1,0 +1,61 @@
+apiVersion: "v1"
+kind: "Template"
+metadata:
+  annotations:
+    description: "Template to make OpenBLAS AVX build image"
+    tags: "openblas-nfd-avx-build-image-rhel8"
+  name: "openblas-nfd-avx-build-image-rhel8"
+objects:
+- apiVersion: "v1"
+  kind: "BuildConfig"
+  metadata:
+    name: "openblas-nfd-avx-build-image-rhel8" 
+  spec:
+    runPolicy: "Serial" 
+    triggers: 
+      -
+        type: "ImageChange"
+    source:
+      type: "Git"
+      git:
+        uri: "https://github.com/redhat-performance/aimlperf_reg_tests.git"
+        ref: "master"
+    strategy: 
+      type: "Docker"
+      dockerStrategy:
+        dockerfilePath: "OpenBLAS/Dockerfiles/Dockerfile.openshift_rhel8"
+    output: 
+      to:
+        kind: "ImageStreamTag"
+        name: "${IMAGESTREAM_NAME}:latest"
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "feature.node.kubernetes.io/cpuid-AVX"
+              operator: "Exists"
+              values:
+              - "true"
+          - matchExpressions:
+            - key: "feature.node.kubernetes.io/cpuid-AVX2"
+              operator: "DoesNotExist"
+              values:
+              - "true"
+- apiVersion: "v1"
+  kind: "ImageStream"
+  metadata:
+    name: "${IMAGESTREAM_NAME}"
+    namespace: "openshift-image-registry"
+  spec:
+    dockerImageRepository: "${REGISTRY}/image-registry"
+parameters:
+- description: "ImageStream name"
+  name: "IMAGESTREAM_NAME"
+  from: '[A-Z0-9]{10}'
+  value: "openblas-rhel8-avx"
+  required: true
+- description: "Registry route. Use `oc registry info` to get the route after exposing it."
+  name: "REGISTRY"
+  value: "image-registry.openshift-image-registry.svc:5000"
+  required: true
