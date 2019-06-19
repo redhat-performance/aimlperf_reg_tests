@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Thread values
+THREAD_VALUES=$1
+
 # Add user to /etc/passwd
 uid=$(id -u)
 gid=$(id -g)
@@ -34,7 +37,11 @@ else
 fi
 
 # Execute the tests
-sh run_benchmarks.sh -e nd_cosine_ffts -i 5 -r 2 -f 0.001 -d "3000 3000" -j "fftw_cosine_performance_results.json"
+if [[ -z ${THREAD_VALUES} ]]; then
+    sh run_benchmarks.sh -e nd_cosine_ffts -i 5 -r 2 -f 0.001 -d "3000 3000" -j "fftw_cosine_performance_results.json"
+else
+    sh run_benchmarks.sh -e nd_cosine_ffts -i 5 -r 2 -f 0.001 -d "3000 3000" -j "fftw_cosine_performance_results.json" -v ${THREAD_VALUES}
+fi
 
 # cat the results
 cat fftw_cosine_performance_results.json

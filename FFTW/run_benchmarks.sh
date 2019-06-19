@@ -224,7 +224,7 @@ elif [ "$executable" == "nd_cosine_ffts" ]; then
     # Else, use the thread values the user specified
     else
         echo "Using custom thread values."
-        for k in $thread_values; do
+        for k in ${thread_values//,/ }; do
             echo "Executing ./nd_cosine_ffts $should_plot json=$json_doc nthreads=$k num_executions=$num_executions fs=$fs rank=$rank dims=\"$dimensions\""
             if [ $use_numactl == 1 ]; then
                 numactl -C 0-$((k-1)) -i 0,1 ./nd_cosine_ffts $should_plot $json_doc $k $num_executions $fs $rank $dimensions >> $run_log

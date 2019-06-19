@@ -105,7 +105,7 @@ This tool is useful because it allows you to run a series of benchmark tests wit
 Example for `2d_fft`:
 
 ```
-$ ./run_benchmarks.sh -i 1000 -e 2d_fft -v "2 4 9" -j "fftw_image_blur_performance_results.json"
+$ ./run_benchmarks.sh -i 1000 -e 2d_fft -v "2,4,9" -j "fftw_image_blur_performance_results.json"
 ```
 
 This command will run the `2d_fft` executable on 2, 4, and 9 threads, and for each thread count (i.e., 2, 4, and 9), it will process 1000 images to obtain a "good" average. All performance results will be saved to `fftw_image_blur_performance_results.json`. See the *Sample Outputs* section below for an example layout of the JSON document.
