@@ -1,24 +1,36 @@
 #!/bin/bash
 
 usage() {
-    echo "This script launches the FFTW app on an AWS OpenShift cluster."
+    echo "This script launches the FFTW app on an AWS OpenShift cluster for RHEL 7 or RHEL 8. Node Feature Discovery may optionally be used for selecting specific nodes, and CPU Manager may optionally be used as well."
     echo ""
-    echo "Usage: $0 [-v rhel_version] [-n] [-t instance_type] [-r image_registry] [-s namespace] [-i custom_imagestream_name] [-a custom_app_name] [-x instruction_set]"
+    echo ""
+    echo "Usage: $0 [-v rhel_version] [-n] [-t instance_type] [-r image_registry] [-s namespace] [-i custom_imagestream_name] [-a custom_app_name] [-x instruction_set] [-p] [-c number_of_cpus] [-m memory_size]"
     echo "  REQUIRED:"
     echo "  -v  Version of RHEL to use. Choose from: {7,8}"
     echo ""
+    echo ""
     echo "  OPTIONAL:"
-    echo "  -n  Use NFD. (Requires option -i to be used!)"
+    echo "  -n  Use NFD. (Requires option -i *or* -x to be used!)"
+    echo "      -i  Custom ImageStream name (this is what your image will be named). Default: fftw-rhel<rhel-version>"
+    echo "      -x  Use no-AVX, AVX, AVX2, or AVX512 instructions. Choose from: {no_avx, avx, avx2, avx512}. Currently cannot be combined with -i (this is a TODO)"
+    echo ""
     echo "  -t  Instance type (e.g., m4.4xlarge, m4.large, etc.). Currently cannot be combined with AVX* instructions (this is a TODO)"
+    echo ""
     echo "  -r  OpenShift Image Registry URL (e.g., image-registry.openshift-image-registry.svc:5000). If you do not use this flag, the registry defaults whatever \"oc registry info\" outputs."
+    echo ""
     echo "  -s  Namespace to use."
-    echo "  -i  Custom ImageStream name (this is what your image will be named). Default: fftw-rhel<rhel-version>"
+    echo ""
     echo "  -a  Custom app name (this is what your app will be named). Default: fftw-app-rhel<rhel-version>"
-    echo "  -x  Use no-AVX, AVX, AVX2, or AVX512 instructions. Choose from: {no_avx, avx, avx2, avx512}. Currently cannot be combined with -i (this is a TODO)"
+    echo ""
+    echo "  -p  Use CPU Manager. (Requires options -c and -m to be used!)"
+    echo "      -c  Number of CPUs to use with CPU Manager (the -p option)"
+    echo "      -m  Memory size to use with CPU Manager (the -p option)"
+    echo ""
+    echo "  -l  Thread values, as a comma-separated list, for running the benchmark."
     exit
 }
 
-options=":h:v:t:nr:s:i:a:x:"
+options=":h:v:t:nr:s:i:a:x:c:pm:l:"
 while getopts "$options" x
 do
     case "$x" in
@@ -49,6 +61,18 @@ do
       x)
           AVX=${OPTARG}
           ;;
+      p)
+          CPU_MANAGER="true"
+          ;;
+      c)
+          N_CPUS=${OPTARG}
+          ;;
+      m)
+          MEMORY_SIZE=${OPTARG}
+          ;;
+      l)
+          THREAD_VALUES=${OPTARG}
+          ;;
       *)
           usage
           ;;
@@ -73,9 +97,30 @@ elif [[ ${NFD} == "nfd" ]] && [[ ! -z ${AVX} ]] && [[ ! -z ${INSTANCE_TYPE} ]]; 
     exit 1
 elif [[ ${NFD} == "nfd" ]] && [[ -z ${AVX} ]] && [[ -z ${INSTANCE_TYPE} ]]; then
     echo "Please specify either AVX instructions or instance type, but not both. (This is a TODO feature that will be added in the future.)"
+    exit 1
 fi
 
-# Initialize vars
+# Check CPU Manager options
+if [[ ${CPU_MANAGER} ]]; then
+    if [[ -z ${N_CPUS} ]]; then
+        echo "ERROR. The CPU Manager option -p was passed, but the number of CPUs (-c) was not specified."
+        exit 1
+    elif [[ -z ${MEMORY_SIZE} ]]; then
+        echo "ERROR. The CPU Manager option -p was passed, but the memory size (-m) was not specified."
+        exit 1
+    elif [[ ! ${N_CPUS} =~ ^[0-9]+$ ]]; then
+        echo "ERROR. Number of CPUs is not a number. You entered: ${N_CPUS}"
+        exit 1
+    elif (( N_CPUS <= 0 )); then
+        echo "ERROR. Number of CPUs must be a positive number. You entered: ${N_CPUS}"
+        exit 1
+    elif [[ ! ${MEMORY_SIZE} =~ ^[0-9]+G$ ]]; then
+        echo "ERROR. Memory size must be in the format of <number>G. You entered: ${MEMORY_SIZE}"
+        exit 1
+    fi
+fi
+
+# Initialize image name (if not specified)
 if [[ -z ${IS_NAME} ]]; then
     if [[ ${RHEL_VERSION} == 7 ]] && [[ ! -z ${AVX} ]]; then
         IS_NAME="fftw-rhel7-${AVX}"
@@ -87,11 +132,25 @@ if [[ -z ${IS_NAME} ]]; then
         IS_NAME="fftw-rhel8"
     fi
 fi
+
+# Initialize app name (if not specified)
 if [[ -z ${APP_NAME} ]]; then
     if [[ ${RHEL_VERSION} == 7 ]]; then
-        APP_NAME="fftw-app-rhel7-${AVX}"
+        if [[ ! -z ${CPU_MANAGER} ]] && [[ ! -z ${AVX} ]]; then
+            APP_NAME="fftw-app-rhel7-${AVX}-cpu-managed"
+        elif [[ ! -z ${AVX} ]]; then
+            APP_NAME="fftw-app-rhel7-${AVX}"
+        else
+            APP_NAME="fftw-app-rhel7"
+        fi
     else
-        APP_NAME="fftw-app-rhel8-${AVX}"
+        if [[ ! -z ${CPU_MANAGER} ]] && [[ ! -z ${AVX} ]]; then
+            APP_NAME="fftw-app-rhel8-${AVX}-cpu-managed"
+        elif [[ ! -z ${AVX} ]]; then
+            APP_NAME="fftw-app-rhel8-${AVX}"
+        else
+            APP_NAME="fftw-app-rhel8"
+        fi
     fi
 fi
 if [[ -z ${OC_REGISTRY} ]]; then
@@ -118,16 +177,33 @@ else
     # If the user passed in AVX instructions, then set the template variables to point to the proper AVX templates
     if [[ ! -z ${AVX} ]]; then
         build_image_template_name_prefix="fftw-nfd-${AVX}-build-image-rhel"
-        build_image_template_filename_prefix="templates/nfd/instruction_sets/${AVX}/fftw-nfd-buildconfig-rhel"
-        build_job_path="templates/nfd/instruction_sets/${AVX}/fftw-nfd-build-job.yaml"
-	build_job_name="fftw-${AVX}-nfd-build-job"
+        build_image_template_filename_prefix="templates/nfd/instruction_sets/${AVX}/buildconfig/fftw-nfd-buildconfig-rhel"
+        build_job_path_prefix="templates/nfd/instruction_sets/${AVX}/job"
+
+        # If CPU Manager will be used, then specify the proper name
+        if [[ ! -z ${CPU_MANAGER} ]]; then
+            build_job_path="${build_job_path_prefix}/cpu_manager/fftw-nfd-build-job.yaml"
+	    build_job_name="fftw-${AVX}-nfd-cpu-manager-build-job"
+        else
+            build_job_path="${build_job_path_prefix}/default/fftw-nfd-build-job.yaml"
+	    build_job_name="fftw-${AVX}-nfd-build-job"
+        fi
         
     # If the user passed in an instance type, then set the template variables to point to the instance type templates
     else
         build_image_template_name_prefix="fftw-nfd-build-image-rhel"
-        build_image_template_filename_prefix="templates/nfd/instance/fftw-nfd-buildconfig-rhel"
-        build_job_path="templates/nfd/instance/fftw-nfd-build-job.yaml"
+        build_image_template_filename_prefix="templates/nfd/instance/buildconfig/fftw-nfd-buildconfig-rhel"
+        build_job_path_prefix="templates/nfd/instance/job"
 	build_job_name="fftw-nfd-build-job"
+
+        # If CPU Manager will be used, then specify the proper name
+        if [[ ! -z ${CPU_MANAGER} ]]; then
+            build_job_path="${build_job_path_prefix}/cpu_manager/fftw-nfd-build-job.yaml"
+	    build_job_name="fftw-nfd-cpu-manager-build-job"
+        else
+            build_job_path="${build_job_path_prefix}/default/fftw-nfd-build-job.yaml"
+	    build_job_name="fftw-nfd-build-job"
+        fi
     fi
 fi
 
@@ -141,9 +217,6 @@ else
     build_image_template_name="${build_image_template_name_prefix}8"
     build_image_template_file="${build_image_template_filename_prefix}8.yaml"
 fi
-
-echo $build_image_template_name
-echo $build_image_template_file
 
 # Check if the build template already exists. If it does, delete it and re-create it
 check_build_template=$(oc get templates ${build_image_template_name} | grep NAME)
@@ -220,18 +293,62 @@ elif [[ ! -z $build_stopped_status ]]; then
     echo "Image build STOPPED, so build job will not run."
 elif [[ "${NFD}" == "nfd" ]]; then
     if [[ ! -z "${AVX}" ]]; then
-        oc new-app --template="${build_job_name}" \
-                   --param=IMAGESTREAM_NAME=$IS_NAME \
-                   --param=REGISTRY=$OC_REGISTRY \
-                   --param=APP_NAME=$APP_NAME \
-                   --param=NAMESPACE=$NAMESPACE
+        if [[ ! -z "${CPU_MANAGER}" ]]; then
+            if [[ -z ${THREAD_VALUES} ]]; then
+                oc new-app --template="${build_job_name}" \
+                           --param=IMAGESTREAM_NAME=$IS_NAME \
+                           --param=REGISTRY=$OC_REGISTRY \
+                           --param=APP_NAME=$APP_NAME \
+                           --param=NAMESPACE=$NAMESPACE \
+                           --param=N_CPUS=$N_CPUS \
+                           --param=MEMORY_SIZE=$MEMORY_SIZE
+            else
+                oc new-app --template="${build_job_name}" \
+                           --param=IMAGESTREAM_NAME=$IS_NAME \
+                           --param=REGISTRY=$OC_REGISTRY \
+                           --param=APP_NAME=$APP_NAME \
+                           --param=NAMESPACE=$NAMESPACE \
+                           --param=N_CPUS=$N_CPUS \
+                           --param=MEMORY_SIZE=$MEMORY_SIZE \
+                           --param=THREAD_VALUES=$THREAD_VALUES
+            fi
+        else
+            oc new-app --template="${build_job_name}" \
+                       --param=IMAGESTREAM_NAME=$IS_NAME \
+                       --param=REGISTRY=$OC_REGISTRY \
+                       --param=APP_NAME=$APP_NAME \
+                       --param=NAMESPACE=$NAMESPACE
+        fi
     else
-        oc new-app --template="${build_image_template_name}" \
-                   --param=IMAGESTREAM_NAME=$IS_NAME \
-                   --param=REGISTRY=$OC_REGISTRY \
-                   --param=APP_NAME=$APP_NAME \
-                   --param=NAMESPACE=$NAMESPACE \
-                   --param=INSTANCE_TYPE=$INSTANCE_TYPE
+        if [[ ! -z "${CPU_MANAGER}" ]]; then
+            if [[ -z ${THREAD_VALUES} ]]; then
+                oc new-app --template="${build_job_name}" \
+                           --param=IMAGESTREAM_NAME=$IS_NAME \
+                           --param=REGISTRY=$OC_REGISTRY \
+                           --param=APP_NAME=$APP_NAME \
+                           --param=NAMESPACE=$NAMESPACE \
+                           --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                           --param=N_CPUS=$N_CPUS \
+                           --param=MEMORY_SIZE=$MEMORY_SIZE
+            else
+                oc new-app --template="${build_job_name}" \
+                           --param=IMAGESTREAM_NAME=$IS_NAME \
+                           --param=REGISTRY=$OC_REGISTRY \
+                           --param=APP_NAME=$APP_NAME \
+                           --param=NAMESPACE=$NAMESPACE \
+                           --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                           --param=N_CPUS=$N_CPUS \
+                           --param=MEMORY_SIZE=$MEMORY_SIZE \
+                           --param=THREAD_VALUES=$THREAD_VALUES
+            fi
+        else
+            oc new-app --template="${build_job_name}" \
+                       --param=IMAGESTREAM_NAME=$IS_NAME \
+                       --param=REGISTRY=$OC_REGISTRY \
+                       --param=APP_NAME=$APP_NAME \
+                       --param=NAMESPACE=$NAMESPACE \
+                       --param=INSTANCE_TYPE=$INSTANCE_TYPE
+        fi
     fi
 else
     oc new-app --template=$build_job_name \

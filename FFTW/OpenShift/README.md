@@ -32,3 +32,5 @@ $ sh run_me.sh -v 7 -n -x <avx-instruction-set-name> [optional args]
 Using the `-n` option calls for NFD to be used when building and running the FFTW benchmark app. Replace `<instance-type>` with the AWS instance type you want to use (e.g., m4.4xlarge, m4.large, etc.), or `<avx-instruction-set-name>` with the AVX instructions you want to use (either `no_avx`, `avx`, `avx2`, or `avx512`). Note that you cannot use both an instance type and AVX instructions at the same time.
 
 If you wish to create a MachineSet and run the pod on a node with a specific instance type, use `scripts/create_machineset.sh`.
+
+If you'd like, there is now an option to use the CPU Manager to set number of CPUs and memory size to use when executing the benchmarks. To use CPU Manager, pass in the `-p` option and choose values for `-c` and `-m`. The `-c` option takes in an integer, and the `-m` option takes in an integer in the form of `nG`, where `n` is any integer. For example, `18G`, for 18 GB.

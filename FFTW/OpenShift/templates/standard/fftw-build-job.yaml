@@ -22,7 +22,7 @@ objects:
         containers:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
-          command: ["/usr/libexec/s2i/run"]
+          command: ["/usr/libexec/s2i/run ${THREAD_VALUES}"]
         restartPolicy: "Never"
 parameters:
 - description: "ImageStream name"
@@ -43,4 +43,9 @@ parameters:
   name: "NAMESPACE"
   from: '[A-Z0-9]{15}'
   value: "fftw"
+  required: true
+- description: "Comma separated list of thread values"
+  name: "THREAD_VALUES"
+  from: '[0-9]{30}'
+  value: ""
   required: true
