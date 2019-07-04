@@ -1,0 +1,5 @@
+---
+
+- name: Install TensorFlow
+  pip:
+    name: 'file:///tmp/tensorflow_pkg/tensorflow-{{ TENSORFLOW_VERSION }}-{{ TENSORFLOW_VERSION }}.whl'

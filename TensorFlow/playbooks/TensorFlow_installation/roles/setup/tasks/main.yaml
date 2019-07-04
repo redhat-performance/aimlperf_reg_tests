@@ -1,0 +1,49 @@
+---
+
+# Remove any existing TensorFlow build dirs
+- name: Remove TensorFlow build dir (if it exists)
+  file:
+    state: absent
+    path: '{{ TENSORFLOW_BUILD_DIR }}'
+
+# Make TensorFlow build dir
+- name: Make TensorFlow build dir
+  file:
+    state: directory
+    path: '{{ TENSORFLOW_BUILD_DIR }}'
+
+# Print out where it's being saved to
+- debug:
+    var: TENSORFLOW_BUILD_DIR
+
+# Remove any existing NumPy build dirs
+- name: Remove NumPy build dir (if it exists)
+  file:
+    state: absent
+    path: '{{ NUMPY_BUILD_DIR }}'
+
+# Make NumPy build dir
+- name: Make NumPy build dir
+  file:
+    state: directory
+    path: '{{ NUMPY_BUILD_DIR }}'
+
+# Print out where it's being saved to
+- debug:
+    var: NUMPY_BUILD_DIR
+
+# Remove existing Bazel package
+- name: Remove existing Bazel package
+  file:
+    state: absent
+    path: /usr/local/lib/bazel
+
+- name: Remove existing /usr/local/bin/bazel symlink
+  file:
+    state: absent
+    path: /usr/local/bin/bazel
+
+- name: Remove existing /usr/bin/bazel symlink
+  file:
+    state: absent
+    path: /usr/bin/bazel

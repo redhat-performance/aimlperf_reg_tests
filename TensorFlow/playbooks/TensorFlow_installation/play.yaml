@@ -1,0 +1,37 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  # Set global vars
+  vars:
+    RHEL_VERSION: '{{ rhel_version | default("7") }}'
+    BAZEL_VERSION: '{{ bazel_version | default("0.25.2") }}'
+    TENSORFLOW_VERSION: '{{ tf_version | default("v1.14.0") }}'
+    NUMPY_VERSION: '{{ np_version | default("v1.16.4") }}'
+    USE_FFTW: '{{ use_fftw | default("yes") }}'
+    USE_OPENBLAS: '{{ use_openblas | default("no") }}'
+    USE_CPU: '{{ use_cpu | default("yes") }}'
+    USE_GPU: '{{ use_gpu | default("no") }}'
+
+  roles:
+    # Setup NumPy and TensorFlow build folders
+    - role: setup
+
+    # Gets NumPy and TensorFlow sources
+    - role: get
+
+    # Installs Bazel
+    - role: install_bazel
+
+    # Builds NumPy
+    - role: build_numpy
+
+    # Installs NumPy
+    - role: install_numpy
+
+    # Builds TensorFlow
+    - role: build_tensorflow
+
+    # Installs TensorFlow
+    - role: install_tensorflow

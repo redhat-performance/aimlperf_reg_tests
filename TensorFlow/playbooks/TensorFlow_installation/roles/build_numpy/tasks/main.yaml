@@ -1,0 +1,51 @@
+---
+
+- name: Remove existing numpy site config file
+  file:
+    state: absent
+    path: '{{ NUMPY_SITE_CFG }}'
+
+- name: Set NumPy site config file -- use FFTW if specified
+  shell: |
+    echo '[ALL]' >> {{ NUMPY_SITE_CFG }}
+    echo 'libraries = {{ FFTW_LIB_NAMES }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'library_dirs = {{ FFTW_LIBRARY_DIR }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'include_dirs = {{ FFTW_INCLUDE_DIR }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'runtime_library_dirs = {{ FFTW_LIBRARY_DIR }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'fftw_opt_libs = {{ FFTW_OPT_LIB_NAMES }}' >> {{ NUMPY_SITE_CFG }}
+    echo '' >> {{ NUMPY_SITE_CFG }}
+    echo '[atlas]' >> {{ NUMPY_SITE_CFG }}
+    echo 'atlas_libs = lapack, blas, cblas, atlas' >> {{ NUMPY_SITE_CFG }}
+  when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no'
+
+- name: Configure and build NumPy -- use FFTW if specified
+  shell: |
+    cd {{ NUMPY_BUILD_DIR }}
+    python3 setup.py build --build-lib fftw
+  when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no'
+  register: numpy_fftw_log
+
+- local_action: template src=fftw_numpy_log.j2 dest={{ NUMPY_BUILD_DIR }}/build.log
+  when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no'
+
+- name: Set NumPy site config file -- use OpenBLAS if specified
+  shell: |
+    echo '[ALL]' >> {{ NUMPY_SITE_CFG }}
+    echo 'libraries = {{ OPENBLAS_LIB_NAMES }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'library_dirs = {{ OPENBLAS_LIBRARY_DIR }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'include_dirs = {{ OPENBLAS_INCLUDE_DIR }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'runtime_library_dirs = {{ OPENBLAS_LIBRARY_DIR }}' >> {{ NUMPY_SITE_CFG }}
+  when: USE_FFTW == 'no' and USE_OPENBLAS == 'yes'
+
+- name: Configure and build NumPy -- use OpenBLAS if specified
+  shell: |
+    cd {{ NUMPY_BUILD_DIR }}
+    python3 setup.py build --build-lib openblas
+  when: USE_FFTW == 'no' and USE_OPENBLAS == 'yes'
+  register: numpy_openblas_log
+
+- local_action: template src=openblas_numpy_log.j2 dest={{ NUMPY_BUILD_DIR }}/build.log
+  when: USE_FFTW == 'no' and USE_OPENBLAS == 'yes'
+
+- debug:
+    msg: "NumPy build logs saved to {{ NUMPY_BUILD_DIR }}/build.log"

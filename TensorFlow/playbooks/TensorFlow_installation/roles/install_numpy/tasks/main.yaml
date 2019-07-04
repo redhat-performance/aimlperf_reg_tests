@@ -1,0 +1,6 @@
+---
+
+- name: Install NumPy
+  shell: |
+    cd {{ NUMPY_BUILD_DIR }}
+    python3 setup.py install

@@ -1,0 +1,51 @@
+---
+
+- name: Configure TensorFlow
+  shell: |
+    cd {{ TENSORFLOW_BUILD_DIR }} 
+    ./configure
+  environment:
+    GCC_HOST_COMPILER_PATH: '/usr/bin/gcc'
+    CC_OPT_FLAGS: '-march=native'
+    TF_DOWNLOAD_CLANG: '0'
+    TF_ENABLE_XLA: '0'
+    TF_NEED_COMPUTECPP: '0'
+    TF_NEED_CUDA: '0'
+    TF_NEED_MPI: '0'
+    TF_NEED_OPENCL: '0'
+    TF_NEED_OPENCL_SYCL: '0'
+    TF_NEED_ROCM: '0'
+    TF_NEED_TENSORRT: '0'
+    TF_PYTHON_CONFIG_REPO: '@org_tensorflow//third_party/toolchains/cpus/py'
+    TF_SET_ANDROID_WORKSPACE: '0'
+    PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
+    PYTHON_LIB_PATH: '{{ PYTHON_LIB_PATH }}'
+  register: tensorflow_configure_log
+
+- local_action: template src=tensorflow_configure_log.j2 dest={{ TENSORFLOW_BUILD_DIR }}/configure.log
+
+- debug:
+    msg: "TensorFlow config logs saved to {{ TENSORFLOW_BUILD_DIR }}/configure.log"
+
+- name: Build TensorFlow for the CPU
+  shell: |
+    cd {{ TENSORFLOW_BUILD_DIR }}
+    bazel build //tensorflow/tools/pip_package:build_pip_package
+  when: USE_CPU == 'yes' and USE_GPU == 'no'
+  register: tensorflow_cpu_build_log
+
+- local_action: template src=tensorflow_cpu_build_log.j2 dest={{ TENSORFLOW_BUILD_DIR }}/build.log
+  when: USE_CPU == 'yes' and USE_GPU == 'no'
+
+- name: Build TensorFlow for the GPU
+  shell: |
+    cd {{ TENSORFLOW_BUILD_DIR }}
+    bazel build --config=cuda //tensorflow/tools/pip_package:build_pip_package
+  when: USE_CPU == 'no' and USE_GPU == 'yes'
+  register: tensorflow_gpu_build_log
+
+- local_action: template src=tensorflow_gpu_build_log.j2 dest={{ TENSORFLOW_BUILD_DIR }}/build.log
+  when: USE_CPU == 'no' and USE_GPU == 'yes'
+
+- debug:
+    msg: "TensorFlow build logs saved to {{ TENSORFLOW_BUILD_DIR }}/build.log"

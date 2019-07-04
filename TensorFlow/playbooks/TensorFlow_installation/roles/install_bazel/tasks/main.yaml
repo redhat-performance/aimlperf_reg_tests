@@ -1,0 +1,15 @@
+---
+
+- name: Install Bazel
+  command: sh /tmp/bazel-{{ BAZEL_VERSION }}-installer-linux-x86_64.sh
+
+- name: Remove Bazel installer
+  file:
+    state: absent
+    path: /tmp/bazel-{{ BAZEL_VERSION }}-installer-linux-x86_64.sh
+
+- name: Create symlink (because Bazel v0.27.1 and later may have bugs)
+  file:
+    state: link
+    src: /usr/local/bin/bazel
+    path: /usr/bin/bazel
