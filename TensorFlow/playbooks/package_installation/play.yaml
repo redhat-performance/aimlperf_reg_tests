@@ -2,6 +2,7 @@
 
 - hosts: localhost
   connection: local
+  become: yes
 
   vars:
     RHEL_VERSION: '{{ rhel_version | default("7") }}'
@@ -21,20 +22,13 @@
     when: RHEL_VERSION == '8'
 
   # Install pip
-  - name: Get pip from source (not from yum/dnf)
-    get_url:
-      url: https://bootstrap.pypa.io/get-pip.py
-      dest: /tmp
+  - name: Install pip on RHEL 7
+    yum: pkg=python36-pip
+    when: RHEL_VERSION == 7
 
-  - name: Install pip
-    shell: |
-      cd /tmp
-      python3 get-pip.py
-
-  - name: Cleanup -- remove pip installer
-    file:
-      state: absent
-      path: /tmp/get-pip.py
+  - name: Install pip on RHEL 8
+    dnf: pkg=python3-pip
+    when: RHEL_VERSION == 8
 
   # Install NumPy requirements
   - name: Install NumPy requirements for RHEL 7
@@ -89,6 +83,7 @@
         - mock
         - six 
         - wheel
+      executable: pip3
 
   - name: Install remaining TensorFlow requirements
     yum:
