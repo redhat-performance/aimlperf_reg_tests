@@ -6,154 +6,24 @@
 
   vars:
     RHEL_VERSION: '{{ rhel_version | default("7") }}'
-    CBLAS_BUILD_DIR: '/opt/CBLAS'
-    CBLAS_DOWNLOAD_LOCATION: '/opt'
+    BAZEL_VERSION: '{{ bazel_version | default("0.25.2") }}'
 
-  tasks:
-  # Install Python 3
-  - name: Install Python 3.x on RHEL 7
-    yum:
-      name: python36
-    when: RHEL_VERSION == '7'
+  roles:
 
-  - name: Install Python 3.x on RHEL 8
-    dnf:
-      name: python3
-    when: RHEL_VERSION == '8'
+    # Install python36
+    - rhel_python36
 
-  # Install pip
-  - name: Install pip on RHEL 7
-    yum: pkg=python36-pip
-    when: RHEL_VERSION == 7
+    # Install pip
+    - python36_pip
 
-  - name: Install pip on RHEL 8
-    dnf: pkg=python3-pip
-    when: RHEL_VERSION == 8
+    # Install NumPy prereqs
+    - python36_numpy
 
-  # Install NumPy requirements
-  - name: Install NumPy requirements for RHEL 7
-    yum:
-      name:
-        - atlas
-        - atlas-devel
-        - blas
-        - blas-devel
-        - blas-static
-        - cpp
-        - Cython
-        - gcc
-        - gcc-c++
-        - gcc-gfortran
-        - lapack
-        - make
-    when: RHEL_VERSION == '7'
+    # Install Bazel
+    - bazel
 
-  - name: Install NumPy requirements for RHEL 8
-    dnf:
-      name:
-        - atlas
-        - atlas-devel
-        - blas
-        - blas-devel
-        - blas-static
-        - cpp
-        - Cython
-        - gcc
-        - gcc-c++
-        - gcc-gfortran
-        - lapack
-        - make
-    when: RHEL_VERSION == '8'
+    # Install TensorFlow prereqs
+    - tensorflow
 
-  # Bazel requires java-devel, so let's install it
-  - name: Install Bazel requirements (java-devel) for RHEL 7
-    yum: pkg=java-devel
-    when: RHEL_VERSION == '7'
-
-  - name: Install Bazel requirements (java-devel) for RHEL 8
-    dnf: pkg=java-devel
-    when: RHEL_VERSION == '8'
-
-  # Install TensorFlow requirements
-  - name: Install requirements for building the to-be-generated TensorFlow pip package
-    pip:
-      name:
-        - keras_applications
-        - keras_preprocessing
-        - mock
-        - six 
-        - wheel
-      executable: pip3
-
-  - name: Install remaining TensorFlow requirements
-    yum:
-      name:
-        - glibc
-
-  # Remove existing CBLAS build directory
-  - name: Remove existing CBLAS build directory
-    file:
-      state: directory
-      path: '{{ CBLAS_BUILD_DIR }}'
-
-  # Make libcblas instead of using libatlas.so
-  - name: Download CBLAS sources rather than using libatlas
-    unarchive:
-      src: http://www.netlib.org/blas/blast-forum/cblas.tgz
-      dest: '{{ CBLAS_DOWNLOAD_LOCATION }}'
-      remote_src: yes
-
-  - name: Change line in CBLAS' Makefile.LINUX to point to where libblas.a is
-    lineinfile:
-      path: '{{ CBLAS_BUILD_DIR }}/Makefile.LINUX'
-      regexp: '^BLLIB*'
-      line: 'BLLIB = /usr/lib64/libblas.a'
-
-  - name: Change line in CBLAS' Makefile.LINUX to build a shared object library, rather than static
-    lineinfile:
-      path: '{{ CBLAS_BUILD_DIR }}/Makefile.LINUX'
-      regexp: '^CBLIB*'
-      line: 'CBLIB = ../lib/libcblas.so'
-
-  - name: Add -fPIC to CFLAGS in CBLAS' Makefile.LINUX
-    lineinfile:
-      path: '{{ CBLAS_BUILD_DIR }}/Makefile.LINUX'
-      regexp: '^CFLAGS*'
-      line: 'CFLAGS = -O3 -DADD_ -fPIC'
-
-  - name: Add -fPIC to FFLAGS in CBLAS' Makefile.LINUX
-    lineinfile:
-      path: '{{ CBLAS_BUILD_DIR }}/Makefile.LINUX'
-      regexp: '^FFLAGS*'
-      line: 'FFLAGS = -O3 -fPIC'
-
-  - name: Set ARCH in Makefile.LINUX to point to gcc
-    lineinfile:
-      path: '{{ CBLAS_BUILD_DIR }}/Makefile.LINUX'
-      regexp: '^ARCH =*'
-      line: 'ARCH = gcc'
-
-  - name: Set ARCHFLAGS in Makefile.Linux to use '-shared' and '-o'
-    lineinfile:
-      path: '{{ CBLAS_BUILD_DIR }}/Makefile.LINUX'
-      regexp: '^ARCHFLAGS'
-      line: 'ARCHFLAGS = -shared -o'
-
-  - name: Remove dummy Makefile.in
-    file:
-      state: absent
-      path: '{{ CBLAS_BUILD_DIR }}/Makefile.in'
-
-  - name: Create symbolic link where we set Makefile.in = Makefile.LINUX
-    file:
-      state: link
-      src: '{{ CBLAS_BUILD_DIR }}/Makefile.LINUX'
-      dest: '{{ CBLAS_BUILD_DIR }}/Makefile.in'
-
-  - name: Make libcblas.so
-    make:
-      target: all
-      chdir: '{{ CBLAS_BUILD_DIR }}'
-
-  - name: Move libcblas.so to /usr/lib64
-    command: 'mv {{ CBLAS_BUILD_DIR }}/lib/libcblas.so /usr/lib64/libcblas.so'
+    # Install CBLAS
+    - cblas

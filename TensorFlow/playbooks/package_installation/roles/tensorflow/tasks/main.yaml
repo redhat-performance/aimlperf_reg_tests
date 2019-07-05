@@ -1,0 +1,15 @@
+---
+
+# Install TensorFlow requirements
+- name: Install requirements for building the to-be-generated TensorFlow pip package
+  pip:
+    name:
+      - keras_applications
+      - keras_preprocessing
+      - mock
+      - six 
+      - wheel
+    executable: pip3
+
+- name: Install remaining TensorFlow requirements
+  yum: pkg=glibc

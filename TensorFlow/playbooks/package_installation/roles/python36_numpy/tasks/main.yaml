@@ -1,0 +1,36 @@
+---
+
+# Install NumPy requirements
+- name: Install NumPy requirements for RHEL 7
+  yum:
+    name:
+      - atlas
+      - atlas-devel
+      - blas
+      - blas-devel
+      - blas-static
+      - cpp
+      - Cython
+      - gcc
+      - gcc-c++
+      - gcc-gfortran
+      - lapack
+      - make
+  when: RHEL_VERSION == '7'
+
+- name: Install NumPy requirements for RHEL 8
+  dnf:
+    name:
+      - atlas
+      - atlas-devel
+      - blas
+      - blas-devel
+      - blas-static
+      - cpp
+      - Cython
+      - gcc
+      - gcc-c++
+      - gcc-gfortran
+      - lapack
+      - make
+  when: RHEL_VERSION == '8'

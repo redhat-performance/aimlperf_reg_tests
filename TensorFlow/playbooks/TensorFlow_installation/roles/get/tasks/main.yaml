@@ -1,21 +1,15 @@
 ---
 
-# Get Bazel installer
-- name: Get Bazel installer
-  shell: |
-    cd /tmp
-    wget https://github.com/bazelbuild/bazel/releases/download/{{ BAZEL_VERSION }}/bazel-{{ BAZEL_VERSION }}-installer-linux-x86_64.sh
-
 # Get TensorFlow
 - name: Get TensorFlow
   git:
     repo: https://github.com/tensorflow/tensorflow.git
     dest: '{{ TENSORFLOW_BUILD_DIR }}'
-    version: '{{ TENSORFLOW_VERSION }}'
+    version: 'v{{ TENSORFLOW_VERSION }}'
 
 # Get NumPy
 - name: Get NumPy
   git:
     repo: https://github.com/numpy/numpy.git
     dest: '{{ NUMPY_BUILD_DIR }}'
-    version: '{{ NUMPY_VERSION }}'
+    version: 'v{{ NUMPY_VERSION }}'

@@ -3,4 +3,4 @@
 - name: Install NumPy
   shell: |
     cd {{ NUMPY_BUILD_DIR }}
-    python3 setup.py install
+    python3 setup.py install --prefix={{ NUMPY_INSTALL_DIR }}

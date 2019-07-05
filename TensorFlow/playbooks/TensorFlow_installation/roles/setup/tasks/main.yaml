@@ -31,19 +31,3 @@
 # Print out where it's being saved to
 - debug:
     var: NUMPY_BUILD_DIR
-
-# Remove existing Bazel package
-- name: Remove existing Bazel package
-  file:
-    state: absent
-    path: /usr/local/lib/bazel
-
-- name: Remove existing /usr/local/bin/bazel symlink
-  file:
-    state: absent
-    path: /usr/local/bin/bazel
-
-- name: Remove existing /usr/bin/bazel symlink
-  file:
-    state: absent
-    path: /usr/bin/bazel

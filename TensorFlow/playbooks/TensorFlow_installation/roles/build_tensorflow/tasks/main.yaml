@@ -20,6 +20,8 @@
     TF_SET_ANDROID_WORKSPACE: '0'
     PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
     PYTHON_LIB_PATH: '{{ PYTHON_LIB_PATH }}'
+    NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
+    LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core'
   register: tensorflow_configure_log
 
 - local_action: template src=tensorflow_configure_log.j2 dest={{ TENSORFLOW_BUILD_DIR }}/configure.log
@@ -32,6 +34,8 @@
     cd {{ TENSORFLOW_BUILD_DIR }}
     bazel build //tensorflow/tools/pip_package:build_pip_package
   when: USE_CPU == 'yes' and USE_GPU == 'no'
+  environment:
+    LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core'
   register: tensorflow_cpu_build_log
 
 - local_action: template src=tensorflow_cpu_build_log.j2 dest={{ TENSORFLOW_BUILD_DIR }}/build.log
@@ -42,6 +46,8 @@
     cd {{ TENSORFLOW_BUILD_DIR }}
     bazel build --config=cuda //tensorflow/tools/pip_package:build_pip_package
   when: USE_CPU == 'no' and USE_GPU == 'yes'
+  environment:
+    LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core'
   register: tensorflow_gpu_build_log
 
 - local_action: template src=tensorflow_gpu_build_log.j2 dest={{ TENSORFLOW_BUILD_DIR }}/build.log

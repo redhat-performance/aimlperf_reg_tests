@@ -1,0 +1,50 @@
+---
+
+# Bazel requires java-devel, so let's install it
+- name: Install Bazel requirements (java-devel) for RHEL 7
+  yum: pkg=java-devel
+  when: RHEL_VERSION == '7'
+
+- name: Install Bazel requirements (java-devel) for RHEL 8
+  dnf: pkg=java-devel
+  when: RHEL_VERSION == '8'
+
+# Remove existing Bazel package
+- name: Remove existing Bazel package
+  file:
+    state: absent
+    path: /usr/local/lib/bazel
+
+# Cleanup symlinks
+- name: Remove existing /usr/local/bin/bazel symlink
+  file:
+    state: absent
+    path: /usr/local/bin/bazel
+
+- name: Remove existing /usr/bin/bazel symlink
+  file:
+    state: absent
+    path: /usr/bin/bazel
+
+# Get Bazel installer
+- name: Get Bazel installer
+  shell: |
+    cd /tmp
+    wget https://github.com/bazelbuild/bazel/releases/download/{{ BAZEL_VERSION }}/bazel-{{ BAZEL_VERSION }}-installer-linux-x86_64.sh
+
+# Install Bazel
+- name: Install Bazel
+  command: sh /tmp/bazel-{{ BAZEL_VERSION }}-installer-linux-x86_64.sh
+
+# Cleanup
+- name: Remove Bazel installer
+  file:
+    state: absent
+    path: /tmp/bazel-{{ BAZEL_VERSION }}-installer-linux-x86_64.sh
+
+# Fix linking
+- name: Create symlink (because Bazel v0.27.1 and later may have bugs)
+  file:
+    state: link
+    src: /usr/local/bin/bazel
+    path: /usr/bin/bazel
