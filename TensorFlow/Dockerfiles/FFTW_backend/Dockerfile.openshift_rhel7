@@ -20,10 +20,10 @@ COPY TensorFlow/.s2i_fftw/bin/ /usr/libexec/s2i
 # Put on port 8080
 EXPOSE 8080
 
-# Install Ansible, python36, and git
-RUN yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-    yum -y install git python36 ansible && \
-    rm -rf /var/cache/yum*
+# Install Ansible
+COPY FFTW/scripts/install_ansible_from_source.sh ${HOME}
+RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
+    rm install_ansible_from_source.sh
 
 # Install FFTW prerequisites via Ansible
 COPY FFTW/playbooks/package_installation ${HOME}
