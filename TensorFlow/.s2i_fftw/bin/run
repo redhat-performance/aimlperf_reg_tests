@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Which device? 'cpu' or 'gpu'
+DEVICE=$1
+
+# How many GPUs? (Only required if using GPUs.)
+NUM_GPUS=$2
+
+# Add user to /etc/passwd
+uid=$(id -u)
+gid=$(id -g)
+echo "${uid}:x:${uid}:${gid}:1001 uid:${HOME}:/bin/sh" >> /etc/passwd
+echo "${uid}:x:$(id -G | cut -d' ' -f 2)" >> /etc/group
+
+# Configure git
+git config --global user.name user
+git config --global user.email user@openshift-s2i
+
+##########################################
+#         BUILD AND INSTALL FFTW         #
+##########################################
+FFTW_INSTALL_DIR=${HOME}/custom_fftw
+FFTW_BUILD_DIR=${HOME}/build
+cd ${HOME}/playbooks/FFTW_installation
+ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: ${FFTW_INSTALL_DIR}, build_dir: ${FFTW_BUILD_DIR}, rhel_version: ${RHEL_VERSION}}"
+
+##########################################
+#      BUILD AND INSTALL TENSORFLOW      #
+##########################################
+cd ${HOME}/playbooks/TensorFlow_installation
+ansible-playbook -i hosts play.yaml
+
+##########################################
+#        RUN TENSORFLOW BENCHMARKS       #
+##########################################
+cd ${HOME}/playbooks/TensorFlow_benchmarks
+
+if [[ ${DEVICE} == "cpu" ]]; then
+    ansible-playbook -i hosts play.yaml
+elif [[ ${DEVICE} == "gpu" ]]; then
+    if [[ -z ${NUM_GPUS} ]]; then
+        echo "ERROR. Missing input for number of GPUs."
+    elif [[ ${NUM_GPUS} =~ ^[0-9]+$ ]] && (( NUM_GPUS > 0 )); then
+        ansible-playbook -i hosts play.yaml --extra-vars="{device: 'gpu', num_gpus: ${NUM_GPUS}}"
+    else
+        echo "ERROR. Number of GPUs must be a positive integer."
+    fi
+else
+    echo "ERROR. Unrecognized device '${DEVICE}'"
+fi
+
+##########################################
+# PRINT OUT TENSORFLOW BENCHMARK RESULTS #
+##########################################
+tail -n 15 ${HOME}/tensorflow_benchmarks/tf_cnn_benchmarks/resnet50-${DEVICE}-benchmark*.log
