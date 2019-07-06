@@ -22,7 +22,7 @@ EXPOSE 8080
 
 # Install Ansible, python36, and git
 RUN yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-    yum -y install git python36 && \
+    yum -y install git python36 ansible && \
     rm -rf /var/cache/yum*
 
 # Install FFTW prerequisites via Ansible
