@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/rhscl/s2i-core-rhel7
+FROM registry.access.redhat.com/rhscl/s2i-core-rhel7:1-66
 MAINTAINER Courtney Pacheco <cpacheco@redhat.com>
 ENV LANG=en_US.utf8
 USER root
