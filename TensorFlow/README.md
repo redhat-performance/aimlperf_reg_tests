@@ -4,29 +4,12 @@ The contents of this folder are currently in progress, but as of now, there are 
 
 ## Building TensorFlow with Ansible
 
-To build TensoFlow with a custom FFTW or custom OpenBLAS, first install Ansible and build a custom FFTW or custom OpenBLAS (see `../FFTW` and `../OpenBLAS`). Next, install the required packages for building TensorFlow:
+View `playbooks/README.md` for information on how to build TensorFlow with Ansible
+
+## Running TensorFlow CNN High-Performance Benchmarks
+
+View `playbooks/README.md` to see how to run the benchmarks. Note that in order to run these benchmarks, though, you are required to have installed TensorFlow locally to `${HOME}/.local/lib/python3.6/site-packages`. Using the `playbooks/TensorFlow_installation` playbook will install TensorFlow to that directory for you. Alternatively, if you just want to test the benchmarks without having to build TensorFlow from source, 
 
 ```
-$ cd playbooks/package_installation
-$ ansible-playbook -i hosts play.yaml
+$ pip3 install --user tensorflow
 ```
-
-Now that the necessary packages have been installed, it's time to build TensorFlow. 
-
-By default, the custom NumPy that TensorFlow uses will be built with FFTW. If you would like to use FFTW as a backend, then run:
-
-```
-$ cd ../TensorFlow_installation
-$ ansible-playbook -i hosts play.yaml
-```
-
-If you would like to use OpenBLAS as a backend instead, then run:
-
-```
-$ cd ../TensorFlow_installation
-$ ansible-playbook -i hosts play.yaml --extra-vars="{use_fftw: 'no', use_openblas: 'yes'}"
-```
-
-## TODO
-
-Ultimately, the goal here is to run TensorFlow benchmarks/regression-tests in OpenShift on AWS. OpenShift files will be added shortly.

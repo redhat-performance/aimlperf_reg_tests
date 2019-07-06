@@ -1,0 +1,64 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  # Do not edit these vars. Use --extra-vars in the command line to use a custom input value
+  vars:
+
+    # Set this value to tell the benchmark suite to run on the CPU or GPU. Options: {cpu, gpu}
+    LOCAL_PARAMETER_DEVICE: '{{ device | default("cpu") }}'
+
+    # Set the batch size for the synthetic data
+    BATCH_SIZE: '{{ batch_size | default("32") }}'
+
+    # If using GPUs, set the number of GPUs you'd like to use
+    NUM_GPUS: '{{ num_gpus | default("1") }}'
+
+    # Model. Choose from: {resnet50, inceptionv3, resnet512}
+    MODEL: '{{ model | default("resnet50") }}'
+
+
+  tasks:
+
+    # First, delete existing benchmark repo
+    - name: Delete official TensorFlow benchmark repo
+      file:
+        state: absent
+        path: '{{ BENCHMARKS_DIR }}'
+
+    # Next, we need to download the official benchmarks from github
+    - name: Clone official TensorFlow benchmarks
+      git:
+        repo: https://github.com/tensorflow/benchmarks.git
+        dest: '{{ BENCHMARKS_DIR }}'
+
+    # Now print out whether we're using the CPU or GPU (just to let the user know)
+    - debug:
+        msg: "Running tests on the {{ LOCAL_PARAMETER_DEVICE }} with synthetic data"
+
+    # Now it's time to run the benchmarks. We can run on CPU or GPU and use real or synthetic data
+    - name: Run benchmarks on the CPU with synthetic data
+      shell: |
+        cd {{ BENCHMARKS_DIR }}/scripts/tf_cnn_benchmarks
+        python3 tf_cnn_benchmarks.py --batch_size={{ BATCH_SIZE }} --model={{ MODEL }} --local_parameter_device=cpu --variable_update=parameter_server --data_format=NHWC
+      environment:
+        PYTHONPATH: "{{ lookup('env', 'HOME') }}/.local/lib/python3.6/site-packages"
+      when: LOCAL_PARAMETER_DEVICE == 'cpu'
+      register: cpu_benchmark_output
+
+    - name: Run benchmarks on the GPU with synthetic data
+      shell: |
+        cd {{ BENCHMARKS_DIR }}/scripts/tf_cnn_benchmarks
+        python3 tf_cnn_benchmarks.py --batch_size={{ BATCH_SIZE }} --model={{ MODEL }} --local_parameter_device=gpu --num_gpus={{ NUM_GPUS }} --variable_update=parameter_server
+      environment:
+        PYTHONPATH: "{{ lookup('env', 'HOME') }}/.local/lib/python3.6/site-packages"
+      when: LOCAL_PARAMETER_DEVICE == 'gpu'
+      register: gpu_benchmark_output
+
+    # Save the benchmark outputs
+    - local_action: template src=cpu_benchmarks_output.j2 dest={{ BENCHMARKS_DIR }}/scripts/tf_cnn_benchmarks/{{ MODEL }}-cpu-benchmark-{{ lookup('pipe', 'date +%Y-%m-%d-%H:%M:%S') }}.log
+      when: LOCAL_PARAMETER_DEVICE == 'cpu'
+
+    - local_action: template src=gpu_benchmarks_output.j2 dest={{ BENCHMARKS_DIR }}/scripts/tf_cnn_benchmarks/{{ MODEL }}-gpu-benchmark-{{ lookup('pipe', 'date +%Y-%m-%d-%H:%M:%S') }}.log
+      when: LOCAL_PARAMETER_DEVICE == 'gpu'
