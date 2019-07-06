@@ -55,3 +55,7 @@
 
 - debug:
     msg: "TensorFlow build logs saved to {{ TENSORFLOW_BUILD_DIR }}/build.log"
+
+- name: Build pip package with Bazel
+  shell: |
+    ./bazel-bin/tensorflow/tools/pip_package/build_pip_package /tmp/tensorflow_pkg

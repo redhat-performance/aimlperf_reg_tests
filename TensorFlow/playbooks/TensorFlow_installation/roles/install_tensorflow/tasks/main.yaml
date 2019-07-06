@@ -1,6 +1,18 @@
 ---
 
+- name: Find TensorFlow wheel file
+  find:
+    paths: /tmp/tensorflow_pkg
+    patterns: '*.whl'
+  register: tf_wheel_files
+
+- name: Found wheel file(s)
+  debug:
+    var: item.path
+  with_items: '{{ tf_wheel_files["files"] }}'
+
 - name: Install TensorFlow
   pip:
-    name: 'file:///tmp/tensorflow_pkg/tensorflow-{{ TENSORFLOW_VERSION }}-{{ TENSORFLOW_VERSION }}.whl'
+    name: '{{ item["path"] }}'
     executable: pip3
+  with_items: '{{ tf_wheel_files["files"] }}'
