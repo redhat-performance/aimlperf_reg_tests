@@ -17,6 +17,26 @@
 - name: Rename INSTALL/make.inc.gfortran to make.inc
   command: 'mv {{ LAPACK_BUILD_DIR }}/INSTALL/make.inc.gfortran {{ LAPACK_BUILD_DIR }}/make.inc'
 
+# Make libblas.a
+- name: Make libblas.a
+  make:
+    target: blaslib
+    chdir: '{{ LAPACK_BUILD_DIR }}'
+
+# Rename 'librefblas.a' to libblas.a, and move it to /usr/lib64
+- name: Rename 'librefblas.a' to 'libblas.a', and move it to /usr/lib64
+  command: 'mv {{ LAPACK_BUILD_DIR }}/librefblas.a /usr/lib64/libblas.a'
+
+# Make liblapack.a
+- name: Make liblapack.a
+  make:
+    target: lapacklib
+    chdir: '{{ LAPACK_BUILD_DIR }}'
+
+# Make liblapack.a
+- name: Move liblapack.a to /usr/lib64
+  command: 'mv {{ LAPACK_BUILD_DIR }}/liblapack.a /usr/lib64'
+
 # Modify our 'make.inc' file such that we build BLAS and LAPACK shared object libraries
 - name: Modify make.inc -- Add -fPIC to CFLAGS
   lineinfile:
