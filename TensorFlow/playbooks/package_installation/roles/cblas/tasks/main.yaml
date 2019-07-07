@@ -67,6 +67,13 @@
     target: all
     chdir: '{{ CBLAS_BUILD_DIR }}'
 
+# Move CBLAS headers to /usr/include
+- name: Move cblas.h to /usr/include
+  command: 'mv {{ CBLAS_BUILD_DIR }}/include/cblas.h /usr/include'
+
+- name: Move cblas_f77.h to /usr/include
+  command: 'mv {{ CBLAS_BUILD_DIR }}/include/cblas_f77.h /usr/include'
+
 # Finally, move the shared object library to /usr/lib64 so it can be found by NumPy
 - name: Move libcblas.so to /usr/lib64
   command: 'mv {{ CBLAS_BUILD_DIR }}/lib/libcblas.so /usr/lib64/libcblas.so'
