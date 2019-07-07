@@ -1,11 +1,5 @@
 ---
 
-- name: Specify to use Cython 3 with 'cythonize'
-  lineinfile:
-    path: '{{ NUMPY_BUILD_DIR }}/tools/cythonize.py'
-    regexp: "\['cython'\]\ \+\ flags\ \+\ \[\"\-o\",\ tofile,\ fromfile\]"
-    line: "['cython -3'] + flags + [\"-o\", tofile, fromfile])"
-
 - name: Remove existing numpy site config file
   file:
     state: absent
@@ -23,6 +17,12 @@
     echo '[atlas]' >> {{ NUMPY_SITE_CFG }}
     echo 'atlas_libs = lapack, blas, cblas, atlas' >> {{ NUMPY_SITE_CFG }}
   when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no'
+
+- name: Some versions of NumPy do not work well with later versions of Cython, so we need to add the -3 flag
+  lineinfile:
+    path: '{{ NUMPY_BUILD_DIR }}/tools/cythonize.py'
+    regexp: '.*flags\ ='
+    line: "flags = ['--fast-fail', '-3']"
 
 - name: Configure and build NumPy -- use FFTW if specified
   shell: |
