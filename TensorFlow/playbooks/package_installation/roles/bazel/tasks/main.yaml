@@ -28,9 +28,9 @@
 
 # Get Bazel installer
 - name: Get Bazel installer
-  shell: |
-    cd /tmp
-    wget https://github.com/bazelbuild/bazel/releases/download/{{ BAZEL_VERSION }}/bazel-{{ BAZEL_VERSION }}-installer-linux-x86_64.sh
+  get_url: 
+    url: https://github.com/bazelbuild/bazel/releases/download/{{ BAZEL_VERSION }}/bazel-{{ BAZEL_VERSION }}-installer-linux-x86_64.sh
+    dest: /tmp/bazel-{{ BAZEL_VERSION }}-installer-linux-x86_64.sh
 
 # Install Bazel
 - name: Install Bazel
