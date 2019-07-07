@@ -27,6 +27,12 @@
 - name: Rename 'librefblas.a' to 'libblas.a', and move it to /usr/lib64
   command: 'mv {{ LAPACK_BUILD_DIR }}/librefblas.a /usr/lib64/libblas.a'
 
+# Clean up the repo
+- name: Clean the repo
+  make:
+    target: clean
+    chdir: '{{ LAPACK_BUILD_DIR }}'
+
 # Make liblapack.a
 - name: Make liblapack.a
   make:
@@ -36,6 +42,12 @@
 # Make liblapack.a
 - name: Move liblapack.a to /usr/lib64
   command: 'mv {{ LAPACK_BUILD_DIR }}/liblapack.a /usr/lib64'
+
+# Clean up the repo
+- name: Clean the repo
+  make:
+    target: clean
+    chdir: '{{ LAPACK_BUILD_DIR }}'
 
 # Modify our 'make.inc' file such that we build BLAS and LAPACK shared object libraries
 - name: Modify make.inc -- Add -fPIC to CFLAGS
@@ -121,3 +133,9 @@
 
 - name: Move liblapack.so to /usr/lib64
   command: 'mv {{ LAPACK_BUILD_DIR }}/liblapack.so /usr/lib64/liblapack.so'
+
+# Remove the folder
+- name: Remove Reference-LAPACK repo
+  file:
+    state: absent
+    path: '{{ LAPACK_BUILD_DIR }}'
