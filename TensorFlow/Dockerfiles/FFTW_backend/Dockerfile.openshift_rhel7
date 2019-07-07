@@ -34,7 +34,7 @@ RUN cd ${HOME} && \
 # Install TensorFlow prerequisites via Ansible
 COPY TensorFlow/playbooks/package_installation ${HOME}
 RUN cd ${HOME} && \
-    ansible-playbook -i hosts play.yaml && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes'}" && \
     rm -rf package_installation
 
 # Copy FFTW installation playbook
