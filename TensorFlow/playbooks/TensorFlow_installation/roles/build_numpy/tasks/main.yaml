@@ -3,7 +3,7 @@
 - name: Specify to use Cython 3 with 'cythonize'
   lineinfile:
     path: '{{ NUMPY_BUILD_DIR }}/tools/cythonize.py'
-    regexp: "\[\'cython\'\]\ \+\ flags\ \+\ \[\"\-o\"\, tofile\, fromfile\]\)"
+    regexp: "\['cython'\]\ \+\ flags\ \+\ \[\"\-o\",\ tofile,\ fromfile\]"
     line: "['cython -3'] + flags + [\"-o\", tofile, fromfile])"
 
 - name: Remove existing numpy site config file
