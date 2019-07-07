@@ -7,23 +7,28 @@
   vars:
     RHEL_VERSION: '{{ rhel_version | default("7") }}'
     BAZEL_VERSION: '{{ bazel_version | default("0.25.2") }}'
+    USE_S2I: '{{ use_s2i | default ("no") }}'
 
   roles:
 
     # Install python36
-    - rhel_python36
+    - role: rhel_python36
 
     # Install pip
-    - python36_pip
+    - role: python36_pip
 
     # Install NumPy prereqs
-    - python36_numpy
+    - role: python36_numpy
 
     # Install Bazel
-    - bazel
+    - role: bazel
 
     # Install TensorFlow prereqs
-    - tensorflow
+    - role: tensorflow
+
+    # Build BLAS and LAPACK by hand (since UBI/s2i yum repos do not contain BLAS or LAPACK)
+    - role: s2i_blas_lapack
+      when: USE_S2I == 'yes'
 
     # Install CBLAS
-    - cblas
+    - role: cblas

@@ -1,0 +1,103 @@
+---
+
+# Remove existing CBLAS build directory
+- name: Remove existing LAPACK build directory
+  file:
+    state: directory
+    path: '{{ LAPACK_BUILD_DIR }}'
+
+# Get sources to make libblas and liblapack
+- name: Download LAPACK read-only sources
+  git:
+    repo: https://github.com/Reference-LAPACK/lapack.git
+    dest: '{{ LAPACK_BUILD_DIR }}'
+    version: '{{ LAPACK_VERSION }}'
+
+# Rename make.inc.example to make.inc
+- name: Rename INSTALL/make.inc.gfortran to make.inc
+  command: 'mv {{ LAPACK_BUILD_DIR }}/INSTALL/make.inc.gfortran {{ LAPACK_BUILD_DIR }}/make.inc'
+
+# Modify our 'make.inc' file such that we build BLAS and LAPACK shared object libraries
+- name: Modify make.inc -- Add -fPIC to CFLAGS
+  lineinfile:
+    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    regexp: '^CFLAGS*'
+    line: 'CFLAGS = -O3 -fPIC'
+
+- name: Modify make.inc -- Add -fPIC to Fortran OPTS
+  lineinfile:
+    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    regexp: '^OPTS'
+    line: 'OPTS    = -O2 -frecursive -fPIC'
+
+- name: Modify make.inc -- Add -fPIC to Fortran NOOPT
+  lineinfile:
+    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    regexp: '^NOOPT'
+    line: 'NOOPT    = -O0 -frecursive -fPIC'
+
+- name: Modify make.inc -- Add -fPIC to LOADOPTS
+  lineinfile:
+    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    regexp: '^LOADOPTS'
+    line: 'LOADOPTS = -fPIC'
+
+- name: Set ARCH in make.inc to point to gcc
+  lineinfile:
+    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    regexp: '^ARCH =*'
+    line: 'ARCH = gcc'
+
+- name: Set ARCHFLAGS in make.inc to use '-shared' and '-o'
+  lineinfile:
+    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    regexp: '^ARCHFLAGS'
+    line: 'ARCHFLAGS = -shared -o'
+
+- name: Comment out ranlib since we don't need it
+  lineinfile:
+    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    regexp: '^RANLIB'
+    line: '#RANLIB    = ranlib'
+
+- name: Remove RANLIB from BLAS/SRC/Makefile
+  lineinfile:
+    path: '{{ LAPACK_BUILD_DIR }}/BLAS/SRC/Makefile'
+    regexp: '.*\$\(RANLIB\) \$\@'
+    line: ' '
+
+- name: Remove RANLIB from SRC/Makefile
+  lineinfile:
+    path: '{{ LAPACK_BUILD_DIR }}/SRC/Makefile'
+    regexp: '.*\$\(RANLIB\) \$\@'
+    line: ' '
+
+- name: Set BLAS lib name to libblas.so
+  lineinfile:
+    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    regexp: '^BLASLIB'
+    line: 'BLASLIB      = ../../libblas.so'
+
+- name: Set LAPACK lib name to liblapack.so
+  lineinfile:
+    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    regexp: '^LAPACKLIB'
+    line: 'LAPACKLIB    = liblapack.so'
+
+# Make the libraries
+- name: Make libblas.so
+  make:
+    target: blaslib
+    chdir: '{{ LAPACK_BUILD_DIR }}'
+
+- name: Make liblapack.so
+  make:
+    target: lapacklib
+    chdir: '{{ LAPACK_BUILD_DIR }}'
+
+# Finally, move the shared object library to /usr/lib64 so it can be found by NumPy
+- name: Move libblas.so to /usr/lib64
+  command: 'mv {{ LAPACK_BUILD_DIR }}/libblas.so /usr/lib64/libblas.so'
+
+- name: Move liblapack.so to /usr/lib64
+  command: 'mv {{ LAPACK_BUILD_DIR }}/liblapack.so /usr/lib64/liblapack.so'
