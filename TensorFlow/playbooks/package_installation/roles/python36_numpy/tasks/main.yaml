@@ -1,7 +1,7 @@
 ---
 
 # Install NumPy requirements
-- name: Install NumPy requirements for RHEL 7 (for non-UBI and non-s2i images only)
+- name: Install yum NumPy requirements for RHEL 7 (for non-UBI and non-s2i images only)
   yum:
     name:
       - atlas
@@ -18,13 +18,12 @@
       - make
   when: RHEL_VERSION == '7' and USE_S2I == 'no'
 
-- name: Install NumPy requirements for RHEL 7 (for UBI and s2i images only)
+- name: Install yum NumPy requirements for RHEL 7 (for UBI and s2i images only)
   yum:
     name:
       - atlas
       - atlas-devel
       - cpp
-      - Cython
       - gcc
       - gcc-c++
       - gcc-gfortran
@@ -48,15 +47,20 @@
       - make
   when: RHEL_VERSION == '8'
 
-- name: Install NumPy requirements for RHEL 8 (for UBI and s2i images only)
+- name: Install yum NumPy requirements for RHEL 8 (for UBI and s2i images only)
   dnf:
     name:
       - atlas
       - atlas-devel
       - cpp
-      - Cython
       - gcc
       - gcc-c++
       - gcc-gfortran
       - make
   when: RHEL_VERSION == '8'
+
+- name: Install pip NumPy requirements for RHEL 7/8 (for UBI and s2i images only)
+  pip:
+    name: Cython
+    executable: pip3
+  when: USE_S2I == 'yes'
