@@ -28,7 +28,7 @@ ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: ${FFTW_INSTALL_D
 #      BUILD AND INSTALL TENSORFLOW      #
 ##########################################
 cd ${HOME}/playbooks/TensorFlow_installation
-ansible-playbook -i hosts play.yaml
+ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes'}"
 
 ##########################################
 #        RUN TENSORFLOW BENCHMARKS       #
