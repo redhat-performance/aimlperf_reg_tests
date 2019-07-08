@@ -76,4 +76,4 @@
 
 # Finally, move the shared object library to /usr/lib64 so it can be found by NumPy
 - name: Move libcblas.so to /usr/lib64
-  command: 'mv {{ CBLAS_BUILD_DIR }}/lib/libcblas.so /usr/lib64/libcblas.so'
+  command: 'mv {{ CBLAS_BUILD_DIR }}/lib/libcblas.so /usr/lib/libcblas.so'
