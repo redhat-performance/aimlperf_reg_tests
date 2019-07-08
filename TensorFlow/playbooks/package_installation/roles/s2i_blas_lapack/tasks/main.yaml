@@ -128,11 +128,11 @@
     chdir: '{{ LAPACK_BUILD_DIR }}'
 
 # Finally, move the shared object library to /usr/lib64 so it can be found by NumPy
-- name: Move libblas.so to /usr/lib64
-  command: 'mv {{ LAPACK_BUILD_DIR }}/libblas.so /usr/lib64/libblas.so'
+- name: Move libblas.so to '{{ BLAS_INSTALL_DIR }}'
+  command: 'mv {{ LAPACK_BUILD_DIR }}/libblas.so {{ BLAS_INSTALL_DIR }}/libblas.so'
 
-- name: Move liblapack.so to /usr/lib64
-  command: 'mv {{ LAPACK_BUILD_DIR }}/liblapack.so /usr/lib64/liblapack.so'
+- name: Move liblapack.so to '{{ LAPACK_INSTALL_DIR }}'
+  command: 'mv {{ LAPACK_BUILD_DIR }}/liblapack.so {{ LAPACK_INSTALL_DIR }}/liblapack.so'
 
 # Remove the folder
 - name: Remove Reference-LAPACK repo
