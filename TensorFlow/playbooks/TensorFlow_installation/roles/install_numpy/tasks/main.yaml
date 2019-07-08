@@ -4,3 +4,5 @@
   shell: |
     cd {{ NUMPY_BUILD_DIR }}
     python3 setup.py install --prefix={{ NUMPY_INSTALL_DIR }}
+  environment:
+    PYTHONPATH: '{{ PYTHONPATH }}'
