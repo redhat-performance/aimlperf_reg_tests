@@ -27,7 +27,7 @@
 - name: Configure and build NumPy -- use FFTW if specified
   shell: |
     cd {{ NUMPY_BUILD_DIR }}
-    python3 setup.py build --build-lib fftw
+    python3 setup.py build --build-lib fftw --fcompiler=gnu95
   when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no'
   register: numpy_fftw_log
 
@@ -46,7 +46,7 @@
 - name: Configure and build NumPy -- use OpenBLAS if specified
   shell: |
     cd {{ NUMPY_BUILD_DIR }}
-    python3 setup.py build --build-lib openblas
+    python3 setup.py build --build-lib openblas --fcompiler=gnu95
   when: USE_FFTW == 'no' and USE_OPENBLAS == 'yes'
   register: numpy_openblas_log
 
