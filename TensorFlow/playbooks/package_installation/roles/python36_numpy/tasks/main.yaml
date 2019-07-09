@@ -159,6 +159,12 @@
     chdir: '{{ SQLITE_BUILD_DIR }}/sqlite-autoconf-3280000'
   when: USE_S2I == 'yes'
 
+
+- name: << s2i/ubi only >> Create LZ4 build directory
+  file:
+    state: directory
+    path: '{{ LZ4_BUILD_DIR }}'
+
 - name: << s2i/ubi only >> Get LZ4 library
   git:
     repo: https://github.com/lz4/lz4.git
