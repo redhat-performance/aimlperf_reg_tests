@@ -125,7 +125,7 @@
 
 - name: << s2i/ubi only >> Install APR-util
   make:
-    target: all
+    target: install
     chdir: '{{ APR_UTIL_BUILD_DIR }}/apr-util-1.6.1'
   when: USE_S2I == 'yes'
 
