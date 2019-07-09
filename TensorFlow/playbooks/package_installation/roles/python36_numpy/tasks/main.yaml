@@ -81,20 +81,20 @@
 
 - name: << s2i/ubi only >> Configure APR
   shell: |
-    cd {{ APR_BUILD_DIR }}
+    cd {{ APR_BUILD_DIR }}/apr-1.6.5
     ./configure
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Make APR
   make:
     target: all
-    chdir: '{{ APR_BUILD_DIR }}'
+    chdir: '{{ APR_BUILD_DIR }}/apr-1.6.5'
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Install APR
   make:
     target: install
-    chdir: '{{ APR_BUILD_DIR }}'
+    chdir: '{{ APR_BUILD_DIR }}/apr-1.6.5'
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Create APR-util build directory
@@ -111,20 +111,20 @@
 
 - name: << s2i/ubi only >> Configure APR-util
   shell: |
-    cd {{ APR_UTIL_BUILD_DIR }}
+    cd {{ APR_UTIL_BUILD_DIR }}/apr-util-1.6.1
     ./configure --with-apr=/usr/local/apr
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Make APR-util
   make:
     target: all
-    chdir: '{{ APR_UTIL_BUILD_DIR }}'
+    chdir: '{{ APR_UTIL_BUILD_DIR }}/apr-util-1.6.1'
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Install APR-util
   make:
     target: all
-    chdir: '{{ APR_UTIL_BUILD_DIR }}'
+    chdir: '{{ APR_UTIL_BUILD_DIR }}/apr-util-1.6.1'
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Create SQLite build directory
@@ -141,20 +141,20 @@
 
 - name: << s2i/ubi only >> Configure SQLite
   shell: |
-    cd {{ SQLITE_BUILD_DIR }}
+    cd {{ SQLITE_BUILD_DIR }}/sqlite-autoconf-3280000
     ./configure
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Make SQLite
   make:
     target: all
-    chdir: '{{ SQLITE_BUILD_DIR }}'
+    chdir: '{{ SQLITE_BUILD_DIR }}/sqlite-autoconf-3280000'
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Install SQLite
   make:
     target: install
-    chdir: '{{ SQLITE_BUILD_DIR }}'
+    chdir: '{{ SQLITE_BUILD_DIR }}/sqlite-autoconf-3280000'
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Get LZ4 library
@@ -215,20 +215,20 @@
 
 - name: << s2i/ubi only >> Configure Subversion
   shell: |
-    cd {{ SUBVERSION_BUILD_DIR }}
+    cd {{ SUBVERSION_BUILD_DIR }}/subversion-1.12.0
     ./configure
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Make subversion
   make:
     target: all
-    chdir: '{{ SUBVERSION_BUILD_DIR }}'
+    chdir: '{{ SUBVERSION_BUILD_DIR }}/subversion-1.12.0'
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Install subversion
   make:
     target: install
-    chdir: '{{ SUBVERSION_BUILD_DIR }}'
+    chdir: '{{ SUBVERSION_BUILD_DIR }}/subversion-1.12.0'
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Remove APR build folder
