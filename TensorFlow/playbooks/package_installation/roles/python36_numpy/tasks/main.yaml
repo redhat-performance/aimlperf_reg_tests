@@ -68,3 +68,183 @@
     name: Cython
     executable: pip3
   when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Get APR (Apache Portable Runtime)
+  unarchive:
+    src: https://archive.apache.org/dist/apr/apr-1.6.5.tar.gz
+    dest: '{{ APR_BUILD_DIR }}'
+    remote_src: yes
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Configure APR
+  shell: |
+    cd {{ APR_BUILD_DIR }}
+    ./configure
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Make APR
+  make:
+    target: all
+    chdir: '{{ APR_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Install APR
+  make:
+    target: install
+    chdir: '{{ APR_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Get APR-util
+  unarchive:
+    src: http://apache.mirrors.hoobly.com//apr/apr-util-1.6.1.tar.gz
+    dest: '{{ APR_UTIL_BUILD_DIR }}'
+    remote_src: yes
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Configure APR-util
+  shell: |
+    cd {{ APR_UTIL_BUILD_DIR }}
+    ./configure --with-apr=/usr/local/apr
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Make APR-util
+  make:
+    target: all
+    chdir: '{{ APR_UTIL_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Install APR-util
+  make:
+    target: all
+    chdir: '{{ APR_UTIL_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Get SQLite
+  unarchive:
+    src: https://www.sqlite.org/2019/sqlite-autoconf-3280000.tar.gz
+    dest: '{{ SQLITE_BUILD_DIR }}'
+    remote_src: yes
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Configure SQLite
+  shell: |
+    cd {{ SQLITE_BUILD_DIR }}
+    ./configure
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Make SQLite
+  make:
+    target: all
+    chdir: '{{ SQLITE_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Install SQLite
+  make:
+    target: install
+    chdir: '{{ SQLITE_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Get LZ4 library
+  git:
+    repo: https://github.com/lz4/lz4.git
+    dest: '{{ LZ4_BUILD_DIR }}'
+    version: '{{ LZ4_VERSION }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Configure LZ4 library
+  shell: |
+    cd {{ LZ4_BUILD_DIR }}
+    ./configure
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Make LZ4 library
+  make:
+    target: all
+    chdir: '{{ LZ4_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Install LZ4 library
+  make:
+    target: install
+    chdir: '{{ LZ4_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Get utf8proc
+  git:
+    repo: https://github.com/JuliaStrings/utf8proc.git
+    dest: '{{ UTF8PROC_BUILD_DIR }}'
+    version: '{{ UTF8PROC_VERSION }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Make utf8proc
+  make:
+    target: all
+    chdir: '{{ UTF8PROC_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Install utf8proc
+  make:
+    target: install
+    chdir: '{{ UTF8PROC_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Get subversion
+  unarchive:
+    src: http://apache.mirrors.tds.net/subversion/subversion-1.12.0.tar.gz
+    dest: '{{ SUBVERSION_BUILD_DIR }}'
+    remote_src: yes
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Configure Subversion
+  shell: |
+    cd {{ SUBVERSION_BUILD_DIR }}
+    ./configure
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Make subversion
+  make:
+    target: all
+    chdir: '{{ SUBVERSION_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Install subversion
+  make:
+    target: install
+    chdir: '{{ SUBVERSION_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Remove APR build folder
+  file:
+    state: absent
+    path: '{{ APR_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Remove apr-utils build folder
+  file:
+    state: absent
+    path: '{{ APR_UTILS_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Remove SQLite build folder
+  file:
+    state: absent
+    path: '{{ SQLITE_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Remove LZ4 build folder
+  file:
+    state: absent
+    path: '{{ LZ4_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Remove utf8proc build folder
+  file:
+    state: absent
+    path: '{{ UTF8PROC_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Remove subversion build folder
+  file:
+    state: absent
+    path: '{{ SUBVERSION_BUILD_DIR }}'
+  when: USE_S2I == 'yes'
