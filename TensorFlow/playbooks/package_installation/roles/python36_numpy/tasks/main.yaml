@@ -67,6 +67,11 @@
     executable: pip3
   when: USE_S2I == 'yes'
 
+- name: << s2i/ubi only >> Create APR build directory
+  file:
+    state: directory
+    path: '{{ APR_BUILD_DIR }}'
+
 - name: << s2i/ubi only >> Get APR (Apache Portable Runtime)
   unarchive:
     src: https://archive.apache.org/dist/apr/apr-1.6.5.tar.gz
@@ -92,6 +97,11 @@
     chdir: '{{ APR_BUILD_DIR }}'
   when: USE_S2I == 'yes'
 
+- name: << s2i/ubi only >> Create APR-util build directory
+  file:
+    state: directory
+    path: '{{ APR_UTIL_BUILD_DIR }}'
+
 - name: << s2i/ubi only >> Get APR-util
   unarchive:
     src: http://apache.mirrors.hoobly.com//apr/apr-util-1.6.1.tar.gz
@@ -116,6 +126,11 @@
     target: all
     chdir: '{{ APR_UTIL_BUILD_DIR }}'
   when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Create SQLite build directory
+  file:
+    state: directory
+    path: '{{ SQLITE_BUILD_DIR }}'
 
 - name: << s2i/ubi only >> Get SQLite
   unarchive:
@@ -185,6 +200,11 @@
     target: install
     chdir: '{{ UTF8PROC_BUILD_DIR }}'
   when: USE_S2I == 'yes'
+
+- name: << s2i/ubi only >> Create subversion build directory
+  file:
+    state: directory
+    path: '{{ SUBVERSION_BUILD_DIR }}'
 
 - name: << s2i/ubi only >> Get subversion
   unarchive:
