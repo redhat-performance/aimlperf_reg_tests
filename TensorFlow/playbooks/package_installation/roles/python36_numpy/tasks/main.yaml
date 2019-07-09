@@ -248,7 +248,7 @@
 - name: << s2i/ubi only >> Remove apr-utils build folder
   file:
     state: absent
-    path: '{{ APR_UTILS_BUILD_DIR }}'
+    path: '{{ APR_UTIL_BUILD_DIR }}'
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Remove SQLite build folder
