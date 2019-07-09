@@ -12,4 +12,4 @@
     executable: pip3
 
 - name: Install remaining TensorFlow requirements
-yum: pkg=glibc
+  yum: pkg=glibc
