@@ -171,22 +171,16 @@
     version: '{{ LZ4_VERSION }}'
   when: USE_S2I == 'yes'
 
-- name: << s2i/ubi only >> Configure LZ4 library
-  shell: |
-    cd {{ LZ4_BUILD_DIR }}/lz4
-    ./configure
-  when: USE_S2I == 'yes'
-
 - name: << s2i/ubi only >> Make LZ4 library
   make:
     target: all
-    chdir: '{{ LZ4_BUILD_DIR }}/lz4'
+    chdir: '{{ LZ4_BUILD_DIR }}'
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Install LZ4 library
   make:
     target: install
-    chdir: '{{ LZ4_BUILD_DIR }}/lz4'
+    chdir: '{{ LZ4_BUILD_DIR }}'
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Create directory for utf8proc
@@ -204,13 +198,13 @@
 - name: << s2i/ubi only >> Make utf8proc
   make:
     target: all
-    chdir: '{{ UTF8PROC_BUILD_DIR }}/utf8proc'
+    chdir: '{{ UTF8PROC_BUILD_DIR }}'
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Install utf8proc
   make:
     target: install
-    chdir: '{{ UTF8PROC_BUILD_DIR }}/utf8proc'
+    chdir: '{{ UTF8PROC_BUILD_DIR }}'
   when: USE_S2I == 'yes'
 
 - name: << s2i/ubi only >> Create subversion build directory
