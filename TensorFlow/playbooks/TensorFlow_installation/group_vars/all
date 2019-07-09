@@ -3,10 +3,14 @@
 TENSORFLOW_BUILD_DIR: "{{ lookup('env', 'HOME') }}/build/tensorflow"
 NUMPY_BUILD_DIR: "{{ lookup('env', 'HOME') }}/build/numpy"
 NUMPY_INSTALL_DIR: "{{ lookup('env', 'HOME') }}/numpy"
-FFTW_LIB_NAMES: fftw3
-FFTW_OPT_LIB_NAMES: fftw3_threads
-FFTW_LIBRARY_DIR: /usr/lib64:/usr/lib
-FFTW_INCLUDE_DIR: /usr/include
+FFTW_RHEL7_LIB_NAMES: fftw
+FFTW_RHEL7_OPT_LIB_NAMES: fftw_threads
+FFTW_RHEL7_LIBRARY_DIR: /usr/lib64:/usr/lib
+FFTW_RHEL7_INCLUDE_DIR: /usr/include
+FFTW_RHEL8_LIB_NAMES: fftw3
+FFTW_RHEL8_OPT_LIB_NAMES: fftw3_threads
+FFTW_RHEL8_LIBRARY_DIR: /usr/lib64:/usr/lib
+FFTW_RHEL8_INCLUDE_DIR: /usr/include
 OPENBLAS_LIB_NAMES: openblas
 OPENBLAS_LIBRARY_DIR: /usr/lib64:/usr/lib
 OPENBLAS_INCLUDE_DIR: /usr/include/openblas

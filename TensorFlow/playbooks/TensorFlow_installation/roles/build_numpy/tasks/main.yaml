@@ -5,14 +5,27 @@
     state: absent
     path: '{{ NUMPY_SITE_CFG }}'
 
-- name: Set NumPy site config file -- use FFTW if specified
+- name: Set NumPy site config file for RHEL 7 -- use FFTW if specified
   shell: |
     echo '[ALL]' >> {{ NUMPY_SITE_CFG }}
-    echo 'libraries = {{ FFTW_LIB_NAMES }}' >> {{ NUMPY_SITE_CFG }}
-    echo 'library_dirs = {{ FFTW_LIBRARY_DIR }}' >> {{ NUMPY_SITE_CFG }}
-    echo 'include_dirs = {{ FFTW_INCLUDE_DIR }}' >> {{ NUMPY_SITE_CFG }}
-    echo 'runtime_library_dirs = {{ FFTW_LIBRARY_DIR }}' >> {{ NUMPY_SITE_CFG }}
-    echo 'fftw_opt_libs = {{ FFTW_OPT_LIB_NAMES }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'libraries = {{ FFTW_RHEL7_LIB_NAMES }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'library_dirs = {{ FFTW_RHEL7_LIBRARY_DIR }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'include_dirs = {{ FFTW_RHEL7_INCLUDE_DIR }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'runtime_library_dirs = {{ FFTW_RHEL7_LIBRARY_DIR }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'fftw_opt_libs = {{ FFTW_RHEL7_OPT_LIB_NAMES }}' >> {{ NUMPY_SITE_CFG }}
+    echo '' >> {{ NUMPY_SITE_CFG }}
+    echo '[atlas]' >> {{ NUMPY_SITE_CFG }}
+    echo 'atlas_libs = lapack, blas, cblas, tatlas' >> {{ NUMPY_SITE_CFG }}
+  when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no' and RHEL_VERSION == '7'
+
+- name: Set NumPy site config file for RHEL 8 -- use FFTW if specified
+  shell: |
+    echo '[ALL]' >> {{ NUMPY_SITE_CFG }}
+    echo 'libraries = {{ FFTW_RHEL8_LIB_NAMES }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'library_dirs = {{ FFTW_RHEL8_LIBRARY_DIR }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'include_dirs = {{ FFTW_RHEL8_INCLUDE_DIR }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'runtime_library_dirs = {{ FFTW_RHEL8_LIBRARY_DIR }}' >> {{ NUMPY_SITE_CFG }}
+    echo 'fftw_opt_libs = {{ FFTW_RHEL8_OPT_LIB_NAMES }}' >> {{ NUMPY_SITE_CFG }}
     echo '' >> {{ NUMPY_SITE_CFG }}
     echo '[atlas]' >> {{ NUMPY_SITE_CFG }}
     echo 'atlas_libs = lapack, blas, cblas, tatlas' >> {{ NUMPY_SITE_CFG }}
