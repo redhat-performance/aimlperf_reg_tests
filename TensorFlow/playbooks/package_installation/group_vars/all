@@ -10,3 +10,5 @@ APR_UTIL_BUILD_DIR: /opt/apr-utils
 SQLITE_BUILD_DIR: /opt/sqlite
 LZ4_BUILD_DIR: /opt/lz4
 LZ4_VERSION: v1.9.1
+UTF8PROC_BUILD_DIR: /opt/utf8proc
+UTF8PROC_VERSION: v2.4.0
