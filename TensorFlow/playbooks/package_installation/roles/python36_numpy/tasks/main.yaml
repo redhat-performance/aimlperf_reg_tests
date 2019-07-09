@@ -16,6 +16,7 @@
       - gcc-gfortran
       - lapack
       - make
+      - subversion
   when: RHEL_VERSION == '7' and USE_S2I == 'no'
 
 - name: Install yum NumPy requirements for RHEL 7 (for UBI and s2i images only)
@@ -28,6 +29,7 @@
       - gcc-c++
       - gcc-gfortran
       - make
+      - subversion
   when: RHEL_VERSION == '7' and USE_S2I == 'yes'
 
 - name: Install NumPy requirements for RHEL 8 (for non-UBI and non-s2i images only)
@@ -45,6 +47,7 @@
       - gcc-gfortran
       - lapack
       - make
+      - subversion
   when: RHEL_VERSION == '8'
 
 - name: Install yum NumPy requirements for RHEL 8 (for UBI and s2i images only)
@@ -57,6 +60,7 @@
       - gcc-c++
       - gcc-gfortran
       - make
+      - subversion
   when: RHEL_VERSION == '8'
 
 - name: Install pip NumPy requirements for RHEL 7/8 (for UBI and s2i images only)
