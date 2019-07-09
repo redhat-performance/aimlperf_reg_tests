@@ -15,7 +15,7 @@
     echo 'fftw_opt_libs = {{ FFTW_OPT_LIB_NAMES }}' >> {{ NUMPY_SITE_CFG }}
     echo '' >> {{ NUMPY_SITE_CFG }}
     echo '[atlas]' >> {{ NUMPY_SITE_CFG }}
-    echo 'atlas_libs = lapack, blas, cblas, atlas' >> {{ NUMPY_SITE_CFG }}
+    echo 'atlas_libs = lapack, blas, cblas, tatlas' >> {{ NUMPY_SITE_CFG }}
   when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no'
 
 - name: Some versions of NumPy do not work well with later versions of Cython, so we need to add the -3 flag
