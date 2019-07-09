@@ -25,6 +25,7 @@
       - atlas
       - atlas-devel
       - cpp
+      - expat-devel
       - gcc
       - gcc-c++
       - gcc-gfortran
@@ -55,6 +56,7 @@
       - atlas
       - atlas-devel
       - cpp
+      - expat-devel
       - gcc
       - gcc-c++
       - gcc-gfortran
