@@ -6,7 +6,7 @@ BLAS_INSTALL_DIR: /usr/lib
 LAPACK_INSTALL_DIR: /usr/lib
 SUBVERSION_BUILD_DIR: /opt/subversion
 APR_BUILD_DIR: /opt/apr
-APR_UTILS_BUILD_DIR: /opt/apr-utils
+APR_UTIL_BUILD_DIR: /opt/apr-utils
 SQLITE_BUILD_DIR: /opt/sqlite
 LZ4_BUILD_DIR: /opt/lz4
 LZ4_VERSION: v1.9.1
