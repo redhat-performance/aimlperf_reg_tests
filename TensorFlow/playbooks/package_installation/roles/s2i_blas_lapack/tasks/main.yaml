@@ -24,8 +24,8 @@
     chdir: '{{ LAPACK_BUILD_DIR }}'
 
 # Rename 'librefblas.a' to libblas.a, and move it to /usr/lib64
-- name: Rename 'librefblas.a' to 'libblas.a', and move it to /usr/lib64
-  command: 'mv {{ LAPACK_BUILD_DIR }}/librefblas.a /usr/lib64/libblas.a'
+- name: Rename 'librefblas.a' to 'libblas.a', and move it to '{{ BLAS_INSTALL_DIR }}'
+  command: 'mv {{ LAPACK_BUILD_DIR }}/librefblas.a {{ BLAS_INSTALL_DIR }}/libblas.a'
 
 # Clean up the repo
 - name: Clean the repo
@@ -40,8 +40,8 @@
     chdir: '{{ LAPACK_BUILD_DIR }}'
 
 # Make liblapack.a
-- name: Move liblapack.a to /usr/lib64
-  command: 'mv {{ LAPACK_BUILD_DIR }}/liblapack.a /usr/lib64'
+- name: Move liblapack.a to '{{ LAPACK_INSTALL_DIR }}'
+  command: 'mv {{ LAPACK_BUILD_DIR }}/liblapack.a {{ LAPACK_INSTALL_DIR }}/liblapack.a'
 
 # Clean up the repo
 - name: Clean the repo
@@ -127,7 +127,7 @@
     target: lapacklib
     chdir: '{{ LAPACK_BUILD_DIR }}'
 
-# Finally, move the shared object library to /usr/lib64 so it can be found by NumPy
+# Finally, move the shared object library to /usr/lib so it can be found by NumPy
 - name: Move libblas.so to '{{ BLAS_INSTALL_DIR }}'
   command: 'mv {{ LAPACK_BUILD_DIR }}/libblas.so {{ BLAS_INSTALL_DIR }}/libblas.so'
 
