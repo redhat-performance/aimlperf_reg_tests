@@ -16,6 +16,7 @@
       - gcc-gfortran
       - lapack
       - make
+      - python36-devel
       - subversion
   when: RHEL_VERSION == '7' and USE_S2I == 'no'
 
@@ -30,6 +31,7 @@
       - gcc-c++
       - gcc-gfortran
       - make
+      - python36-devel
       - zlib-devel
   when: RHEL_VERSION == '7' and USE_S2I == 'yes'
 
@@ -48,6 +50,7 @@
       - gcc-gfortran
       - lapack
       - make
+      - python36-devel
       - subversion
   when: RHEL_VERSION == '8'
 
@@ -62,6 +65,7 @@
       - gcc-c++
       - gcc-gfortran
       - make
+      - python36-devel
       - zlib-devel
   when: RHEL_VERSION == '8'
 
