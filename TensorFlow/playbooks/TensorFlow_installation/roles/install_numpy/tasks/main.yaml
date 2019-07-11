@@ -3,6 +3,15 @@
 - name: Install NumPy
   shell: |
     cd {{ NUMPY_BUILD_DIR }}
+    CC="gcc -lblas -lgfortran" python3 setup.py install --prefix={{ NUMPY_INSTALL_DIR }}
+  environment:
+    PYTHONPATH: '{{ PYTHONPATH }}'
+  when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no'
+
+- name: Install NumPy
+  shell: |
+    cd {{ NUMPY_BUILD_DIR }}
     python3 setup.py install --prefix={{ NUMPY_INSTALL_DIR }}
   environment:
     PYTHONPATH: '{{ PYTHONPATH }}'
+  when: USE_FFTW == 'no' and USE_OPENBLAS == 'yes'
