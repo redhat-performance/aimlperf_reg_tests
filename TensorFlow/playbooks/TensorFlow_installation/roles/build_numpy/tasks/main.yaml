@@ -43,6 +43,7 @@
     python3 setup.py build --build-lib fftw --fcompiler=gnu95
   environment:
     LD_LIBRARY_PATH: '/usr/lib:/usr/lib64:/usr/lib64/atlas'
+    CC: 'gcc -lblas -lgfortran'
   when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no'
   register: numpy_fftw_log
 
