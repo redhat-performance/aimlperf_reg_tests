@@ -18,7 +18,7 @@
   lineinfile:
     path: '{{ CBLAS_BUILD_DIR }}/Makefile.LINUX'
     regexp: '^BLLIB*'
-    line: 'BLLIB = /usr/lib64/libblas.a'
+    line: 'BLLIB = {{ BLAS_INSTALL_DIR }}/libblas.so'
 
 - name: Change line in CBLAS' Makefile.LINUX to build a shared object library, rather than static
   lineinfile:
@@ -76,4 +76,4 @@
 
 # Finally, move the shared object library to /usr/lib64 so it can be found by NumPy
 - name: Move libcblas.so to /usr/lib64
-  command: 'mv {{ CBLAS_BUILD_DIR }}/lib/libcblas.so /usr/lib/libcblas.so'
+  command: 'mv {{ CBLAS_BUILD_DIR }}/lib/libcblas.so {{ CBLAS_INSTALL_DIR }}/libcblas.so'
