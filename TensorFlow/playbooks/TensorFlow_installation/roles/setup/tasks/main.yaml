@@ -42,7 +42,7 @@
 - name: Make NumPy install dir
   file:
     state: directory
-    path: '{{ NUMPY_INSTALL_DIR }}'
+    path: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages'
 
 # Print out where the library will be installed
 - debug:
