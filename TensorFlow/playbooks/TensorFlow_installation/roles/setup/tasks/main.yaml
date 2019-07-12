@@ -31,3 +31,19 @@
 # Print out where it's being saved to
 - debug:
     var: NUMPY_BUILD_DIR
+
+# Remove any existing NumPy install dirs
+- name: Remove NumPy install dir (if it exists)
+  file:
+    state: absent
+    path: '{{ NUMPY_INSTALL_DIR }}'
+
+# Make NumPy install dir
+- name: Make NumPy install dir
+  file:
+    state: directory
+    path: '{{ NUMPY_INSTALL_DIR }}'
+
+# Print out where the library will be installed
+- debug:
+    var: NUMPY_INSTALL_DIR
