@@ -37,14 +37,14 @@ RUN cd ${HOME} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes'}" && \
     rm -rf package_installation
 
-# Copy FFTW installation playbook
+# Copy FFTW installation playbook and create dir for installation
 ENV FFTW_INSTALLATION=${HOME}/playbooks/FFTW_installation
 RUN mkdir -p ${FFTW_INSTALLATION}
 COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
 
-# Copy TensorFlow installation playbook
+# Copy TensorFlow installation playbook and create dirs for installation
 ENV TENSORFLOW_INSTALLATION=${HOME}/playbooks/TensorFlow_installation
-RUN mkdir -p ${TENSORFLOW_INSTALLATION}
+RUN mkdir -p ${TENSORFLOW_INSTALLATION} ${HOME}/.cache
 COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
 
 # Create a folder for the benchmark tests and copy the tests to the new folder
@@ -58,6 +58,7 @@ RUN chmod 777 /usr/libexec/s2i/run && \
     mkdir -p /opt/app-root/src/.ansible/tmp && \
     chmod 777 /opt/app-root/src/.ansible/tmp && \
     chmod 777 /opt/app-root/src/.ansible && \
+    chmod 777 /opt/app-root/src/.cache && \
     chmod 777 /opt/app-root/src && \
     chmod 777 /opt/app-root
 
