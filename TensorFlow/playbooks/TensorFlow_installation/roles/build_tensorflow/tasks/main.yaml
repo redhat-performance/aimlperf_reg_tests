@@ -58,4 +58,4 @@
 
 - name: Build pip package with Bazel
   shell: |
-    ./bazel-bin/tensorflow/tools/pip_package/build_pip_package /tmp/tensorflow_pkg
+    'sh /bazel-bin/tensorflow/tools/pip_package/build_pip_package {{ TF_PIP_PACKAGE_LOCATION }}'

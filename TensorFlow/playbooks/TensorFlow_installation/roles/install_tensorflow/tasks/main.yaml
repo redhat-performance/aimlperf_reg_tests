@@ -2,7 +2,7 @@
 
 - name: Find TensorFlow wheel file
   find:
-    paths: /tmp/tensorflow_pkg
+    paths: '{{ TF_PIP_PACKAGE_LOCATION }}'
     patterns: '*.whl'
   register: tf_wheel_files
 
@@ -16,3 +16,8 @@
     name: '{{ item["path"] }}'
     executable: pip3
   with_items: '{{ tf_wheel_files["files"] }}'
+
+- name: Remove pip package
+  file:
+    state: absent
+    path: '{{ TF_PIP_PACKAGE_LOCATION }}'

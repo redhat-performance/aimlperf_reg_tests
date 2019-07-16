@@ -18,3 +18,4 @@ NUMPY_SITE_CFG: "{{ lookup('env', 'HOME') }}/build/numpy/site.cfg"
 PYTHON_LIB_PATH: /usr/local/lib64/python3.6/site-packages
 PYTHON_BIN_PATH: /usr/bin/python3
 PYTHONPATH: "{{ lookup('env', 'HOME') }}/numpy/lib64/python3.6/site-packages"
+TF_PIP_PACKAGE_LOCATION: "{{ lookup('env', 'HOME') }}/tmp/tensorflow_package"

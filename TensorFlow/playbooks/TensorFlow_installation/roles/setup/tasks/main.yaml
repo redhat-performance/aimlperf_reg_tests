@@ -16,6 +16,12 @@
 - debug:
     var: TENSORFLOW_BUILD_DIR
 
+# Make TensorFlow pip package dir
+- name: Make TensorFlow pip package dir
+  file:
+    state: directory
+    path: '{{ TF_PIP_PACKAGE_LOCATION }}'
+
 # Remove any existing NumPy build dirs
 - name: Remove NumPy build dir (if it exists)
   file:
