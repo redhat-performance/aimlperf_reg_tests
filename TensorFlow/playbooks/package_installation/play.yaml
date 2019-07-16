@@ -7,7 +7,11 @@
   vars:
     RHEL_VERSION: '{{ rhel_version | default("7") }}'
     BAZEL_VERSION: '{{ bazel_version | default("0.25.2") }}'
-    USE_S2I: '{{ use_s2i | default ("no") }}'
+    USE_S2I: '{{ use_s2i | default("no") }}'
+    USE_GPU: '{{ use_gpu | default("no") }}'
+    CUDA_VERSION: '{{ cuda_version | default("10.1") }}'
+    CUDA_NETWORK_RPM: '{{ cuda_rpm | default("") }}'
+    NCCL_NETWORK_RPM: '{{ nccl_rpm | default("") }}'
 
   roles:
 
@@ -32,3 +36,7 @@
 
     # Install CBLAS
     - role: cblas
+
+    # Install GPU prerequisites
+    - role: cuda
+      when: USE_GPU == 'yes'
