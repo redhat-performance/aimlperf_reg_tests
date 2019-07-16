@@ -15,6 +15,7 @@
   pip:
     name: '{{ item["path"] }}'
     executable: pip3
+    extra_args: '--target={{ TF_INSTALL_DIR }}'
   with_items: '{{ tf_wheel_files["files"] }}'
 
 - name: Remove pip package

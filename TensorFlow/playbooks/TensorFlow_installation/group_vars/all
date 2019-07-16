@@ -1,6 +1,7 @@
 ---
 
 TENSORFLOW_BUILD_DIR: "{{ lookup('env', 'HOME') }}/build/tensorflow"
+TENSORFLOW_INSTALL_DIR: "{{ lookup('env', 'HOME') }}/tensorflow"
 NUMPY_BUILD_DIR: "{{ lookup('env', 'HOME') }}/build/numpy"
 NUMPY_INSTALL_DIR: "{{ lookup('env', 'HOME') }}/numpy"
 FFTW_RHEL7_LIB_NAMES: fftw
