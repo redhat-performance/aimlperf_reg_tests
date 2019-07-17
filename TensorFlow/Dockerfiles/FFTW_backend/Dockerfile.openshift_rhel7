@@ -28,7 +28,7 @@ RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
 # Install FFTW prerequisites via Ansible
 ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
 RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK}
-COPY FFTW/playbooks/package_installation ${FFTW_PREREQS}
+COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml && \
     cd .. && \
@@ -37,7 +37,7 @@ RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
 # Install TensorFlow prerequisites via Ansible
 ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
 RUN mkdir -p ${TF_PREREQS_PLAYBOOK}
-COPY TensorFlow/playbooks/package_installation ${HOME}
+COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
 RUN cd ${TF_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes'}" && \
     cd .. && \
