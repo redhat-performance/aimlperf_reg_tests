@@ -26,16 +26,22 @@ RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
     rm install_ansible_from_source.sh
 
 # Install FFTW prerequisites via Ansible
-COPY FFTW/playbooks/package_installation ${HOME}
-RUN cd ${HOME} && \
+ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
+RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK}
+COPY FFTW/playbooks/package_installation ${FFTW_PREREQS}
+RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml && \
-    rm -rf package_installation
+    cd .. && \
+    rm -rf ${FFTW_PREREQS_PLAYBOOK}
 
 # Install TensorFlow prerequisites via Ansible
+ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
+RUN mkdir -p ${TF_PREREQS_PLAYBOOK}
 COPY TensorFlow/playbooks/package_installation ${HOME}
-RUN cd ${HOME} && \
+RUN cd ${TF_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes'}" && \
-    rm -rf package_installation
+    cd .. && \
+    rm -rf ${TF_PREREQS_PLAYBOOK}
 
 # Copy FFTW installation playbook and create dir for installation
 ENV FFTW_INSTALLATION=${HOME}/playbooks/FFTW_installation
@@ -48,7 +54,7 @@ RUN mkdir -p ${TENSORFLOW_INSTALLATION} ${HOME}/.cache
 COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
 
 # Create a folder for the benchmark tests and copy the tests to the new folder
-ENV TENSORFLOW_BENCHMARKS=/home/playbooks/TensorFlow_benchmarks
+ENV TENSORFLOW_BENCHMARKS=${HOME}/playbooks/TensorFlow_benchmarks
 RUN mkdir -p ${TENSORFLOW_BENCHMARKS}
 COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
 
