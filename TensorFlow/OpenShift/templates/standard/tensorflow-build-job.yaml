@@ -23,7 +23,7 @@ objects:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
-          args: ["${DEVICE}", "${NUM_GPUS}"]
+          args: ["${RHEL_VERSION}", "${DEVICE}", "${NUM_GPUS}"]
         restartPolicy: "Never"
 parameters:
 - description: "ImageStream name"
@@ -44,6 +44,11 @@ parameters:
   name: "NAMESPACE"
   from: '[A-Z0-9]{15}'
   value: "openshift-image-registry"
+  required: true
+- description: "Version of RHEL to use"
+  name: "RHEL_VERSION"
+  from: '[0-9]{1}'
+  value: "7"
   required: true
 - description: "Device to use (cpu or gpu)"
   name: "DEVICE"

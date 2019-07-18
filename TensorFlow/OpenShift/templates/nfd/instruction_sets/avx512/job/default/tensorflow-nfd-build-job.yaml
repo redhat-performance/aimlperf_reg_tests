@@ -23,7 +23,7 @@ objects:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
-          args: ["cpu", " "]
+          args: ["${RHEL_VERSION}", "cpu", " "]
         restartPolicy: "Never"
         affinity:
           nodeAffinity:
@@ -63,4 +63,9 @@ parameters:
   name: "NAMESPACE"
   from: '[A-Z0-9]{15}'
   value: "openshift-image-registry"
+  required: true
+- description: "RHEL version to use"
+  name: "RHEL_VERSION"
+  from: '[0-9]{1}'
+  value: "7"
   required: true
