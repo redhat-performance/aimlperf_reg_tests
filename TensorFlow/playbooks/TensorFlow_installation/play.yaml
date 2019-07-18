@@ -13,6 +13,7 @@
     USE_CPU: '{{ use_cpu | default("yes") }}'
     USE_GPU: '{{ use_gpu | default("no") }}'
     NCCL_INSTALL_PATH: '{{ nccl_install_path | default("/home/nccl") }}'
+    CUDNN_INSTALL_PATH: '{{ cudnn_install_path | default("/home/cuDNN") }}'
 
   roles:
     # Setup NumPy and TensorFlow build folders

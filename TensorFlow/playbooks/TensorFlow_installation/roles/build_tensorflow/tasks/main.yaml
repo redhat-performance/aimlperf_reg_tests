@@ -45,7 +45,7 @@
     GCC_HOST_COMPILER_PATH: '/usr/bin/gcc'
     CC_OPT_FLAGS: '-march=native'
     CUDA_TOOLKIT_PATH: '/usr/local/cuda'
-    CUDNN_INSTALL_PATH: '/usr/local/cuda'
+    CUDNN_INSTALL_PATH: '{{ CUDNN_INSTALL_PATH }}'
     NCCL_INSTALL_PATH: '{{ NCCL_INSTALL_PATH }}'
     TF_CUDA_VERSION: '{{ cuda_version.stdout }}'
     TF_CUDNN_VERSION: '{{ cudnn_version.stdout }}'
