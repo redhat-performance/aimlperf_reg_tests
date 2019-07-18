@@ -1,0 +1,36 @@
+---
+
+- name: Delete NCCL tmp dir (if it exists)
+  file:
+    state: absent
+    path: /tmp/nccl
+
+- name: Create NCCL tmp dir
+  file:
+    state: directory
+    path: /tmp/nccl
+
+- name: Download NCCL network rpm
+  get_url:
+    src: '{{ NCCL_NETWORK_RPM }}'
+    remote_src: yes
+    dest: /tmp/nccl
+
+- name: Find NCCL rpm
+  find:
+    paths: /tmp/nccl
+    patterns: '*.rpm'
+  register: nccl_rpm
+
+- name: Install NCCL rpm
+  yum:
+    name: item.path
+  with_items: '{{ nccl_rpm["files"] }}'
+
+- name: Yum clean expire-cache
+  command: yum clean expire-cache
+
+- name: Install NCCL
+  yum:
+    name:
+      - libnccl*

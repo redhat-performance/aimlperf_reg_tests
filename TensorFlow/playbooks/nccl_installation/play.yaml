@@ -1,0 +1,21 @@
+---
+
+- hosts: localhost
+  connection: local
+  become: yes
+
+  vars:
+
+    # This is the path to the CUDA installation you want to use
+    CUDA_INSTALLATION: '{{ cuda_installation | default("/usr/local/cuda")'
+
+    # This is the URL where Ansile will download the NCCL rpm
+    NCCL_NETWORK_RPM: '{{ cuda_rpm | default("") }}'
+
+  roles:
+
+    # Check for NVIDIA (CUDA-capable) GPU
+    - role: check_gpu
+
+    # Install NCCL
+    - role: install_nccl
