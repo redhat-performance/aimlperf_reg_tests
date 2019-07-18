@@ -4,7 +4,7 @@
 - name: Install requirements for building the to-be-generated TensorFlow pip package
   pip:
     name:
-      - absl
+      - absl-py
       - keras_applications
       - keras_preprocessing
       - mock
