@@ -10,27 +10,25 @@
     state: directory
     path: /tmp/nccl
 
-- name: Download NCCL network rpm
-  get_url:
-    src: '{{ NCCL_NETWORK_RPM }}'
+- name: Download NCCL OS agnostic installer
+  unarchive:
+    src: '{{ NCCL_AGNOSTIC_LOCAL_INSTALLER }}'
     remote_src: yes
     dest: /tmp/nccl
+    extra_opts: [--strip-components=1]
 
-- name: Find NCCL rpm
-  find:
-    paths: /tmp/nccl
-    patterns: '*.rpm'
-  register: nccl_rpm
+- debug:
+    var: NCCL_INSTALL_PATH
 
-- name: Install NCCL rpm
-  yum:
-    name: item.path
-  with_items: '{{ nccl_rpm["files"] }}'
+- name: Remove {{ NCCL_INSTALL_PATH }} if it exists
+  file:
+    state: absent
+    path: '{{ NCCL_INSTALL_PATH }}'
 
-- name: Yum clean expire-cache
-  command: yum clean expire-cache
+- name: Create {{ NCCL_INSTALL_PATH }}
+  file:
+    state: directory
+    path: '{{ NCCL_INSTALL_PATH }}'
 
-- name: Install NCCL
-  yum:
-    name:
-      - libnccl*
+- name: Move /tmp/nccl contents to {{ NCCL_INSTALL_PATH }}
+  command: mv '/tmp/nccl' '{{ NCCL_INSTALL_PATH }}'

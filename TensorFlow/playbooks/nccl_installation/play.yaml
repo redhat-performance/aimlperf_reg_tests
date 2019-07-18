@@ -9,8 +9,11 @@
     # This is the path to the CUDA installation you want to use
     CUDA_INSTALLATION: '{{ cuda_installation | default("/usr/local/cuda")'
 
-    # This is the URL where Ansile will download the NCCL rpm
-    NCCL_NETWORK_RPM: '{{ cuda_rpm | default("") }}'
+    # This is the URL where Ansible will download the NCCL OS agnostic local installer
+    NCCL_AGNOSTIC_LOCAL_INSTALLER: '{{ nccl_installer | default("") }}'
+
+    # This is where we will install NCCL to
+    NCCL_INSTALL_PATH: '{{ nccl_install_path | default("/home/nccl") }}'
 
   roles:
 
