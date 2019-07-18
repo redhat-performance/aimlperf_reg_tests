@@ -1,0 +1,91 @@
+FROM registry.access.redhat.com/rhscl/s2i-core-rhel7:1-66
+MAINTAINER Courtney Pacheco <cpacheco@redhat.com>
+ENV LANG=en_US.utf8
+USER root
+ENV BUILDER_VERSION 1.0
+
+# Ansible version
+ENV ANSIBLE_GIT_VERSION=v2.7.10
+
+# RHEL version (for building FFTW)
+ENV RHEL_VERSION=7
+
+# Set up labels
+LABEL io.openshift.s2i.scripts-url="image:///usr/libexec/s2i"
+LABEL io.openshift.expose-services="8080:http"
+
+# Copy s2i assemble + run
+COPY TensorFlow/.s2i_fftw/bin/ /usr/libexec/s2i
+
+# Put on port 8080
+EXPOSE 8080
+
+# Install Ansible
+COPY FFTW/scripts/install_ansible_from_source.sh ${HOME}
+RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
+    rm install_ansible_from_source.sh
+
+# Install FFTW prerequisites via Ansible
+ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
+RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK}
+COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
+RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
+    ansible-playbook -i hosts play.yaml && \
+    cd .. && \
+    rm -rf ${FFTW_PREREQS_PLAYBOOK}
+
+# Install TensorFlow prerequisites via Ansible
+ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
+RUN mkdir -p ${TF_PREREQS_PLAYBOOK}
+COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
+RUN cd ${TF_PREREQS_PLAYBOOK} && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes', use_gpu: 'yes', cuda_rpm: 'https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/cuda-repo-rhel7-10.0.130-1.x86_64.rpm'}" && \
+    cd .. && \
+    rm -rf ${TF_PREREQS_PLAYBOOK}
+
+# Copy FFTW installation playbook and create dir for installation
+ENV FFTW_INSTALLATION=${HOME}/playbooks/FFTW_installation
+RUN mkdir -p ${FFTW_INSTALLATION}
+COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
+
+# Copy TensorFlow installation playbook and create dirs for installation
+ENV TENSORFLOW_INSTALLATION=${HOME}/playbooks/TensorFlow_installation
+RUN mkdir -p ${TENSORFLOW_INSTALLATION} ${HOME}/.cache
+COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
+
+# Create a folder for the benchmark tests and copy the tests to the new folder
+ENV TENSORFLOW_BENCHMARKS=${HOME}/playbooks/TensorFlow_benchmarks
+RUN mkdir -p ${TENSORFLOW_BENCHMARKS}
+COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
+
+# Create a folder for NCCL installation and copy the installation playbook to the folder
+ENV NCCL_INSTALLATION=${HOME}/playbooks/nccl_installation
+RUN mkdir -p ${NCCL_INSTALLATION}
+COPY TensorFlow/playbooks/nccl_installation ${NCCL_INSTALLATION}
+
+# Create a folder for cuDNN installation and copy the installation playbook to the folder
+ENV CUDNN_INSTALLATION=${HOME}/playbooks/cudnn_installation
+RUN mkdir -p ${CUDNN_INSTALLATION}
+COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
+
+# Give user permissions to modify the 'macros' file + other files to run tests
+RUN chmod 777 /usr/libexec/s2i/run && \
+    chmod g=u /etc/passwd /etc/group && \
+    mkdir -p /opt/app-root/src/.ansible/tmp && \
+    chmod 777 /opt/app-root/src/.ansible/tmp && \
+    chmod 777 /opt/app-root/src/.ansible && \
+    chmod 777 /opt/app-root/src/.cache && \
+    chmod 777 /opt/app-root/src && \
+    chmod 777 /opt/app-root
+
+# Set Ansible remote tmp
+RUN echo "remote_tmp = ${HOME}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
+    echo "remote_tmp = ${HOME}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg && \
+    echo "rempte_tmp = ${HOME}/.ansible/tmp" >> ${NCCL_INSTALLATION}/ansible.cfg
+
+# This default user is created in the openshift/base-centos7 image
+USER 1001
+
+WORKDIR ${HOME}
+
+CMD ["/usr/libexec/s2i/usage"]

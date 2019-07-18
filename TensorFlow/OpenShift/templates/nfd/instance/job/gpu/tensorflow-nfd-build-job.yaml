@@ -2,9 +2,9 @@ apiVersion: "v1"
 kind: "Template"
 metadata:
   annotations:
-    description: "Template to run the TensorFlow benchmark build job"
-    tags: "tensorflow-build-job"
-  name: "tensorflow-build-job"
+    description: "Template to run a TensorFlow build job with CPU Manager"
+    tags: "tensorflow-gpu-build-job"
+  name: "tensorflow-gpu-build-job"
 objects:
 - apiVersion: "batch/v1"
   kind: "Job"
@@ -23,18 +23,31 @@ objects:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
-          args: ["${RHEL_VERSION}", "${DEVICE}", "${NUM_GPUS}", "${NCCL_URL}", "${CUDNN_URL}"]
+          args: ["${RHEL_VERSION}", "gpu", "${NUM_GPUS}", "${NCCL_URL}", "${CUDNN_URL}"]
         restartPolicy: "Never"
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: "beta.kubernetes.io/instance-type"
+                  operator: "In"
+                  values:
+                  - "${INSTANCE_TYPE}"
+                - key: "cpumanager"
+                  operator: "In"
+                  values:
+                  - "true"
 parameters:
 - description: "ImageStream name"
   name: "IMAGESTREAM_NAME"
   from: '[A-Z0-9]{10}'
   value: "tensorflow-rhel7"
   required: true 
-- description: "TensorFlow benchmark app name"
+- description: "TensorFlow CPU Manager app name"
   name: "APP_NAME"
   from: '[A-Z0-9]{20}'
-  value: "tensorflow-s2i-benchmark-app"
+  value: "tensorflow-s2i-benchmark-app-cpu-manager"
   required: true
 - description: "Registry route. Use `oc registry info` to get the route after exposing it."
   name: "REGISTRY"
@@ -45,15 +58,14 @@ parameters:
   from: '[A-Z0-9]{15}'
   value: "openshift-image-registry"
   required: true
-- description: "Version of RHEL to use"
+- description: "AWS instance type"
+  name: "INSTANCE_TYPE"
+  value: "m4.4xlarge"
+  required: true
+- description: "RHEL version to use"
   name: "RHEL_VERSION"
   from: '[0-9]{1}'
   value: "7"
-  required: true
-- description: "Device to use (cpu or gpu)"
-  name: "DEVICE"
-  from: '[A-Z]{3}'
-  value: "cpu"
   required: true
 - description: "Number of GPUs to use (must be an integer)"
   name: "NUM_GPUS"
