@@ -34,7 +34,7 @@ ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes'}"
 #        RUN TENSORFLOW BENCHMARKS       #
 ##########################################
 cd ${HOME}/playbooks/TensorFlow_benchmarks
-export PYTHONPATH=$PYTHONPATH:${HOME}/numpy/lib64/python3.6/site-packages:${HOME}/tensorflow/lib/python3.6/site-packages
+export PYTHONPATH=$PYTHONPATH:${HOME}/numpy/lib64/python3.6/site-packages:${HOME}/tensorflow
 
 if [[ ${DEVICE} == "cpu" ]]; then
     ansible-playbook -i hosts play.yaml
