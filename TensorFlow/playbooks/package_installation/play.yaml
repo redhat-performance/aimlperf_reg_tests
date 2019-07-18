@@ -11,7 +11,6 @@
     USE_GPU: '{{ use_gpu | default("no") }}'
     CUDA_VERSION: '{{ cuda_version | default("10.1") }}'
     CUDA_NETWORK_RPM: '{{ cuda_rpm | default("") }}'
-    NCCL_NETWORK_RPM: '{{ nccl_rpm | default("") }}'
 
   roles:
 

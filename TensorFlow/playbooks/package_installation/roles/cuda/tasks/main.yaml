@@ -1,20 +1,12 @@
 ---
 
 - block:
-  - name: 'End play if CUDA network rpm and NCCL rpm are missing'
+  - name: 'End play if CUDA network rpm is missing'
     debug:
-      msg: 'Missing one or more CUDA related rpms'
+      msg: 'Missing CUDA network rpm. Find your network rpm here: https://developer.nvidia.com/cuda-toolkit-archive'
 
   - meta: end_play
-  when: (CUDA_NETWORK_RPM == "" and NCCL_NETWORK_RPM == "") or (CUDA_NETWORK_RPM == "") or (NCCL_NETWORK_RPM == "")
-
-- block:
-  - name: 'End play if CUDA version is not supplied'
-    debug:
-      msg: 'CUDA version must be supplied to Ansible to continue this installation.'
-
-  - meta: end_play
-  when: CUDA_VERSION == ""
+  when: CUDA_NETWORK_RPM == ""
 
 - name: Check for a CUDA-capable GPU
   shell: 'lspci | grep -i nvidia'
@@ -32,12 +24,6 @@
 - debug:
     var: CUDA_NETWORK_RPM
 
-- debug:
-    var: NCCL_NETWORK_RPM
-
-- debug:
-    var: CUDA_VERSION
-
 - name: Create CUDA tmp dir
   file:
     state: directory
@@ -49,19 +35,13 @@
     remote_src: yes
     dest: '{{ CUDA_TMP_DIR }}'
 
-- name: Download NCCL network rpm
-  get_url:
-    src: '{{ NCCL_NETWORK_RPM }}'
-    remote_src: yes
-    dest: '{{ CUDA_TMP_DIR }}'
-
-- name: Find CUDA toolkit + NCCL rpms
+- name: Find CUDA rpm
   find:
     paths: '{{ CUDA_TMP_DIR }}'
     patterns: '*.rpm'
   register: cuda_rpms
 
-- name: Install CUDA related rpms
+- name: Install CUDA rpm
   yum:
     name: item.path
   with_items: '{{ cuda_rpms["files"] }}'
@@ -69,8 +49,7 @@
 - name: Yum clean expire-cache
   command: yum clean expire-cache
 
-- name: Install CUDA + NCCL
+- name: Install CUDA
   yum:
     name:
-      - 'cuda'
-      - 'libnccl*cuda*{{ CUDA_VERSION }}'
+      - cuda
