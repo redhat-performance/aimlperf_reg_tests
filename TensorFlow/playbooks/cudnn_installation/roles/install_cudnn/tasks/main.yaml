@@ -1,0 +1,8 @@
+---
+
+- name: Download cuDNN
+  unarchive:
+    src: '{{ CUDNN }}'
+    remote_src: yes
+    dest: '{{ CUDNN_INSTALL_PATH }}'
+    extra_opts: [--strip-components=1]

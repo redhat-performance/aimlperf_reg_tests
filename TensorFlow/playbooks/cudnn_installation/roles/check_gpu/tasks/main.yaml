@@ -1,0 +1,17 @@
+---
+
+- name: Check for a CUDA-capable GPU
+  shell: 'lspci | grep -i nvidia'
+  register: nvidia_lspci_output
+  ignore_errors: yes
+
+- block:
+  - name: 'End play if user does not have a CUDA-capable GPU'
+    debug:
+      msg: 'No CUDA capable GPU was found. Aborting.'
+
+  - meta: end_play
+  when: nvidia_lspci_output.stdout == ""
+
+- debug:
+    msg: 'CUDA capable GPU found. Proceeding to next step.'
