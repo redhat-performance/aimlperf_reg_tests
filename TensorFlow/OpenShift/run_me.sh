@@ -4,7 +4,7 @@ usage() {
     echo "This script launches the TensorFlow CNN High-Performance benchmark app on an AWS OpenShift cluster for RHEL 7 only (for now). Node Feature Discovery may optionally be used for selecting specific nodes, and CPU Manager may optionally be used as well."
     echo ""
     echo ""
-    echo "Usage: $0 [-v rhel_version] [-n] [-t instance_type] [-r image_registry] [-s namespace] [-i custom_imagestream_name] [-a custom_app_name] [-x instruction_set] [-p] [-c number_of_cpus] [-m memory_size]"
+    echo "Usage: $0 [-v rhel_version] [-n] [-t instance_type] [-r image_registry] [-s namespace] [-i custom_imagestream_name] [-a custom_app_name] [-x instruction_set] [-p] [-c number_of_cpus] [-m memory_size] [-g]"
     echo "  REQUIRED:"
     echo "  -v  Version of RHEL to use. Choose from: {7}. (Will be adding RHEL 8 in the future.)"
     echo ""
@@ -25,12 +25,20 @@ usage() {
     echo "  -a  Custom app name (this is what your app will be named). Default: tensorflow-s2i-benchmark-app-rhel7"
     echo ""
     echo "  -p  Use CPU Manager. (Requires options -c and -m to be used!)"
-    echo "      -c  Number of CPUs to use with CPU Manager (the -p option)"
-    echo "      -m  Memory size to use with CPU Manager (the -p option)"
+    echo "      -c  Number of CPUs to use with CPU Manager"
+    echo "      -m  Memory size to use with CPU Manager"
+    echo ""
+    echo "  -u  Use GPUs (Requires option -t, g, -y, and -z to be used!)"
+    echo "      -g  Number of GPUs to use"
+    echo "      -y  NCCL download URL"
+    echo "      -z  cuDNN download URL"
     exit
 }
 
-options=":h:v:b:t:nr:s:i:a:x:c:pm:l:"
+# Set default GPU usage
+USE_GPU="false"
+
+options=":h:v:b:t:nr:s:i:a:x:c:pm:l:ug:y:z:"
 while getopts "$options" x
 do
     case "$x" in
@@ -73,6 +81,18 @@ do
       m)
           MEMORY_SIZE=${OPTARG}
           ;;
+      u)
+          USE_GPU="true"
+          ;;
+      g)
+          N_GPUS=${OPTARG}
+          ;;
+      y)
+          NCCL_URL=${OPTARG}
+          ;;
+      z)
+          CUDNN_URL=${OPTARG}
+          ;;
       *)
           usage
           ;;
@@ -110,7 +130,7 @@ elif [[ ${NFD} == "nfd" ]] && [[ -z ${AVX} ]] && [[ -z ${INSTANCE_TYPE} ]]; then
 fi
 
 # Check CPU Manager options
-if [[ ${CPU_MANAGER} ]]; then
+if [[ ${CPU_MANAGER} ]] && [[ ${USE_GPU} == "false"]]; then
     if [[ -z ${N_CPUS} ]]; then
         echo "ERROR. The CPU Manager option -p was passed, but the number of CPUs (-c) was not specified."
         exit 1
@@ -127,12 +147,52 @@ if [[ ${CPU_MANAGER} ]]; then
         echo "ERROR. Memory size must be in the format of <number>G. You entered: ${MEMORY_SIZE}"
         exit 1
     fi
+elif [[ ${CPU_MANAGER} ]] && [[ ${USE_GPU} == "true" ]]; then
+    echo "ERROR. Cannot use CPU manager and gpus simultaneously!"
+    exit 1
+fi
+
+# Check GPU options
+if [[ ${USE_GPU} == "true" ]]; then
+
+    # Make sure the user passed in a valid number of GPUs
+    if [[ -z ${N_GPUS} ]]; then
+        echo "ERROR. The GPU option -g was passed, but the number of GPUs (-g) was not specified."
+        exit 1
+    elif [[ ${N_GPUS} =~ ^[0-9]+$ ]]; then
+        echo "ERROR. Number of GPUs is not a number. You entered: ${N_GPUS}"
+        exit 1
+    elif (( N_GPUS <= 0 )); then
+        echo "ERROR. Number of GPUs must be a positive number. You entered: ${N_GPUS}"
+        exit 1
+    fi
+
+    # Make sure the user passed in a download URL for NCCL. Check it to make sure it's valid by downloading the file.
+    # If the file failed to download, then the script will crash on its own.
+    if [[ -z ${NCCL_URL} ]]; then
+        echo "ERROR. NCCL download URL is missing. Please provide an NCCL URL with the -y option."
+        exit 1
+    else
+        curl -o nccl_test ${NCCL_URL}
+        rm -rf nccl_test
+    fi
+
+    # Do the same with cuDNN
+    if [[ -z ${CUDNN_URL} ]]; then
+        echo "ERROR. cuDNN download URL is missing. Please provide a cuDNN URL with the -z option."
+        exit 1
+    else
+        curl -o cudnn_test ${CUDNN_URL}
+        rm -rf cudnn_test
+    fi
 fi
 
 # Initialize image name (if not specified)
 if [[ -z ${IS_NAME} ]]; then
     if [[ ${RHEL_VERSION} == 7 ]] && [[ ! -z ${AVX} ]]; then
         IS_NAME="tensorflow-${BACKEND}-rhel7-${AVX}"
+    elif [[ ${RHEL_VERSION} == 7 ]] && [[ ${USE_GPU} == "true" ]]; then
+        IS_NAME="tensorflow-${BACKEND}-rhel7-gpu"
     else
         IS_NAME="tensorflow-${BACKEND}-rhel7"
     fi
@@ -145,6 +205,8 @@ if [[ -z ${APP_NAME} ]]; then
             APP_NAME="tensorflow-s2i-benchmark-app-rhel7-${AVX}-cpu-managed"
         elif [[ ! -z ${AVX} ]]; then
             APP_NAME="tensorflow-s2i-benchmark-app-rhel7-${AVX}"
+        elif [[ ${USE_GPU} == "true" ]]; then
+            APP_NAME="tensorflow-s2i-benchmark-app-rhel7-gpu"
         else
             APP_NAME="tensorflow-s2i-benchmark-app-rhel7"
         fi
@@ -197,6 +259,10 @@ else
         if [[ ! -z ${CPU_MANAGER} ]]; then
             build_job_path="${build_job_path_prefix}/cpu_manager/tensorflow-nfd-build-job.yaml"
 	    build_job_name="tensorflow-nfd-cpu-manager-build-job"
+        # If GPUs will be used, then specify the proper name
+        elif [[ ${USE_GPU} == "true" ]]; then
+            build_job_path="${build_job_path_prefix}/gpu/tensorflow-nfd-build-job.yaml"
+            build_job_name="tensorflow-nfd-gpu-build-job"
         else
             build_job_path="${build_job_path_prefix}/default/tensorflow-nfd-build-job.yaml"
 	    build_job_name="tensorflow-nfd-build-job"
@@ -338,6 +404,15 @@ elif [[ "${NFD}" == "nfd" ]]; then
                            --param=MEMORY_SIZE=$MEMORY_SIZE \
                            --param=THREAD_VALUES=$THREAD_VALUES
             fi
+        elif [[ ${USE_GPU} == "true" ]]; then
+            oc new-app --template="${build_job_name}" \
+                       --param=IMAGESTREAM_NAME=$IS_NAME \
+                       --param=REGISTRY=$OC_REGISTRY \
+                       --param=APP_NAME=$APP_NAME \
+                       --param=NAMESPACE=$NAMESPACE \
+                       --param=NUM_GPUS=$N_GPUS \
+                       --param=NCCL_URL=$NCCL_URL \
+                       --param=CUDNN_URL=$CUDNN_URL
         else
             oc new-app --template="${build_job_name}" \
                        --param=IMAGESTREAM_NAME=$IS_NAME \
