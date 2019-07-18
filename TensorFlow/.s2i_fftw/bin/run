@@ -1,10 +1,13 @@
 #!/bin/bash
 
+# Which version of RHEL?
+RHEL_VERSION=$1
+
 # Which device? 'cpu' or 'gpu'
-DEVICE=$1
+DEVICE=$2
 
 # How many GPUs? (Only required if using GPUs.)
-NUM_GPUS=$2
+NUM_GPUS=$3
 
 # Add user to /etc/passwd
 uid=$(id -u)
@@ -28,7 +31,7 @@ ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: ${FFTW_INSTALL_D
 #      BUILD AND INSTALL TENSORFLOW      #
 ##########################################
 cd ${HOME}/playbooks/TensorFlow_installation
-ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes'}"
+ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes', rhel_version: ${RHEL_VERSION}}"
 
 ##########################################
 #        RUN TENSORFLOW BENCHMARKS       #
