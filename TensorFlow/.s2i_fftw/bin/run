@@ -9,6 +9,18 @@ DEVICE=$2
 # How many GPUs? (Only required if using GPUs.)
 NUM_GPUS=$3
 
+# URL to NCCL download (make sure to sign up for NVIDIA account)
+NCCL=$4
+
+# URL to cuDNN download (make sure to sign up for NVIDIA account)
+CUDNN=$5
+
+# Check device input
+if [[ ${DEVICE} != "cpu" ]] && [[ ${DEVICE} != "gpu" ]]; then
+    echo "ERROR. Unrecognized device '${DEVICE}'"
+    exit 1
+fi
+
 # Add user to /etc/passwd
 uid=$(id -u)
 gid=$(id -g)
@@ -28,10 +40,32 @@ cd ${HOME}/playbooks/FFTW_installation
 ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: ${FFTW_INSTALL_DIR}, build_dir: ${FFTW_BUILD_DIR}, rhel_version: ${RHEL_VERSION}}"
 
 ##########################################
+#       INSTALL NCCL IF USING GPUS       #
+##########################################
+NCCL_INSTALL_PATH=${HOME}/nccl
+if [[ ${DEVICE} == "gpu" ]]; then
+    cd ${HOME}/playbooks/nccl_installation
+    ansible-playbook -i hosts play.yaml --extra-vars="{nccl_install_path: '${NCCL_INSTALL_PATH}', nccl_installer: '${NCCL}', cuda_path: '/usr/local/cuda'}"
+fi
+
+##########################################
+#      INSTALL CUDNN IF USING GPUS       #
+##########################################
+CUDNN_INSTALL_PATH=${HOME}/cuDNN
+if [[ ${DEVICE} == "gpu" ]]; then
+    cd ${HOME}/playbooks/cudnn_installation
+    ansible-playbook -i hosts play.yaml --extra-vars="{cudnn_install_path: '${CUDNN_INSTALL_PATH}', cudnn: '${CUDNN}', cuda_path: '/usr/local/cuda'}"
+fi
+
+##########################################
 #      BUILD AND INSTALL TENSORFLOW      #
 ##########################################
 cd ${HOME}/playbooks/TensorFlow_installation
-ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes', rhel_version: ${RHEL_VERSION}}"
+if [[ ${DEVICE} == "cpu" ]]; then
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: ${RHEL_VERSION}}"
+else
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: ${RHEL_VERSION}, use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cudnn_install_path: '${CUDNN_INSTALL_PATH}'}"
+fi
 
 ##########################################
 #        RUN TENSORFLOW BENCHMARKS       #
@@ -41,7 +75,7 @@ export PYTHONPATH=$PYTHONPATH:${HOME}/numpy/lib64/python3.6/site-packages:${HOME
 
 if [[ ${DEVICE} == "cpu" ]]; then
     ansible-playbook -i hosts play.yaml
-elif [[ ${DEVICE} == "gpu" ]]; then
+else
     if [[ -z ${NUM_GPUS} ]]; then
         echo "ERROR. Missing input for number of GPUs."
     elif [[ ${NUM_GPUS} =~ ^[0-9]+$ ]] && (( NUM_GPUS > 0 )); then
@@ -49,8 +83,6 @@ elif [[ ${DEVICE} == "gpu" ]]; then
     else
         echo "ERROR. Number of GPUs must be a positive integer."
     fi
-else
-    echo "ERROR. Unrecognized device '${DEVICE}'"
 fi
 
 ##########################################
