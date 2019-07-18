@@ -12,6 +12,7 @@
     USE_OPENBLAS: '{{ use_openblas | default("no") }}'
     USE_CPU: '{{ use_cpu | default("yes") }}'
     USE_GPU: '{{ use_gpu | default("no") }}'
+    NCCL_INSTALL_PATH: '{{ nccl_install_path | default("/home/nccl") }}'
 
   roles:
     # Setup NumPy and TensorFlow build folders
