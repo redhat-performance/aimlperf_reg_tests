@@ -68,7 +68,10 @@
   when: USE_CPU == 'no' and USE_GPU == 'yes'
 
 - local_action: template src=tensorflow_configure_log_cpu.j2 dest={{ TENSORFLOW_BUILD_DIR }}/configure.log
+  when: USE_CPU == 'yes' and USE_GPU == 'no'
+
 - local_action: template src=tensorflow_configure_log_gpu.j2 dest={{ TENSORFLOW_BUILD_DIR }}/configure.log
+  when: USE_CPU == 'no' and USE_GPU == 'yes'
 
 - debug:
     msg: "TensorFlow config logs saved to {{ TENSORFLOW_BUILD_DIR }}/configure.log"
