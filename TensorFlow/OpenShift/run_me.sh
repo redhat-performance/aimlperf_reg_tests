@@ -130,7 +130,7 @@ elif [[ ${NFD} == "nfd" ]] && [[ -z ${AVX} ]] && [[ -z ${INSTANCE_TYPE} ]]; then
 fi
 
 # Check CPU Manager options
-if [[ ${CPU_MANAGER} ]] && [[ ${USE_GPU} == "false"]]; then
+if [[ ${CPU_MANAGER} ]] && [[ ${USE_GPU} == "false" ]]; then
     if [[ -z ${N_CPUS} ]]; then
         echo "ERROR. The CPU Manager option -p was passed, but the number of CPUs (-c) was not specified."
         exit 1
@@ -159,9 +159,9 @@ if [[ ${USE_GPU} == "true" ]]; then
     if [[ -z ${N_GPUS} ]]; then
         echo "ERROR. The GPU option -g was passed, but the number of GPUs (-g) was not specified."
         exit 1
-    elif [[ ${N_GPUS} =~ ^[0-9]+$ ]]; then
-        echo "ERROR. Number of GPUs is not a number. You entered: ${N_GPUS}"
-        exit 1
+    #elif [[ ${N_GPUS} =~ ^[0-9]+$ ]]; then
+    #    echo "ERROR. Number of GPUs is not a number. You entered: ${N_GPUS}"
+    #    exit 1
     elif (( N_GPUS <= 0 )); then
         echo "ERROR. Number of GPUs must be a positive number. You entered: ${N_GPUS}"
         exit 1
@@ -250,8 +250,8 @@ else
         
     # If the user passed in an instance type, then set the template variables to point to the instance type templates
     else
-        build_image_template_name_prefix="tensorflow-nfd-build-image-rhel"
-        build_image_template_filename_prefix="templates/nfd/instance/buildconfig/tensorflow-nfd-buildconfig-rhel"
+        build_image_template_name_prefix="tensorflow-${BACKEND}-build-image-rhel"
+        build_image_template_filename_prefix="templates/nfd/instance/buildconfig/tensorflow-${BACKEND}-buildconfig-rhel"
         build_job_path_prefix="templates/nfd/instance/job"
 	build_job_name="tensorflow-nfd-build-job"
 
@@ -262,7 +262,7 @@ else
         # If GPUs will be used, then specify the proper name
         elif [[ ${USE_GPU} == "true" ]]; then
             build_job_path="${build_job_path_prefix}/gpu/tensorflow-nfd-build-job.yaml"
-            build_job_name="tensorflow-nfd-gpu-build-job"
+            build_job_name="tensorflow-nfd-build-job-gpu"
         else
             build_job_path="${build_job_path_prefix}/default/tensorflow-nfd-build-job.yaml"
 	    build_job_name="tensorflow-nfd-build-job"
@@ -270,8 +270,13 @@ else
     fi
 fi
 
-# If the RHEL version is 7, then set the template name and file to point to the RHEL 7 ones
-if [[ ${RHEL_VERSION} == 7 ]]; then
+# If we're using GPUs...
+if [[ ${USE_GPU} == "true" ]]; then
+    build_image_template_name="${build_image_template_name_prefix}7-gpu"
+    build_image_template_file="${build_image_template_filename_prefix}7-gpu.yaml"
+
+# If the RHEL version is 7 and we're *not* using GPUs, then set the template name and file to point to the RHEL 7 ones
+elif [[ ${RHEL_VERSION} == 7 ]]; then
     build_image_template_name="${build_image_template_name_prefix}7"
     build_image_template_file="${build_image_template_filename_prefix}7.yaml"
 
@@ -343,7 +348,7 @@ while [[ -z $build_succeeded_status ]] && [[ -z $build_failed_status ]] && [[ -z
     sleep 10
     echo "Build is still running"
     oc status > statuses.txt 
-    oc_build_status=$(grep -i -A 2 "bc/${build_image_template_name}" statuses.txt)
+    oc_build_status=$(grep -i -A 1 "  -> istag/${IS_NAME}:latest" statuses.txt)
     build_succeeded_status=$(echo $oc_build_status | grep build | grep succeeded)
     build_completed_status=$(echo $oc_build_status | grep build | grep completed)
     build_failed_status=$(echo $oc_build_status | grep build | grep failed)
