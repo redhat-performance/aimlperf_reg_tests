@@ -1,1 +1,0 @@
-../../../FFTW/OpenShift/scripts/enable_cpumanager.sh

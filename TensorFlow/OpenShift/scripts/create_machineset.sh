@@ -1,1 +1,0 @@
-../../../FFTW/OpenShift/scripts/create_machineset.sh
