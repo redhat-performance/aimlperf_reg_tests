@@ -21,3 +21,10 @@ To run the OpenBLAS or FFTW regression tests in containers, use the provided Doc
 ### AWS
 
 To run the regression tests on OpenShift in AWS, view the **OpenBLAS/OpenShift** folder (for OpenBLAS),  **FFTW/OpenShift** (for FFTW), or **TensorFlow/OpenShift** (for TensorFlow). Everything is automated, and there is even a script under **helper\_scripts/OpenShift** for creating a new node (MachineSet) in OpenShift in the event you want a specific instance type (e.g., m4.4xlarge, c5.large, etc.).
+
+To use/enable GPUs, use the script `helper_scripts/OpenShift/gpu_setup.sh`. Simply run:
+
+```
+$ cd helper_scripts/OpenShift
+$ sh gpu_setup.sh
+```
