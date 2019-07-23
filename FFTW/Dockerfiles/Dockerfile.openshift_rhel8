@@ -21,7 +21,7 @@ COPY FFTW/.s2i/bin/ /usr/libexec/s2i
 EXPOSE 8080
 
 # Install Ansible
-COPY FFTW/scripts/install_ansible_from_source.sh ${HOME}
+COPY helper_scripts/Ansible/install_ansible_from_source.sh ${HOME}
 RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
     rm install_ansible_from_source.sh
 
