@@ -62,9 +62,9 @@ fi
 ##########################################
 cd ${HOME}/playbooks/TensorFlow_installation
 if [[ ${DEVICE} == "cpu" ]]; then
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: ${RHEL_VERSION}}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: ${RHEL_VERSION}, blas_library_dirs: ${FFTW_INSTALL_DIR}/lib, blas_include_dirs: ${FFTW_INSTALL_DIR}/include}"
 else
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: ${RHEL_VERSION}, use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cudnn_install_path: '${CUDNN_INSTALL_PATH}'}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: ${RHEL_VERSION}, blas_library_dirs: ${FFTW_INSTALL_DIR}/lib, blas_include_dirs: ${FFTW_INSTALL_DIR}/include, use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cudnn_install_path: '${CUDNN_INSTALL_PATH}'}"
 fi
 
 ##########################################

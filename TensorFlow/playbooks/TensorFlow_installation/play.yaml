@@ -5,15 +5,32 @@
 
   # Set global vars
   vars:
+
+    # Version of RHEL to use
     RHEL_VERSION: '{{ rhel_version | default("7") }}'
+
+    # Version of TensorFlow to use
     TENSORFLOW_VERSION: '{{ tf_version | default("1.14.0") }}'
+
+    # Version of NumPy to use
     NUMPY_VERSION: '{{ np_version | default("1.16.4") }}'
+
+    # Use FFTW or OpenBLAS?
     USE_FFTW: '{{ use_fftw | default("yes") }}'
     USE_OPENBLAS: '{{ use_openblas | default("no") }}'
+
+    # Use CPU or GPU?
     USE_CPU: '{{ use_cpu | default("yes") }}'
     USE_GPU: '{{ use_gpu | default("no") }}'
+
+    # Paths to CUDA/NVIDIA libraries
     NCCL_INSTALL_PATH: '{{ nccl_install_path | default("/home/nccl") }}'
     CUDNN_INSTALL_PATH: '{{ cudnn_install_path | default("/home/cuDNN") }}'
+
+    # For NumPy site config, we must point to where the BLAS shared object
+    # libraries and include folders are installed
+    BLAS_LIB_DIRS: '{{ blas_library_dirs | default("/usr/lib64:/usr/lib") }}'
+    BLAS_INCLUDE_DIRS: '{{ blas_include_dirs | default("/usr/include") }}'
 
   roles:
     # Setup NumPy and TensorFlow build folders

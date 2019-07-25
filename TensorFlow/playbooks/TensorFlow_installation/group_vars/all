@@ -6,15 +6,9 @@ NUMPY_BUILD_DIR: "{{ lookup('env', 'HOME') }}/build/numpy"
 NUMPY_INSTALL_DIR: "{{ lookup('env', 'HOME') }}/numpy"
 FFTW_RHEL7_LIB_NAMES: fftw
 FFTW_RHEL7_OPT_LIB_NAMES: fftw_threads
-FFTW_RHEL7_LIBRARY_DIR: /usr/lib64:/usr/lib:/usr/lib64/atlas
-FFTW_RHEL7_INCLUDE_DIR: /usr/include
 FFTW_RHEL8_LIB_NAMES: fftw3
 FFTW_RHEL8_OPT_LIB_NAMES: fftw3_threads
-FFTW_RHEL8_LIBRARY_DIR: /usr/lib64:/usr/lib:/usr/lib64/atlas
-FFTW_RHEL8_INCLUDE_DIR: /usr/include
 OPENBLAS_LIB_NAMES: openblas
-OPENBLAS_LIBRARY_DIR: /usr/lib64:/usr/lib
-OPENBLAS_INCLUDE_DIR: /usr/include/openblas
 NUMPY_SITE_CFG: "{{ lookup('env', 'HOME') }}/build/numpy/site.cfg"
 PYTHON_LIB_PATH: /usr/local/lib64/python3.6/site-packages
 PYTHON_BIN_PATH: /usr/bin/python3
