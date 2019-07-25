@@ -343,16 +343,43 @@ build_succeeded_status=""
 build_completed_status=""
 build_failed_status=""
 build_stopped_status=""
-echo "Checking build status..."
+echo "Checking build status... (This may take up to 15 minutes or more depending on the size and type of instance you're using.)"
+echo ""
+echo "<< WARNING >> Do NOT exit out of this script while it is running. It will stop when it completes."
+echo ""
+min_count=0
+sec_count=0
 while [[ -z $build_succeeded_status ]] && [[ -z $build_failed_status ]] && [[ -z $build_stopped_status ]] && [[ -z $build_completed_status ]]; do
-    sleep 10
-    echo "Build is still running"
+
+    # Update clock counter
+    if (( sec_count == 0 )); then
+        echo "[${min_count}:00] Build is still running"
+    else
+        echo "[${min_count}:${sec_count}] Build is still running"
+    fi
+
+    # Get status of the build
     oc status > statuses.txt 
     oc_build_status=$(grep -i -A 1 "  -> istag/${IS_NAME}:latest" statuses.txt)
     build_succeeded_status=$(echo $oc_build_status | grep build | grep succeeded)
     build_completed_status=$(echo $oc_build_status | grep build | grep completed)
     build_failed_status=$(echo $oc_build_status | grep build | grep failed)
     build_stopped_status=$(echo $oc_build_status | grep build | grep stopped)
+
+    # Update second count
+    sec_count=$((sec_count+10))
+
+    # Check if we have 60 seconds. If so, convert seconds to minutes
+    if (( $sec_count == 60 )); then
+        sec_count=0
+        min_count=$((min_count+1))
+    fi
+
+    # Wait 10 seconds before checking again
+    if [[ -z $build_succeeded_status ]] && [[ -z $build_completed_status ]]; then
+        sleep 10
+    fi
+
 done
 
 if [[ ! -z $build_failed_status ]]; then
