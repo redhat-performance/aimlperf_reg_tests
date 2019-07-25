@@ -71,7 +71,7 @@ fi
 #        RUN TENSORFLOW BENCHMARKS       #
 ##########################################
 cd ${HOME}/playbooks/TensorFlow_benchmarks
-export PYTHONPATH=$PYTHONPATH:${HOME}/numpy/lib64/python3.6/site-packages:${HOME}/tensorflow
+export PYTHONPATH=$PYTHONPATH:${HOME}/numpy/lib64/python3.6/site-packages:${HOME}/tensorflow/tensorflow
 
 if [[ ${DEVICE} == "cpu" ]]; then
     ansible-playbook -i hosts play.yaml
