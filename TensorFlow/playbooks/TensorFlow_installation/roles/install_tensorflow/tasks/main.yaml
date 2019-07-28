@@ -1,5 +1,11 @@
 ---
 
+- name: Symlink NumPy so that TensorFlow doesn't attempt to overwrite it
+  file:
+    src: '{{ NUMPY_INSTALL_DIR }}'
+    dest: '{{ TENSORFLOW_INSTALL_DIR }}/numpy'
+    state: link
+
 - name: Find TensorFlow wheel file
   find:
     paths: '{{ TF_PIP_PACKAGE_LOCATION }}'
