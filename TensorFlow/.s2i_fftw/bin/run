@@ -78,7 +78,7 @@ else
     if [[ -z ${NUM_GPUS} ]]; then
         echo "ERROR. Missing input for number of GPUs."
     elif [[ ${NUM_GPUS} =~ ^[0-9]+$ ]] && (( NUM_GPUS > 0 )); then
-        ansible-playbook -i hosts play.yaml --extra-vars="{device: 'gpu', num_gpus: ${NUM_GPUS}}"
+        ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: ${TENSORFLOW_INSTALL_DIR}, device: 'gpu', num_gpus: ${NUM_GPUS}}"
     else
         echo "ERROR. Number of GPUs must be a positive integer."
     fi
