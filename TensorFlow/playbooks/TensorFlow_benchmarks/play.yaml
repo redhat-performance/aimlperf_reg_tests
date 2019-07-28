@@ -6,6 +6,9 @@
   # Do not edit these vars. Use --extra-vars in the command line to use a custom input value
   vars:
 
+    # Points to TensorFlow installation
+    TENSORFLOW_INSTALLATION: '{{ tf_installation | default("/usr/lib/python3.6/site-packages") }}'
+
     # Set this value to tell the benchmark suite to run on the CPU or GPU. Options: {cpu, gpu}
     LOCAL_PARAMETER_DEVICE: '{{ device | default("cpu") }}'
 
@@ -43,7 +46,7 @@
         cd {{ BENCHMARKS_DIR }}/scripts/tf_cnn_benchmarks
         python3 tf_cnn_benchmarks.py --batch_size={{ BATCH_SIZE }} --model={{ MODEL }} --local_parameter_device=cpu --variable_update=parameter_server --data_format=NHWC
       environment:
-        PYTHONPATH: "{{ lookup('env', 'HOME') }}/.local/lib/python3.6/site-packages"
+        PYTHONPATH: "{{ lookup('env', 'HOME') }}/.local/lib/python3.6/site-packages:{{ TENSORFLOW_INSTALLATION }}"
       when: LOCAL_PARAMETER_DEVICE == 'cpu'
       register: cpu_benchmark_output
 
@@ -52,7 +55,7 @@
         cd {{ BENCHMARKS_DIR }}/scripts/tf_cnn_benchmarks
         python3 tf_cnn_benchmarks.py --batch_size={{ BATCH_SIZE }} --model={{ MODEL }} --local_parameter_device=gpu --num_gpus={{ NUM_GPUS }} --variable_update=parameter_server
       environment:
-        PYTHONPATH: "{{ lookup('env', 'HOME') }}/.local/lib/python3.6/site-packages"
+        PYTHONPATH: "{{ lookup('env', 'HOME') }}/.local/lib/python3.6/site-packages:{{ TENSORFLOW_INSTALLATION }}"
       when: LOCAL_PARAMETER_DEVICE == 'gpu'
       register: gpu_benchmark_output
 

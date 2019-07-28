@@ -12,6 +12,9 @@
     # Version of TensorFlow to use
     TENSORFLOW_VERSION: '{{ tf_version | default("1.14.0") }}'
 
+    # Where to install TensorFlow to
+    TENSORFLOW_INSTALL_DIR: '{{ tf_install_dir | default("/home/tensorflow") }}'
+
     # Version of NumPy to use
     NUMPY_VERSION: '{{ np_version | default("1.16.4") }}'
 

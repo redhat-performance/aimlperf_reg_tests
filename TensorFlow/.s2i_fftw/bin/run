@@ -61,20 +61,21 @@ fi
 #      BUILD AND INSTALL TENSORFLOW      #
 ##########################################
 cd ${HOME}/playbooks/TensorFlow_installation
+TENSORFLOW_INSTALL_DIR=${HOME}/tensorflow
 if [[ ${DEVICE} == "cpu" ]]; then
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: ${RHEL_VERSION}, blas_library_dirs: ${FFTW_INSTALL_DIR}/lib, blas_include_dirs: ${FFTW_INSTALL_DIR}/include}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: ${RHEL_VERSION}, blas_library_dirs: ${FFTW_INSTALL_DIR}/lib, blas_include_dirs: ${FFTW_INSTALL_DIR}/include, tf_install_dir: ${TENSORFLOW_INSTALL_DIR}}"
 else
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: ${RHEL_VERSION}, blas_library_dirs: ${FFTW_INSTALL_DIR}/lib, blas_include_dirs: ${FFTW_INSTALL_DIR}/include, use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cudnn_install_path: '${CUDNN_INSTALL_PATH}'}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: ${RHEL_VERSION}, blas_library_dirs: ${FFTW_INSTALL_DIR}/lib, blas_include_dirs: ${FFTW_INSTALL_DIR}/include, tf_install_dir: ${TENSORFLOW_INSTALL_DIR}}, use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cudnn_install_path: '${CUDNN_INSTALL_PATH}'}"
 fi
 
 ##########################################
 #        RUN TENSORFLOW BENCHMARKS       #
 ##########################################
 cd ${HOME}/playbooks/TensorFlow_benchmarks
-export PYTHONPATH=$PYTHONPATH:${HOME}/numpy/lib64/python3.6/site-packages:${HOME}/tensorflow/tensorflow
+export PYTHONPATH=$PYTHONPATH:${HOME}/numpy/lib64/python3.6/site-packages:${HOME}/tensorflow
 
 if [[ ${DEVICE} == "cpu" ]]; then
-    ansible-playbook -i hosts play.yaml
+    ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: ${TENSORFLOW_INSTALL_DIR}}"
 else
     if [[ -z ${NUM_GPUS} ]]; then
         echo "ERROR. Missing input for number of GPUs."
