@@ -1,5 +1,10 @@
 ---
 
+- name: Make TensorFlow install directory
+  file:
+    state: directory
+    path: '{{ TENSORFLOW_INSTALL_DIR }}'
+
 - name: Symlink NumPy so that TensorFlow doesn't attempt to overwrite it
   file:
     src: '{{ NUMPY_INSTALL_DIR }}'
