@@ -99,4 +99,4 @@ fi
 ##########################################
 # PRINT OUT TENSORFLOW BENCHMARK RESULTS #
 ##########################################
-tail -n 15 ${HOME}/tensorflow_benchmarks/tf_cnn_benchmarks/resnet50-${DEVICE}-benchmark*.log
+tail -n 15 ${HOME}/tensorflow_benchmarks/tf_cnn_benchmarks/resnet50-${DEVICE}-benchmark.log
