@@ -37,7 +37,7 @@ git config --global user.email user@openshift-s2i
 FFTW_INSTALL_DIR="${HOME}/custom_fftw"
 FFTW_BUILD_DIR="${HOME}/build"
 cd ${HOME}/playbooks/FFTW_installation
-ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: '${FFTW_INSTALL_DIR}', build_dir: '${FFTW_BUILD_DIR}', rhel_version: '${RHEL_VERSION}}'"
+ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: '${FFTW_INSTALL_DIR}', build_dir: '${FFTW_BUILD_DIR}', rhel_version: '${RHEL_VERSION}'}"
 echo ""
 echo "<< SUCCESS >> FFTW built and installed!"
 echo ""
