@@ -34,8 +34,8 @@ git config --global user.email user@openshift-s2i
 ##########################################
 #         BUILD AND INSTALL FFTW         #
 ##########################################
-FFTW_INSTALL_DIR=${HOME}/custom_fftw
-FFTW_BUILD_DIR=${HOME}/build
+FFTW_INSTALL_DIR="${HOME}/custom_fftw"
+FFTW_BUILD_DIR="${HOME}/build"
 cd ${HOME}/playbooks/FFTW_installation
 ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: '${FFTW_INSTALL_DIR}', build_dir: '${FFTW_BUILD_DIR}', rhel_version: '${RHEL_VERSION}}'"
 echo ""
@@ -45,7 +45,7 @@ echo ""
 ##########################################
 #       INSTALL NCCL IF USING GPUS       #
 ##########################################
-NCCL_INSTALL_PATH=${HOME}/nccl
+NCCL_INSTALL_PATH="${HOME}/nccl"
 if [[ ${DEVICE} == "gpu" ]]; then
     cd ${HOME}/playbooks/nccl_installation
     ansible-playbook -i hosts play.yaml --extra-vars="{nccl_install_path: '${NCCL_INSTALL_PATH}', nccl_installer: '${NCCL}', cuda_path: '/usr/local/cuda'}"
@@ -57,7 +57,7 @@ fi
 ##########################################
 #      INSTALL CUDNN IF USING GPUS       #
 ##########################################
-CUDNN_INSTALL_PATH=${HOME}/cuDNN
+CUDNN_INSTALL_PATH="${HOME}/cuDNN"
 if [[ ${DEVICE} == "gpu" ]]; then
     cd ${HOME}/playbooks/cudnn_installation
     ansible-playbook -i hosts play.yaml --extra-vars="{cudnn_install_path: '${CUDNN_INSTALL_PATH}', cudnn: '${CUDNN}', cuda_path: '/usr/local/cuda'}"
@@ -70,11 +70,11 @@ fi
 #      BUILD AND INSTALL TENSORFLOW      #
 ##########################################
 cd ${HOME}/playbooks/TensorFlow_installation
-TENSORFLOW_INSTALL_DIR=${HOME}/tensorflow
+TENSORFLOW_INSTALL_DIR="${HOME}/tensorflow"
 if [[ ${DEVICE} == "cpu" ]]; then
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: ${RHEL_VERSION}, blas_library_dirs: ${FFTW_INSTALL_DIR}/lib, blas_include_dirs: ${FFTW_INSTALL_DIR}/include, tf_install_dir: ${TENSORFLOW_INSTALL_DIR}}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}'}"
 else
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: ${RHEL_VERSION}, blas_library_dirs: ${FFTW_INSTALL_DIR}/lib, blas_include_dirs: ${FFTW_INSTALL_DIR}/include, tf_install_dir: ${TENSORFLOW_INSTALL_DIR}, use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cudnn_install_path: '${CUDNN_INSTALL_PATH}'}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cudnn_install_path: '${CUDNN_INSTALL_PATH}'}"
 fi
 echo ""
 echo "<< SUCCESS >> TensorFlow + NumPy built and installed!"
@@ -85,12 +85,12 @@ echo ""
 ##########################################
 cd ${HOME}/playbooks/TensorFlow_benchmarks
 if [[ ${DEVICE} == "cpu" ]]; then
-    ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: ${TENSORFLOW_INSTALL_DIR}}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: '${TENSORFLOW_INSTALL_DIR}'}"
 else
     if [[ -z ${NUM_GPUS} ]]; then
         echo "ERROR. Missing input for number of GPUs."
     elif [[ ${NUM_GPUS} =~ ^[0-9]+$ ]] && (( NUM_GPUS > 0 )); then
-        ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: ${TENSORFLOW_INSTALL_DIR}, device: 'gpu', num_gpus: ${NUM_GPUS}}"
+        ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: '${TENSORFLOW_INSTALL_DIR}', device: 'gpu', num_gpus: '${NUM_GPUS}'}"
     else
         echo "ERROR. Number of GPUs must be a positive integer."
     fi
