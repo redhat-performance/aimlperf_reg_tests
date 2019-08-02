@@ -44,7 +44,7 @@
     - name: Run benchmarks on the CPU with synthetic data
       shell: |
         cd {{ BENCHMARKS_DIR }}/scripts/tf_cnn_benchmarks
-        python3 tf_cnn_benchmarks.py --batch_size={{ BATCH_SIZE }} --model={{ MODEL }} --local_parameter_device=cpu --variable_update=parameter_server --data_format=NHWC
+        python3 tf_cnn_benchmarks.py --batch_size={{ BATCH_SIZE }} --model={{ MODEL }} --local_parameter_device=cpu --device=cpu --variable_update=parameter_server --data_format=NHWC
       environment:
         PYTHONPATH: "{{ lookup('env', 'HOME') }}/.local/lib/python3.6/site-packages:{{ TENSORFLOW_INSTALLATION }}"
       when: LOCAL_PARAMETER_DEVICE == 'cpu'
