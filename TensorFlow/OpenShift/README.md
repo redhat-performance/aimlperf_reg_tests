@@ -39,7 +39,7 @@ Using the `-n` option calls for NFD to be used when building and running the Ten
 
 ## Automatically creating a Node
 
-If you wish to create a MachineSet and run the pod on a node with a specific instance type, use `../../generic_scripts/OpenShift/create_machineset.sh` to create a YAML file. Or you can create your own YAML file. The script is provided as a convenience.
+If you wish to create a MachineSet and run the pod on a node with a specific instance type, use `../../helper_scripts/OpenShift/create_machineset.sh` to create a YAML file. Or you can create your own YAML file. The script is provided as a convenience.
 
 Once your YAML file is created,
 
