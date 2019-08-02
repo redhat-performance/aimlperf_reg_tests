@@ -15,8 +15,8 @@
     # Set the batch size for the synthetic data
     BATCH_SIZE: '{{ batch_size | default("32") }}'
 
-    # If using GPUs, set the number of GPUs you'd like to use
-    NUM_GPUS: '{{ num_gpus | default("1") }}'
+    # Set the number of devices to use
+    NUM_DEVICES: '{{ num_devices | default("1") }}'
 
     # Model. Choose from: {resnet50, inceptionv3, resnet512}
     MODEL: '{{ model | default("resnet50") }}'
@@ -40,11 +40,13 @@
     - debug:
         msg: "Running tests on the {{ LOCAL_PARAMETER_DEVICE }} with synthetic data"
 
-    # Now it's time to run the benchmarks. We can run on CPU or GPU and use real or synthetic data
+    # Now it's time to run the benchmarks. We can run on CPU or GPU and use real or synthetic data. Whether we
+    # run on the CPU or GPU, we still set '--num_gpus' to set the number of CPUs or GPUs to use. (Yes, it's
+    # confusing.)
     - name: Run benchmarks on the CPU with synthetic data
       shell: |
         cd {{ BENCHMARKS_DIR }}/scripts/tf_cnn_benchmarks
-        python3 tf_cnn_benchmarks.py --batch_size={{ BATCH_SIZE }} --model={{ MODEL }} --local_parameter_device=cpu --device=cpu --variable_update=parameter_server --data_format=NHWC
+        python3 tf_cnn_benchmarks.py --batch_size={{ BATCH_SIZE }} --model={{ MODEL }} --local_parameter_device=cpu --device=cpu --num_gpus={{ NUM_DEVICES }} --variable_update=parameter_server --data_format=NHWC
       environment:
         PYTHONPATH: "{{ lookup('env', 'HOME') }}/.local/lib/python3.6/site-packages:{{ TENSORFLOW_INSTALLATION }}"
       when: LOCAL_PARAMETER_DEVICE == 'cpu'
@@ -53,7 +55,7 @@
     - name: Run benchmarks on the GPU with synthetic data
       shell: |
         cd {{ BENCHMARKS_DIR }}/scripts/tf_cnn_benchmarks
-        python3 tf_cnn_benchmarks.py --batch_size={{ BATCH_SIZE }} --model={{ MODEL }} --local_parameter_device=gpu --num_gpus={{ NUM_GPUS }} --variable_update=parameter_server
+        python3 tf_cnn_benchmarks.py --batch_size={{ BATCH_SIZE }} --model={{ MODEL }} --local_parameter_device=gpu --num_gpus={{ NUM_DEVICES }} --variable_update=parameter_server
       environment:
         PYTHONPATH: "{{ lookup('env', 'HOME') }}/.local/lib/python3.6/site-packages:{{ TENSORFLOW_INSTALLATION }}"
       when: LOCAL_PARAMETER_DEVICE == 'gpu'

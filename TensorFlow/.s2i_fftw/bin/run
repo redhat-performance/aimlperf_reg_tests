@@ -6,8 +6,8 @@ RHEL_VERSION=$1
 # Which device? 'cpu' or 'gpu'
 DEVICE=$2
 
-# How many GPUs? (Only required if using GPUs.)
-NUM_GPUS=$3
+# How many GPUs or CPUs to use?
+NUM_DEVICES=$3
 
 # URL to NCCL download (make sure to sign up for NVIDIA account)
 NCCL=$4
@@ -84,13 +84,18 @@ echo ""
 #        RUN TENSORFLOW BENCHMARKS       #
 ##########################################
 cd ${HOME}/playbooks/TensorFlow_benchmarks
-if [[ ${DEVICE} == "cpu" ]]; then
-    ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: '${TENSORFLOW_INSTALL_DIR}'}"
+if [[ -z ${NUM_DEVICES} ]]; then
+    echo "ERROR. Missing input for number of ${DEVICE}s."
+    exit 1
+elif [[ ${DEVICE} == "cpu" ]]; then
+    if [[ ${NUM_DEVICES} =~ ^[0-9]+$ ]] && (( NUM_DEVICES > 0 )); then
+        ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: '${TENSORFLOW_INSTALL_DIR}', num_devices: '${NUM_DEVICES}'}"
+    else
+        echo "ERROR. Number of CPUs must be a positive integer."
+    fi
 else
-    if [[ -z ${NUM_GPUS} ]]; then
-        echo "ERROR. Missing input for number of GPUs."
-    elif [[ ${NUM_GPUS} =~ ^[0-9]+$ ]] && (( NUM_GPUS > 0 )); then
-        ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: '${TENSORFLOW_INSTALL_DIR}', device: 'gpu', num_gpus: '${NUM_GPUS}'}"
+    if [[ ${NUM_DEVICES} =~ ^[0-9]+$ ]] && (( NUM_DEVICES > 0 )); then
+        ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: '${TENSORFLOW_INSTALL_DIR}', device: 'gpu', num_devices: '${NUM_DEVICES}'}"
     else
         echo "ERROR. Number of GPUs must be a positive integer."
     fi
