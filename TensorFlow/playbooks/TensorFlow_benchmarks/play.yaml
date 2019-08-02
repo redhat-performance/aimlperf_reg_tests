@@ -51,6 +51,7 @@
         PYTHONPATH: "{{ lookup('env', 'HOME') }}/.local/lib/python3.6/site-packages:{{ TENSORFLOW_INSTALLATION }}"
       when: LOCAL_PARAMETER_DEVICE == 'cpu'
       register: cpu_benchmark_output
+      ignore_errors: yes
 
     - name: Run benchmarks on the GPU with synthetic data
       shell: |
@@ -60,6 +61,7 @@
         PYTHONPATH: "{{ lookup('env', 'HOME') }}/.local/lib/python3.6/site-packages:{{ TENSORFLOW_INSTALLATION }}"
       when: LOCAL_PARAMETER_DEVICE == 'gpu'
       register: gpu_benchmark_output
+      ignore_errors: yes
 
     # Save the benchmark outputs
     - local_action: template src=cpu_benchmarks_output.j2 dest={{ BENCHMARKS_DIR }}/scripts/tf_cnn_benchmarks/{{ MODEL }}-cpu-benchmark.log
