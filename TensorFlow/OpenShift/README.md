@@ -5,16 +5,16 @@
 This folder contains files used for launching the [official TensorFlow High-Performance CNN benchmarks](https://github.com/tensorflow/benchmarks/tree/master/scripts/tf_cnn_benchmarks) as an app in OpenShift on AWS. To run, first make sure you've set up an OpenShift AWS instance and exposed your image registry (Docker, CRI-O, etc.). The instance can be either a CPU or GPU type. Once your OpenShift AWS is ready, run:
 
 ```
-$ sh run_me.sh -v <rhel_version> -v <blas_backend_to_use>
+$ sh run_me.sh -v <rhel_version> -v <blas_backend_to_use> -d <num_devices_to_use>
 ```
 
 e.g.,
 
 ```
-$ sh run_me.sh -v 7 -b fftw
+$ sh run_me.sh -v 7 -b fftw -d 24
 ```
 
-The above command will load the templates from the `templates` folder into a random AWS instance, create a build image special for the TensorFlow benchmarks, then run the benchmarks.
+The above command will load the templates from the `templates` folder into a random AWS instance, create a build image special for the TensorFlow benchmarks, then run the benchmarks on the number of CPUs specified by `-d`.
 
 ## How it Works
 
@@ -27,12 +27,12 @@ You can run `run_me.sh` multiple times if you want. It is safe to do so, as it c
 Note that if you want to build using [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery/) and run on a specific node, make sure you have it installed prior to running one of the the following commands:
 
 ```
-$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -i <instance_type> [optional args]
+$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -i <instance_type> -d <num_devices_to_use> [optional args]
 ```
 or
 
 ```
-$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -x <avx_instruction_set_name> [optional args]
+$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -x <avx_instruction_set_name> -d <num_devices_to_use> [optional args]
 ```
 
 Using the `-n` option calls for NFD to be used when building and running the TensorFlow benchmark app. Replace `<instance_type>` with the AWS instance type you want to use (e.g., m4.4xlarge, m4.large, p2.8xlarge etc.), or `<avx_instruction_set_name>` with the AVX instructions you want to use (either `no_avx`, `avx`, `avx2`, or `avx512`). Note that you cannot use both an instance type and AVX instructions at the same time. If you want to use a specific number of CPUs or GPUs, then use `-i` to choose an instance with the number of CPUs/GPUs you want to use.
@@ -128,15 +128,15 @@ $ disable_cpumanager.sh -n <node_name> -k /path/to/cpumanager-kubeletconfig.yaml
 
 ### Using CPU Manager
 
-To use CPU Manager, pass in the `-p` option and choose values for `-c` and `-m`. The `-c` option ("number of CPUs") takes in an integer, and the `-m` option ("memory size") takes in an integer in the form of `nG`, where `n` is any integer. For example, `18G`, for 18 GB.
+To use CPU Manager, pass in the `-p` option and choose values for `-d` and `-m`. The `-d` option ("number of devices") takes in an integer to specify the number of CPUs to use, and the `-m` option ("memory size") takes in an integer in the form of `nG`, where `n` is any integer. For example, `18G`, for 18 GB.
 
 
 ```
-$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -x <avx_instruction_set_name> -p -c <num_cpus> -m <nG> [optional args]
+$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -x <avx_instruction_set_name> -p -d <num_cpus> -m <nG> [optional args]
 ```
 
 or
 
 ```
-$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -i <instance_type> -p -c <num_cpus> -m <nG> [optional args]
+$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -i <instance_type> -p -d <num_cpus> -m <nG> [optional args]
 ```
