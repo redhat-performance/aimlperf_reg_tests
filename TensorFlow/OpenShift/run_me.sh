@@ -4,11 +4,13 @@ usage() {
     echo "This script launches the TensorFlow CNN High-Performance benchmark app on an AWS OpenShift cluster for RHEL 7 only (for now). Node Feature Discovery may optionally be used for selecting specific nodes, and CPU Manager may optionally be used as well."
     echo ""
     echo ""
-    echo "Usage: $0 [-v rhel_version] [-n] [-t instance_type] [-r image_registry] [-s namespace] [-i custom_imagestream_name] [-a custom_app_name] [-x instruction_set] [-p] [-c number_of_cpus] [-m memory_size] [-g]"
+    echo "Usage: $0 [-v rhel_version] [-b backend] [-d number_of_devices] [-n] [-t instance_type] [-r image_registry] [-s namespace] [-i custom_imagestream_name] [-a custom_app_name] [-x instruction_set] [-p] [-c number_of_cpus] [-m memory_size] [-g]"
     echo "  REQUIRED:"
     echo "  -v  Version of RHEL to use. Choose from: {7}. (Will be adding RHEL 8 in the future.)"
     echo ""
     echo "  -b  NumPy backend to use with TensorFlow. Choose from: {fftw, openblas}" 
+    echo ""
+    echo "  -d  Number of devices to use. Must be an integer"
     echo ""
     echo ""
     echo "  OPTIONAL:"
@@ -24,12 +26,10 @@ usage() {
     echo ""
     echo "  -a  Custom app name (this is what your app will be named). Default: tensorflow-s2i-benchmark-app-rhel7"
     echo ""
-    echo "  -p  Use CPU Manager. (Requires options -c and -m to be used!)"
-    echo "      -c  Number of CPUs to use with CPU Manager"
+    echo "  -p  Use CPU Manager. (Requires options -d and -m to be used!)"
     echo "      -m  Memory size to use with CPU Manager"
     echo ""
-    echo "  -u  Use GPUs (Requires option -t, g, -y, and -z to be used!)"
-    echo "      -g  Number of GPUs to use"
+    echo "  -u  Use GPUs (Requires option -t, -d, -y, and -z to be used!)"
     echo "      -y  NCCL download URL"
     echo "      -z  cuDNN download URL"
     exit
@@ -38,7 +38,7 @@ usage() {
 # Set default GPU usage
 USE_GPU="false"
 
-options=":h:v:b:t:nr:s:i:a:x:c:pm:l:ug:y:z:"
+options=":h:v:b:t:nr:s:i:a:x:d:pm:l:ug:y:z:"
 while getopts "$options" x
 do
     case "$x" in
@@ -75,17 +75,14 @@ do
       p)
           CPU_MANAGER="true"
           ;;
-      c)
-          N_CPUS=${OPTARG}
-          ;;
       m)
           MEMORY_SIZE=${OPTARG}
           ;;
       u)
           USE_GPU="true"
           ;;
-      g)
-          N_GPUS=${OPTARG}
+      d)
+          NUM_DEVICES=${OPTARG}
           ;;
       y)
           NCCL_URL=${OPTARG}
@@ -129,19 +126,22 @@ elif [[ ${NFD} == "nfd" ]] && [[ -z ${AVX} ]] && [[ -z ${INSTANCE_TYPE} ]]; then
     exit 1
 fi
 
+# Check number of devices passed in
+if [[ -z ${NUM_DEVICES} ]]; then
+    echo "ERROR. Number of devices must be specified with the -d option."
+    exit 1
+elif [[ ! ${NUM_DEVICES} =~ ^[0-9]+$ ]]; then
+    echo "ERROR. Number of devices is not a number. You entered: ${NUM_DEVICES}"
+    exit 1
+elif (( NUM_DEVICES <= 0 )); then
+    echo "ERROR. Number of devices must be a positive number. You entered: ${NUM_DEVICES}"
+    exit 1
+fi
+
 # Check CPU Manager options
 if [[ ${CPU_MANAGER} ]] && [[ ${USE_GPU} == "false" ]]; then
-    if [[ -z ${N_CPUS} ]]; then
-        echo "ERROR. The CPU Manager option -p was passed, but the number of CPUs (-c) was not specified."
-        exit 1
-    elif [[ -z ${MEMORY_SIZE} ]]; then
+    if [[ -z ${MEMORY_SIZE} ]]; then
         echo "ERROR. The CPU Manager option -p was passed, but the memory size (-m) was not specified."
-        exit 1
-    elif [[ ! ${N_CPUS} =~ ^[0-9]+$ ]]; then
-        echo "ERROR. Number of CPUs is not a number. You entered: ${N_CPUS}"
-        exit 1
-    elif (( N_CPUS <= 0 )); then
-        echo "ERROR. Number of CPUs must be a positive number. You entered: ${N_CPUS}"
         exit 1
     elif [[ ! ${MEMORY_SIZE} =~ ^[0-9]+G$ ]]; then
         echo "ERROR. Memory size must be in the format of <number>G. You entered: ${MEMORY_SIZE}"
@@ -154,18 +154,6 @@ fi
 
 # Check GPU options
 if [[ ${USE_GPU} == "true" ]]; then
-
-    # Make sure the user passed in a valid number of GPUs
-    if [[ -z ${N_GPUS} ]]; then
-        echo "ERROR. The GPU option -g was passed, but the number of GPUs (-g) was not specified."
-        exit 1
-    #elif [[ ${N_GPUS} =~ ^[0-9]+$ ]]; then
-    #    echo "ERROR. Number of GPUs is not a number. You entered: ${N_GPUS}"
-    #    exit 1
-    elif (( N_GPUS <= 0 )); then
-        echo "ERROR. Number of GPUs must be a positive number. You entered: ${N_GPUS}"
-        exit 1
-    fi
 
     # Make sure the user passed in a download URL for NCCL. Check it to make sure it's valid by downloading the file.
     # If the file failed to download, then the script will crash on its own.
@@ -389,30 +377,21 @@ elif [[ ! -z $build_stopped_status ]]; then
 elif [[ "${NFD}" == "nfd" ]]; then
     if [[ ! -z "${AVX}" ]]; then
         if [[ ! -z "${CPU_MANAGER}" ]]; then
-            if [[ -z ${THREAD_VALUES} ]]; then
-                oc new-app --template="${build_job_name}" \
-                           --param=IMAGESTREAM_NAME=$IS_NAME \
-                           --param=REGISTRY=$OC_REGISTRY \
-                           --param=APP_NAME=$APP_NAME \
-                           --param=NAMESPACE=$NAMESPACE \
-                           --param=N_CPUS=$N_CPUS \
-                           --param=MEMORY_SIZE=$MEMORY_SIZE
-            else
-                oc new-app --template="${build_job_name}" \
-                           --param=IMAGESTREAM_NAME=$IS_NAME \
-                           --param=REGISTRY=$OC_REGISTRY \
-                           --param=APP_NAME=$APP_NAME \
-                           --param=NAMESPACE=$NAMESPACE \
-                           --param=N_CPUS=$N_CPUS \
-                           --param=MEMORY_SIZE=$MEMORY_SIZE \
-                           --param=THREAD_VALUES=$THREAD_VALUES
-            fi
+            oc new-app --template="${build_job_name}" \
+                       --param=IMAGESTREAM_NAME=$IS_NAME \
+                       --param=REGISTRY=$OC_REGISTRY \
+                       --param=APP_NAME=$APP_NAME \
+                       --param=NAMESPACE=$NAMESPACE \
+                       --param=NUM_CPUS=$NUM_DEVICES \
+                       --param=N_CPUS=$NUM_DEVICES \
+                       --param=MEMORY_SIZE=$MEMORY_SIZE
         else
             oc new-app --template="${build_job_name}" \
                        --param=IMAGESTREAM_NAME=$IS_NAME \
                        --param=REGISTRY=$OC_REGISTRY \
                        --param=APP_NAME=$APP_NAME \
-                       --param=NAMESPACE=$NAMESPACE
+                       --param=NAMESPACE=$NAMESPACE \
+                       --param=NUM_CPUS=$NUM_DEVICES
         fi
     else
         if [[ ! -z "${CPU_MANAGER}" ]]; then
@@ -442,7 +421,8 @@ elif [[ "${NFD}" == "nfd" ]]; then
                        --param=REGISTRY=$OC_REGISTRY \
                        --param=APP_NAME=$APP_NAME \
                        --param=NAMESPACE=$NAMESPACE \
-                       --param=NUM_GPUS=$N_GPUS \
+                       --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                       --param=NUM_GPUS=$NUM_DEVICES \
                        --param=NCCL_URL=$NCCL_URL \
                        --param=CUDNN_URL=$CUDNN_URL
         else
@@ -451,7 +431,8 @@ elif [[ "${NFD}" == "nfd" ]]; then
                        --param=REGISTRY=$OC_REGISTRY \
                        --param=APP_NAME=$APP_NAME \
                        --param=NAMESPACE=$NAMESPACE \
-                       --param=INSTANCE_TYPE=$INSTANCE_TYPE
+                       --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                       --param=NUM_CPUS=$NUM_DEVICES
         fi
     fi
 else
@@ -459,7 +440,8 @@ else
                --param=IMAGESTREAM_NAME=$IS_NAME \
                --param=REGISTRY=$OC_REGISTRY \
                --param=APP_NAME=$APP_NAME \
-               --param=NAMESPACE=$NAMESPACE
+               --param=NAMESPACE=$NAMESPACE \
+               --param=NUM_CPUS=$NUM_DEVICES
 fi
 
 rm statuses.txt

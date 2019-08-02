@@ -23,7 +23,7 @@ objects:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
-          args: ["${RHEL_VERSION}", "cpu", " ", " ", " "]
+          args: ["${RHEL_VERSION}", "cpu", "${NUM_CPUS}", " ", " "]
         restartPolicy: "Never"
         nodeSelector:
           beta.kubernetes.io/instance-type: "${INSTANCE_TYPE}"
@@ -54,3 +54,8 @@ parameters:
   name: "RHEL_VERSION"
   from: '[0-9]{1}'
   value: "7"
+- description: "Number of CPUs to use (must be an integer)"
+  name: "NUM_CPUS"
+  from: '[0-9]{5}'
+  value: ""
+  required: false
