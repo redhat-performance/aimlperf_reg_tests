@@ -3,8 +3,8 @@ kind: "Template"
 metadata:
   annotations:
     description: "Template to run a TensorFlow build job with CPU Manager"
-    tags: "tensorflow-gpu-build-job"
-  name: "tensorflow-gpu-build-job"
+    tags: "tensorflow-nfd-build-job-gpu"
+  name: "tensorflow-nfd-build-job-gpu"
 objects:
 - apiVersion: "batch/v1"
   kind: "Job"
@@ -34,10 +34,6 @@ objects:
                   operator: "In"
                   values:
                   - "${INSTANCE_TYPE}"
-                - key: "cpumanager"
-                  operator: "In"
-                  values:
-                  - "true"
 parameters:
 - description: "ImageStream name"
   name: "IMAGESTREAM_NAME"
