@@ -23,6 +23,7 @@ objects:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
+          args: ["${RHEL_VERSION}", "cpu", " ", " ", " "]
         restartPolicy: "Never"
         nodeSelector:
           beta.kubernetes.io/instance-type: "${INSTANCE_TYPE}"
@@ -57,3 +58,7 @@ parameters:
 - description: "AWS instance type"
   name: "INSTANCE_TYPE"
   value: "m4.4xlarge"
+- description: "Version of RHEL to use"
+  name: "RHEL_VERSION"
+  from: '[0-9]{1}'
+  value: "7"
