@@ -1,5 +1,94 @@
 ---
 
+# First step is to determine if we have any AVX* instructions that we can take advantage of
+- name: Determine if we have AVX instructions
+  shell: |
+    avx=$(lscpu | grep 'Flags' | grep avx)
+    echo $avx
+  register: HAVE_AVX
+
+- name: Determine if we have AVX2 instructions
+  shell: |
+    avx2=$(lscpu | grep 'Flags' | grep avx2)
+    echo $avx2
+  register: HAVE_AVX2
+
+- name: Determine if we have AVX512 instructions
+  shell: |
+    avx512=$(lscpu | grep 'Flags' | grep avx512)
+    echo $avx512
+  register: HAVE_AVX512
+
+# Next step is to determine if we have FMA instructions that we can take advantage of
+- name: Determine if we have FMA instructions
+  shell: |
+    fma=$(lscpu | grep 'Flags' | grep fma)
+    echo $fma
+  register: HAVE_FMA
+
+# Now determine SSE* instructions
+- name: Determine if we have SSE2 instructions
+  shell: |
+    sse2=$(lscpu | grep 'Flags' | grep sse2)
+    echo $sse2
+  register: HAVE_SSE2
+
+- name: Determine if we have SSE3 instructions
+  shell: |
+    sse3=$(lscpu | grep 'Flags' | grep sse3)
+    echo $sse3
+  register: HAVE_SSE3
+
+- name: Determine if we have SSE4.1 instructions
+  shell: |
+    sse4_1=$(lscpu | grep 'Flags' | grep sse4_1)
+    echo $sse4_1
+  register: HAVE_SSE4_1
+
+- name: Determine if we have SSE4.2 instructions
+  shell: |
+    sse4_2=$(lscpu | grep 'Flags' | grep sse4_2)
+    echo $sse4_2
+  register: HAVE_SSE4_2
+
+# Now that we've gathered information on optimization flags, let's set them appropriately
+- name: Set AVX copt flag
+  shell: if [[ ! -z '{{ HAVE_AVX.stdout }}' ]]; then echo "--copt=-mavx"; else echo " "; fi
+  register: ENABLE_AVX
+
+- name: Set AVX2 copt flag
+  shell: if [[ ! -z '{{ HAVE_AVX2.stdout }}' ]]; then echo "--copt=-mavx2"; else echo " "; fi
+  register: ENABLE_AVX2
+
+- name: Set AVX512 copt flag
+  shell: if [[ ! -z '{{ HAVE_AVX512.stdout }}' ]]; then echo "--copt=-mavx512"; else echo " "; fi
+  register: ENABLE_AVX512
+
+- name: Set FMA copt flag
+  shell: if [[ ! -z '{{ HAVE_FMA.stdout }}' ]]; then echo "--copt=-mfma"; else echo " "; fi
+  register: ENABLE_FMA
+
+- name: Set SSE2 copt flag
+  shell: if [[ ! -z '{{ HAVE_SSE2.stdout }}' ]]; then echo "--copt=-msse2"; else echo " "; fi
+  register: ENABLE_SSE2
+
+- name: Set SSE3 copt flag
+  shell: if [[ ! -z '{{ HAVE_SSE3.stdout }}' ]]; then echo "--copt=-msse3"; else echo " "; fi
+  register: ENABLE_SSE3
+
+- name: Set SSE4.1 copt flag
+  shell: if [[ ! -z '{{ HAVE_SSE4_1.stdout }}' ]]; then echo "--copt=-msse4.1"; else echo " "; fi
+  register: ENABLE_SSE4_1
+
+- name: Set SSE4.2 copt flag
+  shell: if [[ ! -z '{{ HAVE_SSE4_2.stdout }}' ]]; then echo "--copt=-msse4.2"; else echo " "; fi
+  register: ENABLE_SSE4_2
+
+# Now let's print out our final compilation flags
+- debug:
+    msg: "Build flags: {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }}"
+
+# Now configure TensorFlow for the CPU
 - name: Configure TensorFlow for the CPU
   shell: |
     cd {{ TENSORFLOW_BUILD_DIR }} 
@@ -37,6 +126,7 @@
   register: cudnn_version
   when: USE_CPU == 'no' and USE_GPU == 'yes'
 
+# Now configure TensorFlow for the GPU
 - name: Configure TensorFlow for the GPU
   shell: |
     cd {{ TENSORFLOW_BUILD_DIR }} 
@@ -67,19 +157,24 @@
   register: tensorflow_configure_log_gpu
   when: USE_CPU == 'no' and USE_GPU == 'yes'
 
+# Save CPU configure log (if we're using the CPU)
 - local_action: template src=tensorflow_configure_log_cpu.j2 dest={{ TENSORFLOW_BUILD_DIR }}/configure.log
   when: USE_CPU == 'yes' and USE_GPU == 'no'
 
+# Save GPU configure log (if we're using the GPU)
 - local_action: template src=tensorflow_configure_log_gpu.j2 dest={{ TENSORFLOW_BUILD_DIR }}/configure.log
   when: USE_CPU == 'no' and USE_GPU == 'yes'
 
+# Print out where the configure logs have been saved to
 - debug:
     msg: "TensorFlow config logs saved to {{ TENSORFLOW_BUILD_DIR }}/configure.log"
 
+# Now it's time to build TensorFlow for the CPU. We want to use the optimization flags that we
+# found earlier, if applicable.
 - name: Build TensorFlow for the CPU
   shell: |
     cd {{ TENSORFLOW_BUILD_DIR }}
-    bazel build //tensorflow/tools/pip_package:build_pip_package
+    bazel build --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} -k //tensorflow/tools/pip_package:build_pip_package
   when: USE_CPU == 'yes' and USE_GPU == 'no'
   environment:
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core'
@@ -91,7 +186,7 @@
 - name: Build TensorFlow for the GPU
   shell: |
     cd {{ TENSORFLOW_BUILD_DIR }}
-    bazel build --config=cuda //tensorflow/tools/pip_package:build_pip_package
+    bazel build --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }}--config=cuda -k //tensorflow/tools/pip_package:build_pip_package
   when: USE_CPU == 'no' and USE_GPU == 'yes'
   environment:
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core'
