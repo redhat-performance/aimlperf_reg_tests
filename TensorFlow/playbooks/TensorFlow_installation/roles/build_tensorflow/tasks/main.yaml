@@ -13,11 +13,23 @@
     echo $avx2
   register: HAVE_AVX2
 
-- name: Determine if we have AVX512 instructions
+- name: Determine if we have AVX512F instructions
   shell: |
-    avx512=$(lscpu | grep 'Flags' | grep avx512)
-    echo $avx512
-  register: HAVE_AVX512
+    avx512f=$(lscpu | grep 'Flags' | grep avx512f)
+    echo $avx512f
+  register: HAVE_AVX512F
+
+- name: Determine if we have AVX512DQ instructions
+  shell: |
+    avx512dq=$(lscpu | grep 'Flags' | grep avx512dq)
+    echo $avx512dq
+  register: HAVE_AVX512DQ
+
+- name: Determine if we have AVX512CD instructions
+  shell: |
+    avx512cd=$(lscpu | grep 'Flags' | grep avx512cd)
+    echo $avx512cd
+  register: HAVE_AVX512CD
 
 # Next step is to determine if we have FMA instructions that we can take advantage of
 - name: Determine if we have FMA instructions
@@ -61,7 +73,7 @@
   register: ENABLE_AVX2
 
 - name: Set AVX512 copt flag
-  shell: if [[ ! -z '{{ HAVE_AVX512.stdout }}' ]]; then echo "--copt=-mavx512"; else echo ""; fi
+  shell: if [[ ! -z '{{ HAVE_AVX512F.stdout }}' ]]; then echo "--copt=-mavx512f"; elif [[ ! -z '{{ HAVE_AVX512DQ }}' ]]; then echo "--copt=-mavx512dq"; elif [[ ! -z '{{ HAVE_AVX512CD }}' ]]; then echo "--copt=-mavx512cd"; else echo ""; fi
   register: ENABLE_AVX512
 
 - name: Set FMA copt flag
