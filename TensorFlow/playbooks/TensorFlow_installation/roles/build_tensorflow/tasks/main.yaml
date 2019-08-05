@@ -53,35 +53,35 @@
 
 # Now that we've gathered information on optimization flags, let's set them appropriately
 - name: Set AVX copt flag
-  shell: if [[ ! -z '{{ HAVE_AVX.stdout }}' ]]; then echo "--copt=-mavx"; else echo " "; fi
+  shell: if [[ ! -z '{{ HAVE_AVX.stdout }}' ]]; then echo "--copt=-mavx"; else echo ""; fi
   register: ENABLE_AVX
 
 - name: Set AVX2 copt flag
-  shell: if [[ ! -z '{{ HAVE_AVX2.stdout }}' ]]; then echo "--copt=-mavx2"; else echo " "; fi
+  shell: if [[ ! -z '{{ HAVE_AVX2.stdout }}' ]]; then echo "--copt=-mavx2"; else echo ""; fi
   register: ENABLE_AVX2
 
 - name: Set AVX512 copt flag
-  shell: if [[ ! -z '{{ HAVE_AVX512.stdout }}' ]]; then echo "--copt=-mavx512"; else echo " "; fi
+  shell: if [[ ! -z '{{ HAVE_AVX512.stdout }}' ]]; then echo "--copt=-mavx512"; else echo ""; fi
   register: ENABLE_AVX512
 
 - name: Set FMA copt flag
-  shell: if [[ ! -z '{{ HAVE_FMA.stdout }}' ]]; then echo "--copt=-mfma"; else echo " "; fi
+  shell: if [[ ! -z '{{ HAVE_FMA.stdout }}' ]]; then echo "--copt=-mfma"; else echo ""; fi
   register: ENABLE_FMA
 
 - name: Set SSE2 copt flag
-  shell: if [[ ! -z '{{ HAVE_SSE2.stdout }}' ]]; then echo "--copt=-msse2"; else echo " "; fi
+  shell: if [[ ! -z '{{ HAVE_SSE2.stdout }}' ]]; then echo "--copt=-msse2"; else echo ""; fi
   register: ENABLE_SSE2
 
 - name: Set SSE3 copt flag
-  shell: if [[ ! -z '{{ HAVE_SSE3.stdout }}' ]]; then echo "--copt=-msse3"; else echo " "; fi
+  shell: if [[ ! -z '{{ HAVE_SSE3.stdout }}' ]]; then echo "--copt=-msse3"; else echo ""; fi
   register: ENABLE_SSE3
 
 - name: Set SSE4.1 copt flag
-  shell: if [[ ! -z '{{ HAVE_SSE4_1.stdout }}' ]]; then echo "--copt=-msse4.1"; else echo " "; fi
+  shell: if [[ ! -z '{{ HAVE_SSE4_1.stdout }}' ]]; then echo "--copt=-msse4.1"; else echo ""; fi
   register: ENABLE_SSE4_1
 
 - name: Set SSE4.2 copt flag
-  shell: if [[ ! -z '{{ HAVE_SSE4_2.stdout }}' ]]; then echo "--copt=-msse4.2"; else echo " "; fi
+  shell: if [[ ! -z '{{ HAVE_SSE4_2.stdout }}' ]]; then echo "--copt=-msse4.2"; else echo ""; fi
   register: ENABLE_SSE4_2
 
 # Now let's print out our final compilation flags
