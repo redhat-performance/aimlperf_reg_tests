@@ -1,6 +1,8 @@
 ---
 
 TENSORFLOW_BUILD_DIR: "{{ lookup('env', 'HOME') }}/build/tensorflow"
+TENSORFLOW_AVX512_MIN_GCC_VER: 4
+TENSORFLOW_AVX512_MIN_GCC_REL: 9
 NUMPY_BUILD_DIR: "{{ lookup('env', 'HOME') }}/build/numpy"
 NUMPY_INSTALL_DIR: "{{ lookup('env', 'HOME') }}/numpy"
 FFTW_RHEL7_LIB_NAMES: fftw

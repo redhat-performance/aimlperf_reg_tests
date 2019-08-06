@@ -1,6 +1,20 @@
 ---
 
-# First step is to determine if we have any AVX* instructions that we can take advantage of
+# Before we gather information about AVX*, SSE*, FMA, etc. instructions, let's get the
+# version of gcc
+- name: Determine gcc version
+  shell: rpm -qa gcc | cut -d"-" -f2
+  register: GCC_VERSION
+
+- name: Determine gcc main version
+  shell: echo '{{ GCC_VERSION.stdout }}' | cut -d"." -f 1
+  register: GCC_MAIN_VERSION
+
+- name: Determine additional release info
+  shell: echo '{{ GCC_VERSION.stdout }}' | cut -d"." -f 2
+  register: GCC_RELEASE
+
+# Next step is to determine if we have any AVX* instructions that we can take advantage of
 - name: Determine if we have AVX instructions
   shell: |
     avx=$(lscpu | grep 'Flags' | grep avx)
@@ -15,23 +29,23 @@
 
 # XXX:TODO --> Make check to see which version of gcc is being used. TensorFlow requires
 # gcc version 4.9 or greater if using -mavx512f, -mavx512dq, etc.
-#- name: Determine if we have AVX512F instructions
-#  shell: |
-#    avx512f=$(lscpu | grep 'Flags' | grep avx512f)
-#    echo $avx512f
-#  register: HAVE_AVX512F
-#
-#- name: Determine if we have AVX512DQ instructions
-#  shell: |
-#    avx512dq=$(lscpu | grep 'Flags' | grep avx512dq)
-#    echo $avx512dq
-#  register: HAVE_AVX512DQ
-#
-#- name: Determine if we have AVX512CD instructions
-#  shell: |
-#    avx512cd=$(lscpu | grep 'Flags' | grep avx512cd)
-#    echo $avx512cd
-#  register: HAVE_AVX512CD
+- name: Determine if we have AVX512F instructions
+  shell: |
+    avx512f=$(lscpu | grep 'Flags' | grep avx512f)
+    echo $avx512f
+  register: HAVE_AVX512F
+
+- name: Determine if we have AVX512DQ instructions
+  shell: |
+    avx512dq=$(lscpu | grep 'Flags' | grep avx512dq)
+    echo $avx512dq
+  register: HAVE_AVX512DQ
+
+- name: Determine if we have AVX512CD instructions
+  shell: |
+    avx512cd=$(lscpu | grep 'Flags' | grep avx512cd)
+    echo $avx512cd
+  register: HAVE_AVX512CD
 
 # Next step is to determine if we have FMA instructions that we can take advantage of
 - name: Determine if we have FMA instructions
@@ -74,9 +88,9 @@
   shell: if [[ ! -z '{{ HAVE_AVX2.stdout }}' ]]; then echo "--copt=-mavx2"; else echo ""; fi
   register: ENABLE_AVX2
 
-#- name: Set AVX512 copt flag
-#  shell: if [[ ! -z '{{ HAVE_AVX512F.stdout }}' ]]; then echo "--copt=-mavx512f"; elif [[ ! -z '{{ HAVE_AVX512DQ.stdout }}' ]]; then echo "--copt=-mavx512dq"; elif [[ ! -z '{{ HAVE_AVX512CD.stdout }}' ]]; then echo "--copt=-mavx512cd"; else echo ""; fi
-#  register: ENABLE_AVX512
+- name: Set AVX512 copt flag
+  shell: if (( '{{ GCC_MAIN_VERSION.stdout }}' < '{{ TENSORFLOW_AVX512_MIN_GCC_VER }}' )); then echo ""; elif (( '{{ GCC_MAIN_RELEASE.stdout }}' < '{{ TENSORFLOW_AVX512_MIN_GCC_REL }}' )); then echo ""; elif [[ ! -z '{{ HAVE_AVX512F.stdout }}' ]]; then echo "--copt=-mavx512f"; elif [[ ! -z '{{ HAVE_AVX512DQ.stdout }}' ]]; then echo "--copt=-mavx512dq"; elif [[ ! -z '{{ HAVE_AVX512CD.stdout }}' ]]; then echo "--copt=-mavx512cd"; else echo ""; fi
+  register: ENABLE_AVX512
 
 - name: Set FMA copt flag
   shell: if [[ ! -z '{{ HAVE_FMA.stdout }}' ]]; then echo "--copt=-mfma"; else echo ""; fi
@@ -100,7 +114,7 @@
 
 # Now let's print out our final compilation flags
 - debug:
-    msg: "Build flags: {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }}"
+    msg: "Build flags: {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }}"
 
 # Now configure TensorFlow for the CPU
 - name: Configure TensorFlow for the CPU
@@ -188,7 +202,7 @@
 - name: Build TensorFlow for the CPU
   shell: |
     cd {{ TENSORFLOW_BUILD_DIR }}
-    bazel build --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} -k //tensorflow/tools/pip_package:build_pip_package
+    bazel build --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} -k //tensorflow/tools/pip_package:build_pip_package
   when: USE_CPU == 'yes' and USE_GPU == 'no'
   environment:
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core'
