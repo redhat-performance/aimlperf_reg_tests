@@ -8,9 +8,10 @@
     RHEL_VERSION: '{{ rhel_version | default("7") }}'
 
   tasks:
-  - name: yum update (if using RHEL 7)
-    yum: name=* state=latest
-    when: RHEL_VERSION == "7"
+  # XXX:TODO --> For UBI-7, `yum update` is broken.
+  #- name: yum update (if using RHEL 7)
+  #  yum: name=* state=latest
+  #  when: RHEL_VERSION == "7"
 
   - name: Install EPEL (if using RHEL 7)
     yum: pkg=https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
