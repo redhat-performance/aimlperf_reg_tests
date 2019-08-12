@@ -1,0 +1,118 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  # Do not edit these vars. Use --extra-vars in the command line to use a custom input value
+  vars:
+
+    # Points to where GCC will be built
+    gcc_build_path: '{{ build_path | default("/home/build/gcc") }}'
+
+    # Points to where GCC will be installed
+    gcc_install_prefix: '{{ install_prefix | default("/usr/local") }}'
+
+    # Specify which GCC version to install
+    gcc_version: '{{ version | default("9.2.0") }}'
+
+    # GNU mirror, which contains all the gnu packages. See https://www.gnu.org/prep/ftp.html for other mirrors. You shouldn't
+    # need to change this value at all. However, you may need to change it if this default mirror is dead.
+    mirror: '{{ gnu_mirror | default("http://mirror.rit.edu/gnu") }}'
+
+  tasks:
+
+    # First, install required packages for building gcc. (Note that all gcc packages require an
+    # existing installation of gcc in order to be built.)
+    - name: Install required yum packages for building gcc
+      yum:
+        name:
+          - bzip2
+          - gcc
+          - gcc-c++
+          - wget
+        state: present
+
+    # Next, delete existing custom gcc installation so that we can install it after we rebuild it
+    - name: Delete existing custom gcc-{{ gcc_version }} installation
+      file:
+        state: absent
+        path: '{{ gcc_install_prefix }}/gcc-{{ gcc_version }}'
+
+    # Also delete existing custom gcc build dir so that we can rebuild it
+    - name: Delete existing custom gcc-{{ gcc_version }} build folder
+      file:
+        state: absent
+        path: '{{ gcc_build_path }}'
+
+    # Check to see if GCC install prefix exists (e.g., if it's something like /usr/local or a user-created folder such as /home/gcc)
+    - name: Check for {{ gcc_install_prefix }}
+      stat:
+        path: '{{ gcc_install_prefix }}'
+      register: gcc_install_prefix_stat
+
+    # Now, recreate custom gcc installation folder if it doesn't exist
+    - name: Create {{ gcc_install_prefix }} if it doesn't exist
+      file:
+        state: directory
+        path: '{{ gcc_install_prefix }}'
+      when: gcc_install_prefix_stat.stat.exists == false
+
+    # Also, recreate custom gcc build folder
+    - name: Create {{ gcc_build_path }}
+      file:
+        state: directory
+        path: '{{ gcc_build_path }}'
+
+    # Next, we need to get the gcc tar ball
+    - name: Download gcc-{{ gcc_version }}
+      unarchive:
+        src: '{{ mirror }}/gcc/gcc-{{ gcc_version }}/gcc-{{ gcc_version }}.tar.gz'
+        dest: '{{ gcc_build_path }}'
+        remote_src: yes
+
+    # Now we can download gcc required packages
+    - name: Download gcc prerequisites
+      shell: |
+        cd {{ gcc_build_path }}/gcc-{{ gcc_version }}
+        contrib/download_prerequisites
+ 
+    # Make folder to build gcc in
+    - name: Create gcc build folder where configures, Makefiles, etc. will reside
+      file:
+        state: directory
+        path: '{{ gcc_build_path }}/build'
+
+    - debug:
+        msg: '{{ gcc_build_path }}/build'
+
+    # Let's configure gcc
+    - name: Configure gcc
+      shell: |
+        cd {{ gcc_build_path }}/build
+        ../gcc-{{ gcc_version }}/configure --build=x86_64-linux-gnu \
+                                           --host=x86_64-linux-gnu \
+                                           --target=x86_64-linux-gnu \
+                                           --prefix={{ gcc_install_prefix }} \
+                                           --enable-checking=release \
+                                           --enable-languages=c,c++,fortran \
+                                           --disable-multilib \
+                                           --program-suffix=-{{ gcc_version }} \
+                                           --enable-shared
+
+    # Make gcc. (This will take quite a while, ranging from about 30 minutes to 3 hours.)
+    - name: Make gcc. This may take a while...
+      make:
+        target: all
+        chdir: '{{ gcc_build_path }}/build'
+        params:
+          LIBRARY_PATH: '/usr/lib64'
+
+    # Install the built gcc
+    - name: Install the built gcc
+      make:
+        target: install-strip
+        chdir: '{{ gcc_build_path }}/build'
+
+    # Tell user where gcc was installed to
+    - debug:
+        msg: 'GCC ver {{ gcc_version }} successfully installed to {{ gcc_install_prefix }}/gcc-{{ gcc_version }}'

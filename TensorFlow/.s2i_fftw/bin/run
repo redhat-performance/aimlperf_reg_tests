@@ -9,15 +9,40 @@ DEVICE=$2
 # How many GPUs or CPUs to use?
 NUM_DEVICES=$3
 
+# C compiler? e.g., '/usr/bin/gcc'
+CC=$4
+
 # URL to NCCL download (make sure to sign up for NVIDIA account)
-NCCL=$4
+NCCL=$5
 
 # URL to cuDNN download (make sure to sign up for NVIDIA account)
-CUDNN=$5
+CUDNN=$6
 
 # Check device input
 if [[ ${DEVICE} != "cpu" ]] && [[ ${DEVICE} != "gpu" ]]; then
     echo "ERROR. Unrecognized device '${DEVICE}'"
+    exit 1
+fi
+
+# Check number of devices
+if [[ -z ${NUM_DEVICES} ]]; then
+    echo "ERROR. Number of devices is required! Please pass in the number of devices to use."
+    exit 1
+elif [[ ${NUM_DEVICES} =~ ^[0-9]+$ ]] && (( NUM_DEVICES > 0 )); then
+    echo "Using ${NUM_DEVICES} ${DEVICE}s"
+else
+    echo "ERROR. Number of devices must be a positive integer. You entered: ${NUM_DEVICES}"
+    exit 1
+fi
+
+# Check C compiler
+if [[ -z ${CC} ]]; then
+    CC="gcc"
+    echo "Using CC=`which gcc`"
+elif [[ ! -x ${CC} ]]; then
+    echo "Using CC=${CC}"
+else
+    echo "ERROR. Could not find ${CC}. Did you provide the right C compiler (GCC) path?"
     exit 1
 fi
 
@@ -37,7 +62,7 @@ git config --global user.email user@openshift-s2i
 FFTW_INSTALL_DIR="${HOME}/custom_fftw"
 FFTW_BUILD_DIR="${HOME}/build"
 cd ${HOME}/playbooks/FFTW_installation
-ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: '${FFTW_INSTALL_DIR}', build_dir: '${FFTW_BUILD_DIR}', rhel_version: '${RHEL_VERSION}'}"
+ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: '${FFTW_INSTALL_DIR}', build_dir: '${FFTW_BUILD_DIR}', rhel_version: '${RHEL_VERSION}', cc: '${CC}'}"
 echo ""
 echo "<< SUCCESS >> FFTW built and installed!"
 echo ""
@@ -72,9 +97,9 @@ fi
 cd ${HOME}/playbooks/TensorFlow_installation
 TENSORFLOW_INSTALL_DIR="${HOME}/tensorflow"
 if [[ ${DEVICE} == "cpu" ]]; then
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}'}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}'}"
 else
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cudnn_install_path: '${CUDNN_INSTALL_PATH}'}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cudnn_install_path: '${CUDNN_INSTALL_PATH}'}"
 fi
 echo ""
 echo "<< SUCCESS >> TensorFlow + NumPy built and installed!"
@@ -84,21 +109,10 @@ echo ""
 #        RUN TENSORFLOW BENCHMARKS       #
 ##########################################
 cd ${HOME}/playbooks/TensorFlow_benchmarks
-if [[ -z ${NUM_DEVICES} ]]; then
-    echo "ERROR. Missing input for number of ${DEVICE}s."
-    exit 1
-elif [[ ${DEVICE} == "cpu" ]]; then
-    if [[ ${NUM_DEVICES} =~ ^[0-9]+$ ]] && (( NUM_DEVICES > 0 )); then
-        ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: '${TENSORFLOW_INSTALL_DIR}', num_devices: '${NUM_DEVICES}'}"
-    else
-        echo "ERROR. Number of CPUs must be a positive integer."
-    fi
+if [[ ${DEVICE} == "cpu" ]]; then
+    ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: '${TENSORFLOW_INSTALL_DIR}', num_devices: '${NUM_DEVICES}'}"
 else
-    if [[ ${NUM_DEVICES} =~ ^[0-9]+$ ]] && (( NUM_DEVICES > 0 )); then
-        ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: '${TENSORFLOW_INSTALL_DIR}', device: 'gpu', num_devices: '${NUM_DEVICES}'}"
-    else
-        echo "ERROR. Number of GPUs must be a positive integer."
-    fi
+    ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: '${TENSORFLOW_INSTALL_DIR}', device: 'gpu', num_devices: '${NUM_DEVICES}'}"
 fi
 
 ##########################################

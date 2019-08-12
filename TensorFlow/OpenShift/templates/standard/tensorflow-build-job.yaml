@@ -23,7 +23,7 @@ objects:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
-          args: ["${RHEL_VERSION}", "${DEVICE}", "${NUM_GPUS}", "${NCCL_URL}", "${CUDNN_URL}"]
+          args: ["${RHEL_VERSION}", "${DEVICE}", "${NUM_CPUS}", "${CC}", " ", " "]
         restartPolicy: "Never"
 parameters:
 - description: "ImageStream name"
@@ -50,21 +50,12 @@ parameters:
   from: '[0-9]{1}'
   value: "7"
   required: true
-- description: "Device to use (cpu or gpu)"
-  name: "DEVICE"
-  from: '[A-Z]{3}'
-  value: "cpu"
-  required: true
-- description: "Number of GPUs to use (must be an integer)"
-  name: "NUM_GPUS"
+- description: "Number of CPUs to use (must be an integer)"
+  name: "NUM_CPUS"
   from: '[0-9]{5}'
   value: ""
   required: false
-- description: "URL to download NCCL from"
-  name: "NCCL_URL"
-  required: false
-  value: ""
-- description: "URL to download cuDNN from"
-  name: "CUDNN_URL"
-  required: false
-  value: ""
+- description: "Path to gcc"
+  name: "CC"
+  value: "/usr/bin/gcc"
+  required: true

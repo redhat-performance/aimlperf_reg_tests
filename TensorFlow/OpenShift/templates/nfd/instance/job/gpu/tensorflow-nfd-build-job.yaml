@@ -23,7 +23,7 @@ objects:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
-          args: ["${RHEL_VERSION}", "gpu", "${NUM_GPUS}", "${NCCL_URL}", "${CUDNN_URL}"]
+          args: ["${RHEL_VERSION}", "gpu", "${NUM_GPUS}", "${CC}", "${NCCL_URL}", "${CUDNN_URL}"]
         restartPolicy: "Never"
         affinity:
           nodeAffinity:
@@ -76,3 +76,7 @@ parameters:
   name: "CUDNN_URL"
   required: false
   value: ""
+- description: "Path to gcc"
+  name: "CC"
+  value: "/usr/bin/gcc"
+  required: true

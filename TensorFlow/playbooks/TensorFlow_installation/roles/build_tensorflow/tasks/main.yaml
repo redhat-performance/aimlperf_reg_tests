@@ -3,7 +3,7 @@
 # Before we gather information about AVX*, SSE*, FMA, etc. instructions, let's get the
 # version of gcc
 - name: Determine gcc version
-  shell: rpm -qa gcc | cut -d"-" -f2
+  shell: {{ CC }} --version | xargs | cut -d " " -f 3
   register: GCC_VERSION
 
 - name: Determine gcc main version
@@ -122,7 +122,7 @@
     cd {{ TENSORFLOW_BUILD_DIR }} 
     ./configure
   environment:
-    GCC_HOST_COMPILER_PATH: '/usr/bin/gcc'
+    GCC_HOST_COMPILER_PATH: '{{ CC }}'
     CC_OPT_FLAGS: '-march=native'
     TF_DOWNLOAD_CLANG: '0'
     TF_ENABLE_XLA: '0'
@@ -160,7 +160,7 @@
     cd {{ TENSORFLOW_BUILD_DIR }} 
     ./configure
   environment:
-    GCC_HOST_COMPILER_PATH: '/usr/bin/gcc'
+    GCC_HOST_COMPILER_PATH: '{{ CC }}'
     CC_OPT_FLAGS: '-march=native'
     CUDA_TOOLKIT_PATH: '/usr/local/cuda'
     CUDNN_INSTALL_PATH: '{{ CUDNN_INSTALL_PATH }}'

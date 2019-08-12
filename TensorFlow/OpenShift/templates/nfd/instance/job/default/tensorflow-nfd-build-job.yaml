@@ -23,7 +23,7 @@ objects:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
-          args: ["${RHEL_VERSION}", "cpu", "${NUM_CPUS}", " ", " "]
+          args: ["${RHEL_VERSION}", "cpu", "${NUM_CPUS}", "${CC}", " ", " "]
         restartPolicy: "Never"
         nodeSelector:
           beta.kubernetes.io/instance-type: "${INSTANCE_TYPE}"
@@ -59,3 +59,7 @@ parameters:
   from: '[0-9]{5}'
   value: ""
   required: false
+- description: "Path to gcc"
+  name: "CC"
+  value: "/usr/bin/gcc"
+  required: true

@@ -35,6 +35,9 @@
     BLAS_LIB_DIRS: '{{ blas_library_dirs | default("/usr/lib64:/usr/lib") }}'
     BLAS_INCLUDE_DIRS: '{{ blas_include_dirs | default("/usr/include") }}'
 
+    # Which GCC to use
+    CC: '{{ cc | default("/usr/bin/gcc") }}'
+
   roles:
     # Setup NumPy and TensorFlow build folders
     - role: setup

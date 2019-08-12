@@ -4,7 +4,7 @@ usage() {
     echo "This script launches the TensorFlow CNN High-Performance benchmark app on an AWS OpenShift cluster for RHEL 7 only (for now). Node Feature Discovery may optionally be used for selecting specific nodes, and CPU Manager may optionally be used as well."
     echo ""
     echo ""
-    echo "Usage: $0 [-v rhel_version] [-b backend] [-d number_of_devices] [-n] [-t instance_type] [-r image_registry] [-s namespace] [-i custom_imagestream_name] [-a custom_app_name] [-x instruction_set] [-p] [-c number_of_cpus] [-m memory_size] [-g]"
+    echo "Usage: $0 [-v rhel_version] [-b backend] [-d number_of_devices] [-n] [-t instance_type] [-r image_registry] [-s namespace] [-i custom_imagestream_name] [-a custom_app_name] [-x instruction_set] [-p] [-c gcc_path] [-m memory_size] [-g]"
     echo "  REQUIRED:"
     echo "  -v  Version of RHEL to use. Choose from: {7}. (Will be adding RHEL 8 in the future.)"
     echo ""
@@ -14,6 +14,8 @@ usage() {
     echo ""
     echo ""
     echo "  OPTIONAL:"
+    echo "  -c  C compiler (gcc). e.g., '/usr/bin/gcc'"
+    echo ""
     echo "  -n  Use NFD. (Requires option -i *or* -x to be used!)"
     echo "      -i  Custom ImageStream name (this is what your image will be named). Default: fftw-rhel<rhel-version>"
     echo "      -x  Use no-AVX, AVX, AVX2, or AVX512 instructions. Choose from: {no_avx, avx, avx2, avx512}. Currently cannot be combined with -i (this is a TODO)"
@@ -38,7 +40,7 @@ usage() {
 # Set default GPU usage
 USE_GPU="false"
 
-options=":h:v:b:t:nr:s:i:a:x:d:pm:l:ug:y:z:"
+options=":h:v:b:t:nr:s:i:a:x:d:pm:l:ug:y:z:c:"
 while getopts "$options" x
 do
     case "$x" in
@@ -90,6 +92,9 @@ do
       z)
           CUDNN_URL=${OPTARG}
           ;;
+      c)
+          GCC=${OPTARG}
+          ;;
       *)
           usage
           ;;
@@ -110,6 +115,11 @@ if [[ ${BACKEND} != "fftw" ]] && [[ ${BACKEND} != "openblas" ]]; then
 elif [[ ${BACKEND} == "openblas" ]]; then
     echo "OpenBLAS backend build not implemented yet."
     exit 1
+fi
+
+# Check C compiler "GCC"
+if [[ -z ${GCC} ]]; then
+    GCC="/usr/bin/gcc"
 fi
 
 # Check NFD options
@@ -265,8 +275,15 @@ if [[ ${USE_GPU} == "true" ]]; then
 
 # If the RHEL version is 7 and we're *not* using GPUs, then set the template name and file to point to the RHEL 7 ones
 elif [[ ${RHEL_VERSION} == 7 ]]; then
-    build_image_template_name="${build_image_template_name_prefix}7"
-    build_image_template_file="${build_image_template_filename_prefix}7.yaml"
+
+    # Check if we're using AVX512 instructions, because we need to use a special Dockerfile for that
+    if [[ ${AVX} == "avx512" ]]; then
+        build_image_template_name="${build_image_template_name_prefix}7-avx512"
+        build_image_template_file="${build_image_template_filename_prefix}7-avx512.yaml"
+    else
+        build_image_template_name="${build_image_template_name_prefix}7"
+        build_image_template_file="${build_image_template_filename_prefix}7.yaml"
+    fi
 
 # Otherwise, point to the RHEL 8 ones
 else
@@ -384,14 +401,16 @@ elif [[ "${NFD}" == "nfd" ]]; then
                        --param=NAMESPACE=$NAMESPACE \
                        --param=NUM_CPUS=$NUM_DEVICES \
                        --param=N_CPUS=$NUM_DEVICES \
-                       --param=MEMORY_SIZE=$MEMORY_SIZE
+                       --param=MEMORY_SIZE=$MEMORY_SIZE \
+                       --param=CC=$GCC
         else
             oc new-app --template="${build_job_name}" \
                        --param=IMAGESTREAM_NAME=$IS_NAME \
                        --param=REGISTRY=$OC_REGISTRY \
                        --param=APP_NAME=$APP_NAME \
                        --param=NAMESPACE=$NAMESPACE \
-                       --param=NUM_CPUS=$NUM_DEVICES
+                       --param=NUM_CPUS=$NUM_DEVICES \
+                       --param=CC=$GCC
         fi
     else
         if [[ ! -z "${CPU_MANAGER}" ]]; then
@@ -403,7 +422,8 @@ elif [[ "${NFD}" == "nfd" ]]; then
                            --param=NAMESPACE=$NAMESPACE \
                            --param=INSTANCE_TYPE=$INSTANCE_TYPE \
                            --param=N_CPUS=$N_CPUS \
-                           --param=MEMORY_SIZE=$MEMORY_SIZE
+                           --param=MEMORY_SIZE=$MEMORY_SIZE \
+                           --param=CC=$GCC
             else
                 oc new-app --template="${build_job_name}" \
                            --param=IMAGESTREAM_NAME=$IS_NAME \
@@ -413,7 +433,8 @@ elif [[ "${NFD}" == "nfd" ]]; then
                            --param=INSTANCE_TYPE=$INSTANCE_TYPE \
                            --param=N_CPUS=$N_CPUS \
                            --param=MEMORY_SIZE=$MEMORY_SIZE \
-                           --param=THREAD_VALUES=$THREAD_VALUES
+                           --param=THREAD_VALUES=$THREAD_VALUES \
+                           --param=CC=$GCC
             fi
         elif [[ ${USE_GPU} == "true" ]]; then
             oc new-app --template="${build_job_name}" \
@@ -424,7 +445,8 @@ elif [[ "${NFD}" == "nfd" ]]; then
                        --param=INSTANCE_TYPE=$INSTANCE_TYPE \
                        --param=NUM_GPUS=$NUM_DEVICES \
                        --param=NCCL_URL=$NCCL_URL \
-                       --param=CUDNN_URL=$CUDNN_URL
+                       --param=CUDNN_URL=$CUDNN_URL \
+                       --param=CC=$GCC
         else
             oc new-app --template="${build_job_name}" \
                        --param=IMAGESTREAM_NAME=$IS_NAME \
@@ -432,7 +454,8 @@ elif [[ "${NFD}" == "nfd" ]]; then
                        --param=APP_NAME=$APP_NAME \
                        --param=NAMESPACE=$NAMESPACE \
                        --param=INSTANCE_TYPE=$INSTANCE_TYPE \
-                       --param=NUM_CPUS=$NUM_DEVICES
+                       --param=NUM_CPUS=$NUM_DEVICES \
+                       --param=CC=$GCC
         fi
     fi
 else
@@ -441,7 +464,8 @@ else
                --param=REGISTRY=$OC_REGISTRY \
                --param=APP_NAME=$APP_NAME \
                --param=NAMESPACE=$NAMESPACE \
-               --param=NUM_CPUS=$NUM_DEVICES
+               --param=NUM_CPUS=$NUM_DEVICES \
+               --param=CC=$GCC
 fi
 
 rm statuses.txt
