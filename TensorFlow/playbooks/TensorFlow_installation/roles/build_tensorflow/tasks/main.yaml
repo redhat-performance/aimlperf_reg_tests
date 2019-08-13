@@ -3,7 +3,7 @@
 # Before we gather information about AVX*, SSE*, FMA, etc. instructions, let's get the
 # version of gcc
 - name: Determine gcc version
-  shell: {{ CC }} --version | xargs | cut -d " " -f 3
+  shell: '{{ CC }} --version | xargs | cut -d " " -f 3'
   register: GCC_VERSION
 
 - name: Determine gcc main version
