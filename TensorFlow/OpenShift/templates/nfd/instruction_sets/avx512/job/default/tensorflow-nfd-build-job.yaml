@@ -3,8 +3,8 @@ kind: "Template"
 metadata:
   annotations:
     description: "Template to run a TensorFlow AVX512 build job"
-    tags: "tensorflow-avx512-build-job"
-  name: "tensorflow-avx512-build-job"
+    tags: "tensorflow-avx512-nfd-build-job"
+  name: "tensorflow-avx512-nfd-build-job"
 objects:
 - apiVersion: "batch/v1"
   kind: "Job"

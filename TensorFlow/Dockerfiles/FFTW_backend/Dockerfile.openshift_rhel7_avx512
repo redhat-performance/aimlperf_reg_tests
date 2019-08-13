@@ -29,7 +29,7 @@ RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
     rm install_ansible_from_source.sh
 
 # Install updated gcc via Ansible
-GCC_INSTALLER_PLAYBOOK=${HOME}/playbooks/gcc_installer
+ENV GCC_INSTALLER_PLAYBOOK=${HOME}/playbooks/gcc_installer
 RUN mkdir -p ${GCC_INSTALLER_PLAYBOOK}
 COPY misc/playbooks/gcc_installer ${GCC_INSTALLER_PLAYBOOK}
 RUN cd ${GCC_INSTALLER_PLAYBOOK} && \
