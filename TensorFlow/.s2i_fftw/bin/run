@@ -39,7 +39,7 @@ fi
 if [[ -z ${CC} ]]; then
     CC="gcc"
     echo "Using CC=`which gcc`"
-elif [[ ! -x ${CC} ]]; then
+elif [[ -x ${CC} ]]; then
     echo "Using CC=${CC}"
 else
     echo "ERROR. Could not find ${CC}. Did you provide the right C compiler (GCC) path?"
