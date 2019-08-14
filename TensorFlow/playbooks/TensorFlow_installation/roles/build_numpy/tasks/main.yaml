@@ -61,7 +61,7 @@
 - name: Configure and build NumPy -- use OpenBLAS if specified
   shell: |
     cd {{ NUMPY_BUILD_DIR }}
-    CC="gcc -lblas -lgfortran" python3 setup.py build_ext --build-lib fftw --fcompiler=gnu95
+    CC="{{ CC }} -lblas -lgfortran" python3 setup.py build_ext --build-lib fftw --fcompiler=gnu95
   environment:
     LD_LIBRARY_PATH: '/usr/lib:/usr/lib64:/usr/lib64/atlas:{{ GCC_LIBS }}'
   when: USE_FFTW == 'no' and USE_OPENBLAS == 'yes'
