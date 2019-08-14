@@ -37,7 +37,7 @@ fi
 
 # Check C compiler
 if [[ -z ${CC} ]]; then
-    CC="gcc"
+    CC="/usr/bin/gcc"
     echo "Using CC=`which gcc`"
 elif [[ -x ${CC} ]]; then
     echo "Using CC=${CC}"
@@ -94,12 +94,31 @@ fi
 ##########################################
 #      BUILD AND INSTALL TENSORFLOW      #
 ##########################################
+# Change to the installation
 cd ${HOME}/playbooks/TensorFlow_installation
+
+# Set TensorFlow install dir
 TENSORFLOW_INSTALL_DIR="${HOME}/tensorflow"
+
+# Get the gcc libs
+GCC_EXECUTABLE_NAME=$(echo ${CC} | rev | cut -d'/' -f1 | rev)
+GCC_LIBS=''
+IN=${CC}
+files_folders=$(echo $IN | tr "/" "\n")
+for f in ${files_folders}; do
+
+    if [[ ${f} == ${GCC_EXECUTABLE_NAME} ]]; then
+        break;
+    fi
+
+    GCC_LIBS="${GCC_LIBS}/${f}"
+done
+
+# Now build and install TensorFlow
 if [[ ${DEVICE} == "cpu" ]]; then
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}'}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}'}"
 else
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cudnn_install_path: '${CUDNN_INSTALL_PATH}'}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cudnn_install_path: '${CUDNN_INSTALL_PATH}'}"
 fi
 echo ""
 echo "<< SUCCESS >> TensorFlow + NumPy built and installed!"

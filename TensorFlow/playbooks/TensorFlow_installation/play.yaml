@@ -37,6 +37,7 @@
 
     # Which GCC to use
     CC: '{{ cc | default("/usr/bin/gcc") }}'
+    GCC_LIBS: '{{ gcc_libs | default("/usr/lib64") }}'
 
   roles:
     # Setup NumPy and TensorFlow build folders
