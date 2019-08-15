@@ -75,24 +75,24 @@ RUN cd ${GCC_INSTALLER_PLAYBOOK} && \
 
 # Install updated 'make' via Ansible
 RUN cd ${MAKE_INSTALLER_PLAYBOOK} && \
-    ansible-playbook-i hosts play.yaml --extra-vars="{cc: '${TOOLS_INSTALL_PATH}/bin/gcc-${GCC_VERSION}', build_prefix: '${TOOLS_BUILD_PATH}', install_prefix: '${TOOLS_INSTALL_PATH}'}" && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{cc: '${TOOLS_INSTALL_PATH}/bin/gcc-${GCC_VERSION}', build_prefix: '${TOOLS_BUILD_PATH}', install_prefix: '${TOOLS_INSTALL_PATH}'}" && \
     cd .. && \
     rm -rf ${MAKE_INSTALLER_PLAYBOOK}
 
 # Install updated bison via Ansible
 RUN cd ${BISON_INSTALLER_PLAYBOOK} && \
-    ansible-playbook-i hosts play.yaml --extra-vars="{cc: '${TOOLS_INSTALL_PATH}/bin/gcc-${GCC_VERSION}', make: '${TOOLS_INSTALL_PATH}/bin/make', build_prefix: '${TOOLS_BUILD_PATH}', install_prefix: '${TOOLS_INSTALL_PATH}'}" && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{cc: '${TOOLS_INSTALL_PATH}/bin/gcc-${GCC_VERSION}', make: '${TOOLS_INSTALL_PATH}/bin/make', build_prefix: '${TOOLS_BUILD_PATH}', install_prefix: '${TOOLS_INSTALL_PATH}'}" && \
     rm -rf ${BISON_INSTALLER_PLAYBOOK}
 
 # Install updated texinfo via Ansible
 RUN cd ${TEXINFO_INSTALLER_PLAYBOOK} && \
-    ansible-playbook-i hosts play.yaml --extra-vars="{cc: '${TOOLS_INSTALL_PATH}/bin/gcc-${GCC_VERSION}', make: '${TOOLS_INSTALL_PATH}/bin/make', build_prefix: '${TOOLS_BUILD_PATH}', install_prefix: '${TOOLS_INSTALL_PATH}'}" && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{cc: '${TOOLS_INSTALL_PATH}/bin/gcc-${GCC_VERSION}', make: '${TOOLS_INSTALL_PATH}/bin/make', build_prefix: '${TOOLS_BUILD_PATH}', install_prefix: '${TOOLS_INSTALL_PATH}'}" && \
     cd .. && \
     rm -rf ${TEXINFO_INSTALLER_PLAYBOOK}
 
 # Install updated glibc via Ansible
 RUN cd ${GLIBC_INSTALLER_PLAYBOOK} && \
-    ansible-playbook-i hosts play.yaml --extra-vars="{cc: '${TOOLS_INSTALL_PATH}/bin/gcc-${GCC_VERSION}', make: '${TOOLS_INSTALL_PATH}/bin/make', bison: '${TOOLS_INSTALL_PATH}/bin/bison', makeinfo: '${TOOLS_INSTALL_PATH}/bin/makeinfo', build_prefix: '${TOOLS_BUILD_PATH}', install_prefix: '${TOOLS_INSTALL_PATH}'}" && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{cc: '${TOOLS_INSTALL_PATH}/bin/gcc-${GCC_VERSION}', make: '${TOOLS_INSTALL_PATH}/bin/make', bison: '${TOOLS_INSTALL_PATH}/bin/bison', makeinfo: '${TOOLS_INSTALL_PATH}/bin/makeinfo', build_prefix: '${TOOLS_BUILD_PATH}', install_prefix: '${TOOLS_INSTALL_PATH}'}" && \
     cd .. && \
     rm -rf ${GLIBC_INSTALLER_PLAYBOOK} && \
     cd .. && \
