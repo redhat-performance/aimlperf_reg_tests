@@ -31,4 +31,4 @@ $ sh gpu_setup.sh
 
 ## Miscellaneous Files
 
-Under the `misc` folder are miscellaneous files for doing various things. Currently, only one playbook resides there -- `gcc_installer`. Running this playbook is optional, but it enables you to install whatever version of gcc you'd like, which may be useful if your current version of TensorFlow, etc. does not support your existing version of gcc (e.g., more recent versions of TensorFlow do not support gcc-4.8.x if trying to build with AVX-512 instructions).
+Under the `misc` folder are miscellaneous files for doing various things. Currently, there are a few playbooks for installing `gcc` and `glibc`, along with their dependencies. Running these playbooks is optional, but doing so enables you to install whatever version of `gcc` (and `glibc`) you'd like, which may be useful if your current version of TensorFlow, etc. does not support your existing version of `gcc` (e.g., more recent versions of TensorFlow do not support gcc-4.8.x if trying to build with AVX-512 instructions).

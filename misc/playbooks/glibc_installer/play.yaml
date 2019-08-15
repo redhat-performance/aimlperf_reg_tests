@@ -1,0 +1,99 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  # Do not edit these vars. Use --extra-vars in the command line to use a custom input value
+  vars:
+
+    # Points to where glibc will be built
+    glibc_build_path: '{{ build_path | default("/home/build/glibc") }}'
+
+    # Points to where glibc will be installed
+    glibc_install_prefix: '{{ install_prefix | default("/usr/local") }}'
+
+    # Specify which glibc version to install
+    glibc_version: '{{ version | default("2.30") }}'
+
+    # C compiler
+    gcc_compiler: '{{ cc | default("/usr/bin/gcc") }}'
+
+    # Path to 'make'
+    make_executable: '{{ make | default("/usr/bin/make") }}'
+
+    # Path to bison
+    bison_executable: '{{ bison | default("/usr/bin/bison") }}'
+
+    # Path to makeinfo
+    makeinfo_executable: '{{ makeinfo | default("/usr/bin/makeinfo") }}'
+
+    # For parallel builds
+    parallel_value: '{{ num_parallel | default("2") }}'
+
+    # GNU mirror, which contains all the gnu packages. See https://www.gnu.org/prep/ftp.html for other mirrors. You shouldn't
+    # need to change this value at all. However, you may need to change it if this default mirror is dead.
+    mirror: '{{ gnu_mirror | default("http://mirror.rit.edu/gnu") }}'
+
+  tasks:
+
+    # First, install required packages for building gcc. (Note that all gcc packages require an
+    # existing installation of gcc in order to be built.)
+    - name: Install required yum packages for building glibc
+      yum:
+        name:
+          - bzip2
+          - gcc
+          - gcc-c++
+          - wget
+        state: present
+
+    # Delete existing custom gcc build dir so that we can rebuild it
+    - name: Delete existing custom glibc-{{ glibc_version }} build folder
+      file:
+        state: absent
+        path: '{{ glibc_build_path }}'
+
+    # Now recreate custom gcc build folder
+    - name: Create {{ glibc_build_path }}
+      file:
+        state: directory
+        path: '{{ glibc_build_path }}'
+
+    # Since glibc cannot be compiled in the source directory, we have to create a 
+    # directory where we can compile glibc. However, we must first erase the
+    # directory if it exists because we won't be able to build glibc if it's there.
+    - name: Remove {{ glibc_build_path }}/glibc-build so that we can build it in a fresh directory
+      file:
+        state: directory
+        path: '{{ glibc_build_path }}/glibc-build'
+
+    # Now recreate the directory
+    - name: Recreate {{ glibc_build_path }}/glibc-build
+      file:
+        state: directory
+        path: '{{ glibc_build_path }}/glibc-build'
+
+    # Next, we need to get the glibc tar ball
+    - name: Download glibc-{{ glibc_version }}.tar.gz
+      unarchive:
+        src: '{{ mirror }}/glibc/glibc-{{ glibc_version }}.tar.gz'
+        dest: '{{ glibc_build_path }}'
+        remote_src: yes
+
+    # Now configure glibc
+    - name: Configure glibc-{{ glibc_version }}
+      shell: |
+          cd {{ glibc_build_path }}/glibc-build
+          ../glibc-{{ glibc_version }}/configure CC={{ gcc_compiler }} CFLAGS="-O3 -m64" --prefix={{ glibc_install_prefix }} MAKE={{ make_executable }} BISON={{ bison_executable }} MAKEINFO={{ makeinfo_executable }}
+
+    # Now make glibc
+    - name: Make glibc
+      make:
+        target: '-j{{ num_parallel }}'
+        chdir: '{{ glibc_build_path }}/glibc-build'
+
+    # Finally, install it
+    - name: Install glibc
+      make:
+        target: install
+        chdir: '{{ glibc_build_path }}/glibc-build'

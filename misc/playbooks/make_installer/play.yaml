@@ -1,0 +1,80 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  # Do not edit these vars. Use --extra-vars in the command line to use a custom input value
+  vars:
+
+    # Points to where 'make' will be built
+    make_build_path: '{{ build_path | default("/home/build/make") }}'
+
+    # Points to where 'make' will be installed
+    make_install_prefix: '{{ install_prefix | default("/usr/local") }}'
+
+    # Specify which 'make' version to install
+    make_version: '{{ version | default("4.2") }}'
+
+    # C compiler
+    gcc_compiler: '{{ cc | default("/usr/bin/gcc") }}'
+
+    # GNU mirror, which contains all the gnu packages. See https://www.gnu.org/prep/ftp.html for other mirrors. You shouldn't
+    # need to change this value at all. However, you may need to change it if this default mirror is dead.
+    mirror: '{{ gnu_mirror | default("http://mirror.rit.edu/gnu") }}'
+
+  tasks:
+
+    # First, install required packages for building gcc. (Note that all gcc packages require an
+    # existing installation of gcc in order to be built.)
+    - name: Install required yum packages for building gcc
+      yum:
+        name:
+          - bzip2
+          - gcc
+          - gcc-c++
+          - make
+          - wget
+        state: present
+
+    # Next, delete existing custom make build dir so that we can rebuild it
+    - name: Delete existing custom make-{{ make_version }} build folder
+      file:
+        state: absent
+        path: '{{ make_build_path }}'
+
+    # Now, recreate custom make build folder
+    - name: Create {{ make_build_path }}
+      file:
+        state: directory
+        path: '{{ make_build_path }}'
+
+    # Next, we need to get the 'make' tar ball
+    - name: Download make-{{ make_version }}
+      unarchive:
+        src: '{{ mirror }}/make/make-{{ make_version }}.tar.gz'
+        dest: '{{ make_build_path }}'
+        remote_src: yes
+
+    # Let's configure make
+    - name: Configure 'make'
+      shell: |
+        cd {{ make_build_path }}/make-{{ make_version }}
+        ./configure CC={{ gcc_compiler }} --prefix={{ make_install_prefix }}
+
+    # Make 'make' (This will take quite a while, ranging from about 30 minutes to 3 hours.)
+    - name: Make 'make'. This may take a while...
+      make:
+        target: all
+        chdir: '{{ make_build_path }}/make-{{ make_version }}'
+        params:
+          LIBRARY_PATH: '/usr/lib64'
+
+    # Install the built 'make' package
+    - name: Install the built 'make' package
+      make:
+        target: install
+        chdir: '{{ make_build_path }}/make-{{ make_version }}'
+
+    # Tell user where 'make' was installed to
+    - debug:
+        msg: 'Make ver {{ make_version }} successfully installed to {{ make_install_prefix }}/make'

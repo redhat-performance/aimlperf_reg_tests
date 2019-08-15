@@ -1,0 +1,83 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  # Do not edit these vars. Use --extra-vars in the command line to use a custom input value
+  vars:
+
+    # Points to where bison will be built
+    bison_build_path: '{{ build_path | default("/home/build/bison") }}'
+
+    # Points to where bison will be installed
+    bison_install_prefix: '{{ install_prefix | default("/usr/local") }}'
+
+    # Specify which bison version to install
+    bison_version: '{{ version | default("3.4.1") }}'
+
+    # C compiler
+    gcc_compiler: '{{ cc | default("/usr/bin/gcc") }}'
+
+    # Path to 'make'
+    make_executable: '{{ make | default("/usr/bin/make") }}'
+
+    # GNU mirror, which contains all the gnu packages. See https://www.gnu.org/prep/ftp.html for other mirrors. You shouldn't
+    # need to change this value at all. However, you may need to change it if this default mirror is dead.
+    mirror: '{{ gnu_mirror | default("http://mirror.rit.edu/gnu") }}'
+
+  tasks:
+
+    # First, install required packages for building gcc. (Note that all gcc packages require an
+    # existing installation of gcc in order to be built.)
+    - name: Install required yum packages for building gcc
+      yum:
+        name:
+          - bzip2
+          - gcc
+          - gcc-c++
+          - make
+          - wget
+        state: present
+
+    # Next, delete existing custom bison build dir so that we can rebuild it
+    - name: Delete existing custom bison-{{ bison_version }} build folder
+      file:
+        state: absent
+        path: '{{ bison_build_path }}'
+
+    # Now, recreate custom bison build folder
+    - name: Create {{ bison_build_path }}
+      file:
+        state: directory
+        path: '{{ bison_build_path }}'
+
+    # Next, we need to get the bison tar ball
+    - name: Download bison-{{ bison_version }}
+      unarchive:
+        src: '{{ mirror }}/bison/bison-{{ bison_version }}.tar.gz'
+        dest: '{{ bison_build_path }}'
+        remote_src: yes
+
+    # Let's configure bison
+    - name: Configure bison
+      shell: |
+        cd {{ bison_build_path }}/bison-{{ bison_version }}
+        ./configure CC={{ gcc_compiler }} --prefix={{ bison_install_prefix }} MAKE={{ make_executable }}
+
+    # Make bison (This will take quite a while, ranging from about 30 minutes to 3 hours.)
+    - name: Make bison. This may take a while...
+      make:
+        target: all
+        chdir: '{{ bison_build_path }}/bison-{{ bison_version }}'
+        params:
+          LIBRARY_PATH: '/usr/lib64'
+
+    # Install the built bison package
+    - name: Install the built bison package
+      make:
+        target: install
+        chdir: '{{ bison_build_path }}/bison-{{ bison_version }}'
+
+    # Tell user where bison was installed to
+    - debug:
+        msg: 'bison ver {{ bison_version }} successfully installed to {{ bison_install_prefix }}/bison'

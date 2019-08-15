@@ -1,0 +1,83 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  # Do not edit these vars. Use --extra-vars in the command line to use a custom input value
+  vars:
+
+    # Points to where texinfo will be built
+    texinfo_build_path: '{{ build_path | default("/home/build/texinfo") }}'
+
+    # Points to where texinfo will be installed
+    texinfo_install_prefix: '{{ install_prefix | default("/usr/local") }}'
+
+    # Specify which texinfo version to install
+    texinfo_version: '{{ version | default("6.6") }}'
+
+    # C compiler
+    gcc_compiler: '{{ cc | default("/usr/bin/gcc") }}'
+
+    # Path to 'make'
+    make_executable: '{{ make | default("/usr/bin/make") }}'
+
+    # GNU mirror, which contains all the gnu packages. See https://www.gnu.org/prep/ftp.html for other mirrors. You shouldn't
+    # need to change this value at all. However, you may need to change it if this default mirror is dead.
+    mirror: '{{ gnu_mirror | default("http://mirror.rit.edu/gnu") }}'
+
+  tasks:
+
+    # First, install required packages for building gcc. (Note that all gcc packages require an
+    # existing installation of gcc in order to be built.)
+    - name: Install required yum packages for building gcc
+      yum:
+        name:
+          - bzip2
+          - gcc
+          - gcc-c++
+          - make
+          - wget
+        state: present
+
+    # Next, delete existing custom texinfo build dir so that we can rebuild it
+    - name: Delete existing custom texinfo-{{ texinfo_version }} build folder
+      file:
+        state: absent
+        path: '{{ texinfo_build_path }}'
+
+    # Now, recreate custom texinfo build folder
+    - name: Create {{ texinfo_build_path }}
+      file:
+        state: directory
+        path: '{{ texinfo_build_path }}'
+
+    # Next, we need to get the texinfo tar ball
+    - name: Download texinfo-{{ texinfo_version }}
+      unarchive:
+        src: '{{ mirror }}/texinfo/texinfo-{{ texinfo_version }}.tar.gz'
+        dest: '{{ texinfo_build_path }}'
+        remote_src: yes
+
+    # Let's configure make
+    - name: Configure texinfo
+      shell: |
+        cd {{ texinfo_build_path }}/texinfo-{{ texinfo_version }}
+        ./configure CC={{ gcc_compiler }} MAKE={{ make_executable }} --prefix={{ texinfo_install_prefix }} --disable-perl-xs
+
+    # Make texinfo (This will take quite a while, ranging from about 30 minutes to 3 hours.)
+    - name: Make texinfo. This may take a while...
+      make:
+        target: all
+        chdir: '{{ texinfo_build_path }}/texinfo-{{ texinfo_version }}'
+        params:
+          LIBRARY_PATH: '/usr/lib64'
+
+    # Install the built texinfo package
+    - name: Install the built texinfo package
+      make:
+        target: install
+        chdir: '{{ texinfo_build_path }}/texinfo-{{ texinfo_version }}'
+
+    # Tell user where texinfo was installed to
+    - debug:
+        msg: 'texinfo ver {{ texinfo_version }} successfully installed to {{ texinfo_install_prefix }}/bin'
