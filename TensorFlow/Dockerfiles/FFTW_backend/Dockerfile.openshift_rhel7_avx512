@@ -13,6 +13,21 @@ ENV RHEL_VERSION=7
 # GCC version to build
 ENV GCC_VERSION=9.2.0
 
+# GLIBC version to build
+ENV GLIBC_VERSION=2.30
+
+# Make version to build
+ENV MAKE_VERSION=4.2
+
+# Bison version to build
+ENV BISON_VERSION=3.4.1
+
+# Texinfo version to build
+ENV TEXINFO_VERSION=6.6
+
+# Where to install gcc, glibc, etc.
+ENV TOOLS_INSTALL_PATH=/usr
+
 # Set up labels
 LABEL io.openshift.s2i.scripts-url="image:///usr/libexec/s2i"
 LABEL io.openshift.expose-services="8080:http"
@@ -28,15 +43,60 @@ COPY helper_scripts/Ansible/install_ansible_from_source.sh ${HOME}
 RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
     rm install_ansible_from_source.sh
 
-# Install updated gcc via Ansible
+# Set playbook paths
 ENV GCC_INSTALLER_PLAYBOOK=${HOME}/playbooks/gcc_installer
-RUN mkdir -p ${GCC_INSTALLER_PLAYBOOK}
+ENV MAKE_INSTALLER_PLAYBOOK=${HOME}/playbooks/make_installer
+ENV BISON_INSTALLER_PLAYBOOK=${HOME}/playbooks/bison_installer
+ENV TEXINFO_INSTALLER_PLAYBOOK=${HOME}/playbooks/texinfo_installer
+ENV GLIBC_INSTALLER_PLAYBOOK=${HOME}/playbooks/glibc_installer
+
+# Set build directory
+ENV TOOLS_BUILD_PATH=${HOME}/build
+
+# Prepare for playbook installers
+RUN mkdir -p ${GCC_INSTALLER_PLAYBOOK} && \
+    mkdir -p ${MAKE_INSTALLER_PLAYBOOK} && \
+    mkdir -p ${BISON_INSTALLER_PLAYBOOK} && \
+    mkdir -p ${TEXINFO_INSTALLER_PLAYBOOK} && \
+    mkdir -p ${GLIBC_INSTALLER_PLAYBOOK}
+
+# Copy playbooks
 COPY misc/playbooks/gcc_installer ${GCC_INSTALLER_PLAYBOOK}
+COPY misc/playbooks/make_installer ${MAKE_INSTALLER_PLAYBOOK}
+COPY misc/playbooks/bison_installer ${BISON_INSTALLER_PLAYBOOK}
+COPY misc/playbooks/texinfo_installer ${TEXINFO_INSTALLER_PLAYBOOK}
+COPY misc/playbooks/glibc_installer ${GLIBC_INSTALLER_PLAYBOOK}
+
+# Install updated gcc via Ansible
 RUN cd ${GCC_INSTALLER_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml --extra-vars="{version: '${GCC_VERSION}', build_prefix: '${HOME}/build'}" && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{version: '${GCC_VERSION}', build_prefix: '${TOOLS_BUILD_PATH}', install_prefix: '${TOOLS_INSTALL_PATH}'}" && \
     cd .. && \
-    rm -rf ${GCC_INSTALLER_PLAYBOOK} && \
-    rm -rf ${HOME}/build
+    rm -rf ${GCC_INSTALLER_PLAYBOOK}
+
+# Install updated 'make' via Ansible
+RUN cd ${MAKE_INSTALLER_PLAYBOOK} && \
+    ansible-playbook-i hosts play.yaml --extra-vars="{cc: '${TOOLS_INSTALL_PATH}/bin/gcc-${GCC_VERSION}', build_prefix: '${TOOLS_BUILD_PATH}', install_prefix: '${TOOLS_INSTALL_PATH}'}" && \
+    cd .. && \
+    rm -rf ${MAKE_INSTALLER_PLAYBOOK}
+
+# Install updated bison via Ansible
+RUN cd ${BISON_INSTALLER_PLAYBOOK} && \
+    ansible-playbook-i hosts play.yaml --extra-vars="{cc: '${TOOLS_INSTALL_PATH}/bin/gcc-${GCC_VERSION}', make: '${TOOLS_INSTALL_PATH}/bin/make', build_prefix: '${TOOLS_BUILD_PATH}', install_prefix: '${TOOLS_INSTALL_PATH}'}" && \
+    rm -rf ${BISON_INSTALLER_PLAYBOOK}
+
+# Install updated texinfo via Ansible
+RUN cd ${TEXINFO_INSTALLER_PLAYBOOK} && \
+    ansible-playbook-i hosts play.yaml --extra-vars="{cc: '${TOOLS_INSTALL_PATH}/bin/gcc-${GCC_VERSION}', make: '${TOOLS_INSTALL_PATH}/bin/make', build_prefix: '${TOOLS_BUILD_PATH}', install_prefix: '${TOOLS_INSTALL_PATH}'}" && \
+    cd .. && \
+    rm -rf ${TEXINFO_INSTALLER_PLAYBOOK}
+
+# Install updated glibc via Ansible
+RUN cd ${GLIBC_INSTALLER_PLAYBOOK} && \
+    ansible-playbook-i hosts play.yaml --extra-vars="{cc: '${TOOLS_INSTALL_PATH}/bin/gcc-${GCC_VERSION}', make: '${TOOLS_INSTALL_PATH}/bin/make', bison: '${TOOLS_INSTALL_PATH}/bin/bison', makeinfo: '${TOOLS_INSTALL_PATH}/bin/makeinfo', build_prefix: '${TOOLS_BUILD_PATH}', install_prefix: '${TOOLS_INSTALL_PATH}'}" && \
+    cd .. && \
+    rm -rf ${GLIBC_INSTALLER_PLAYBOOK} && \
+    cd .. && \
+    rm -rf ${TOOLS_BUILD_PATH}
 
 # Install FFTW prerequisites via Ansible
 ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
