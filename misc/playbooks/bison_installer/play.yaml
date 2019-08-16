@@ -35,6 +35,7 @@
           - bzip2
           - gcc
           - gcc-c++
+          - m4
           - make
           - wget
         state: present
