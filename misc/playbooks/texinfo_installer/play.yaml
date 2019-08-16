@@ -36,6 +36,7 @@
           - gcc
           - gcc-c++
           - make
+          - perl
           - wget
         state: present
 
