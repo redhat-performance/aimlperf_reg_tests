@@ -37,6 +37,8 @@
           - gcc-c++
           - make
           - perl
+          - perl-Data-Dumper
+          - perl-Encode
           - wget
         state: present
 
