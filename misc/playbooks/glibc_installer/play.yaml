@@ -28,7 +28,7 @@
     makeinfo_executable: '{{ makeinfo | default("/usr/bin/makeinfo") }}'
 
     # For parallel builds
-    parallel_value: '{{ num_parallel | default("2") }}'
+    num_jobs: '{{ num_jobs | default("2") }}'
 
     # GNU mirror, which contains all the gnu packages. See https://www.gnu.org/prep/ftp.html for other mirrors. You shouldn't
     # need to change this value at all. However, you may need to change it if this default mirror is dead.
@@ -89,7 +89,7 @@
     # Now make glibc
     - name: Make glibc
       make:
-        target: '-j{{ num_parallel }}'
+        target: '-j{{ num_jobs }}'
         chdir: '{{ glibc_build_path }}/glibc-build'
 
     # Finally, install it
