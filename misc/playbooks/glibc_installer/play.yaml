@@ -80,6 +80,15 @@
         dest: '{{ glibc_build_path }}'
         remote_src: yes
 
+    # Edit glibc's test-installation.pl file (because it contains a bug)
+    # See more info here: https://patchwork.ozlabs.org/patch/987812
+    - name: For glibc v2.30, fix test-installation.pl bug where test-installation.pl tries to add "-lnss_test2" to the compilation line, but "nss_test2" is an executable, not a library
+      lineinfile:
+        path: '{{ glibc_build_path }}/glibc-2.30/scripts/test-installation.pl'
+        regexp: '.*\&\& \$name ne "nss_test1".*'
+        line: '        && $name ne "nss_test1" && $name ne "nss_test2" && $name ne "libgcc_s")'
+      when: glibc_version == "2.30"
+
     # Now configure glibc
     - name: Configure glibc-{{ glibc_version }}
       shell: |
