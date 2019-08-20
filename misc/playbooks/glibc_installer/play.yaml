@@ -89,6 +89,14 @@
         line: '        && $name ne "nss_test1" && $name ne "nss_test2" && $name ne "libgcc_s") {'
       when: glibc_version == "2.30"
 
+    # libnsl is not being linked when the installation is being tested, so...
+    - name: For glibc v2.30, fix test-installation.pl bug where libnsl is not being linked
+      lineinfile:
+        path: '{{ glibc_build_path }}/glibc-2.30/scripts/test-installation.pl'
+        regexp: '^\$link_libs.*'
+        line: '$link_libs = "-lnsl";'
+      when: glibc_version == "2.30"
+
     # Now configure glibc
     - name: Configure glibc-{{ glibc_version }}
       shell: |
