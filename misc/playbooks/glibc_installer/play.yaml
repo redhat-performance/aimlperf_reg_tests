@@ -86,7 +86,7 @@
       lineinfile:
         path: '{{ glibc_build_path }}/glibc-2.30/scripts/test-installation.pl'
         regexp: '.*\&\& \$name ne "nss_test1".*'
-        line: '        && $name ne "nss_test1" && $name ne "nss_test2" && $name ne "libgcc_s")'
+        line: '        && $name ne "nss_test1" && $name ne "nss_test2" && $name ne "libgcc_s") {'
       when: glibc_version == "2.30"
 
     # Now configure glibc
