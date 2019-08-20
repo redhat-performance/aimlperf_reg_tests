@@ -101,7 +101,7 @@
     - name: Configure glibc-{{ glibc_version }}
       shell: |
           cd {{ glibc_build_path }}/glibc-build
-          ../glibc-{{ glibc_version }}/configure CC={{ gcc_compiler }} CFLAGS="-O3 -m64" --prefix={{ glibc_install_prefix }} MAKE={{ make_executable }} BISON={{ bison_executable }} MAKEINFO={{ makeinfo_executable }}
+          ../glibc-{{ glibc_version }}/configure CC={{ gcc_compiler }} CFLAGS="-O3 -m64" --prefix={{ glibc_install_prefix }} MAKE={{ make_executable }} BISON={{ bison_executable }} MAKEINFO={{ makeinfo_executable }} --enable-obsolete-nsl
 
     # Now make glibc
     - name: Make glibc
