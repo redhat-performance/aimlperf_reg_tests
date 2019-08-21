@@ -38,27 +38,30 @@ COPY TensorFlow/.s2i_fftw/bin/ /usr/libexec/s2i
 # Put on port 8080
 EXPOSE 8080
 
-# Install Ansible
-COPY helper_scripts/Ansible/install_ansible_from_source.sh ${HOME}
-RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
-    rm install_ansible_from_source.sh
-
 # Set playbook paths
 ENV GCC_INSTALLER_PLAYBOOK=${HOME}/playbooks/gcc_installer
 ENV MAKE_INSTALLER_PLAYBOOK=${HOME}/playbooks/make_installer
 ENV BISON_INSTALLER_PLAYBOOK=${HOME}/playbooks/bison_installer
 ENV TEXINFO_INSTALLER_PLAYBOOK=${HOME}/playbooks/texinfo_installer
 ENV GLIBC_INSTALLER_PLAYBOOK=${HOME}/playbooks/glibc_installer
-
-# Set build directory
-ENV TOOLS_BUILD_PATH=${HOME}/build
+ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
+ENV FFTW_INSTALLATION=${HOME}/playbooks/FFTW_installation
+ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
+ENV TENSORFLOW_INSTALLATION=${HOME}/playbooks/TensorFlow_installation
+ENV TENSORFLOW_BENCHMARKS=${HOME}/playbooks/TensorFlow_benchmarks
 
 # Prepare for playbook installers
 RUN mkdir -p ${GCC_INSTALLER_PLAYBOOK} && \
     mkdir -p ${MAKE_INSTALLER_PLAYBOOK} && \
     mkdir -p ${BISON_INSTALLER_PLAYBOOK} && \
     mkdir -p ${TEXINFO_INSTALLER_PLAYBOOK} && \
-    mkdir -p ${GLIBC_INSTALLER_PLAYBOOK}
+    mkdir -p ${GLIBC_INSTALLER_PLAYBOOK} && \
+    mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
+    mkdir -p ${FFTW_INSTALLATION} && \
+    mkdir -p ${TF_PREREQS_PLAYBOOK} && \
+    mkdir -p ${TENSORFLOW_INSTALLATION} && \
+    mkdir -p ${TENSORFLOW_BENCHMARKS} && \
+    mkdir -p ${HOME}/.cache
 
 # Copy playbooks
 COPY misc/playbooks/gcc_installer ${GCC_INSTALLER_PLAYBOOK}
@@ -66,6 +69,25 @@ COPY misc/playbooks/make_installer ${MAKE_INSTALLER_PLAYBOOK}
 COPY misc/playbooks/bison_installer ${BISON_INSTALLER_PLAYBOOK}
 COPY misc/playbooks/texinfo_installer ${TEXINFO_INSTALLER_PLAYBOOK}
 COPY misc/playbooks/glibc_installer ${GLIBC_INSTALLER_PLAYBOOK}
+COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
+COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
+COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
+COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
+COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
+
+# Set build directory
+ENV TOOLS_BUILD_PATH=${HOME}/build
+
+# Install Ansible
+COPY helper_scripts/Ansible/install_ansible_from_source.sh ${HOME}
+RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
+    rm install_ansible_from_source.sh
+
+# Install FFTW prerequisites via Ansible
+RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
+    ansible-playbook -i hosts play.yaml && \
+    cd .. && \
+    rm -rf ${FFTW_PREREQS_PLAYBOOK}
 
 # Install updated gcc via Ansible
 RUN cd ${GCC_INSTALLER_PLAYBOOK} && \
@@ -98,38 +120,11 @@ RUN cd ${GLIBC_INSTALLER_PLAYBOOK} && \
     cd .. && \
     rm -rf ${TOOLS_BUILD_PATH}
 
-# Install FFTW prerequisites via Ansible
-ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
-RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK}
-COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
-RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml && \
-    cd .. && \
-    rm -rf ${FFTW_PREREQS_PLAYBOOK}
-
 # Install TensorFlow prerequisites via Ansible
-ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
-RUN mkdir -p ${TF_PREREQS_PLAYBOOK}
-COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
 RUN cd ${TF_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes'}" && \
     cd .. && \
     rm -rf ${TF_PREREQS_PLAYBOOK}
-
-# Copy FFTW installation playbook and create dir for installation
-ENV FFTW_INSTALLATION=${HOME}/playbooks/FFTW_installation
-RUN mkdir -p ${FFTW_INSTALLATION}
-COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
-
-# Copy TensorFlow installation playbook and create dirs for installation
-ENV TENSORFLOW_INSTALLATION=${HOME}/playbooks/TensorFlow_installation
-RUN mkdir -p ${TENSORFLOW_INSTALLATION} ${HOME}/.cache
-COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
-
-# Create a folder for the benchmark tests and copy the tests to the new folder
-ENV TENSORFLOW_BENCHMARKS=${HOME}/playbooks/TensorFlow_benchmarks
-RUN mkdir -p ${TENSORFLOW_BENCHMARKS}
-COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
 
 # Give user permissions to modify the 'macros' file + other files to run tests
 RUN chmod 777 /usr/libexec/s2i/run && \
