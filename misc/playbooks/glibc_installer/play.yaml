@@ -109,6 +109,12 @@
         target: '-j{{ num_jobs }}'
         chdir: '{{ glibc_build_path }}/glibc-build'
 
+    # Make libm (since apparently it doesn't get built with 'make all')
+    - name: Make libm
+      make:
+        target: math
+        chdir: '{{ glibc_build_path }}/glibc-build'
+
     # Finally, install it
     - name: Install glibc
       make:
