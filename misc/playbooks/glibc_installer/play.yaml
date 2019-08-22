@@ -13,7 +13,7 @@
     glibc_install_prefix: '{{ install_prefix | default("/usr/local") }}'
 
     # Specify which glibc version to install
-    glibc_version: '{{ version | default("2.30") }}'
+    glibc_version: '{{ version | default("2.29") }}'
 
     # C compiler
     gcc_compiler: '{{ cc | default("/usr/bin/gcc") }}'
@@ -114,17 +114,3 @@
       make:
         target: install
         chdir: '{{ glibc_build_path }}/glibc-build'
-
-    # libm.so is not linked properly
-    - name: glibc v2.30 bugfix --> Remove libm.so because it isn't being linked properly to libm-{{ glibc_version }}.so
-      file:
-        state: absent
-        path: '{{ glibc_install_prefix }}/libm.so'
-      when: glibc_version == "2.30"
-
-    - name: glibc v2.30 bugfix --> Add {{ glibc_install_prefix }}/libm.so as a symbolic link to {{ glibc_install_prefix }}/libm-{{ glibc_version}}.so
-      file:
-        state: link
-        src: '{{ glibc_install_prefix }}/libm-{{ glibc_version }}.so'
-        dest: '{{ glibc_install_prefix }}/libm.so'
-      when: glibc_version == "2.30"
