@@ -109,14 +109,22 @@
         target: '-j{{ num_jobs }}'
         chdir: '{{ glibc_build_path }}/glibc-build'
 
-    # Make libm (since apparently it doesn't get built with 'make all')
-    - name: Make libm
-      make:
-        target: math
-        chdir: '{{ glibc_build_path }}/glibc-build'
-
     # Finally, install it
     - name: Install glibc
       make:
         target: install
         chdir: '{{ glibc_build_path }}/glibc-build'
+
+    # libm.so is not linked properly
+    - name: glibc v2.30 bugfix --> Remove libm.so because it isn't being linked properly to libm-{{ glibc_version }}.so
+      file:
+        state: absent
+        path: '{{ glibc_install_prefix }}/libm.so'
+      when: glibc_version == "2.30"
+
+    - name: glibc v2.30 bugfix --> Add {{ glibc_install_prefix }}/libm.so as a symbolic link to {{ glibc_install_prefix }}/libm-{{ glibc_version}}.so
+      file:
+        state: link
+        src: '{{ glibc_install_prefix }}/libm-{{ glibc_version }}.so'
+        dest: '{{ glibc_install_prefix }}/libm.so'
+      when: glibc_version == "2.30"
