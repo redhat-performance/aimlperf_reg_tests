@@ -82,20 +82,20 @@
 
     # Edit glibc's test-installation.pl file (because it contains a bug)
     # See more info here: https://patchwork.ozlabs.org/patch/987812
-    - name: For glibc v2.30, fix test-installation.pl bug where test-installation.pl tries to add "-lnss_test2" to the compilation line, but "nss_test2" is an executable, not a library
+    - name: For glibc v2.30 and v2.29, fix test-installation.pl bug where test-installation.pl tries to add "-lnss_test2" to the compilation line, but "nss_test2" is an executable, not a library
       lineinfile:
         path: '{{ glibc_build_path }}/glibc-2.30/scripts/test-installation.pl'
         regexp: '.*\&\& \$name ne "nss_test1".*'
         line: '        && $name ne "nss_test1" && $name ne "nss_test2" && $name ne "libgcc_s") {'
-      when: glibc_version == "2.30"
+      when: glibc_version == "2.30" or glibc_version == "2.29"
 
     # libnsl is not being linked when the installation is being tested, so...
-    - name: For glibc v2.30, fix test-installation.pl bug where libnsl is not being linked
+    - name: For glibc v2.30 and v2.29, fix test-installation.pl bug where libnsl is not being linked
       lineinfile:
         path: '{{ glibc_build_path }}/glibc-2.30/scripts/test-installation.pl'
         regexp: '^\$link_libs.*'
         line: '$link_libs = "-lnsl";'
-      when: glibc_version == "2.30"
+      when: glibc_version == "2.30" or glibc_version == "2.29"
 
     # Now configure glibc
     - name: Configure glibc-{{ glibc_version }}
