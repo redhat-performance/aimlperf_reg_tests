@@ -38,7 +38,7 @@ fi
 ld_linux_lib_name=$(ls "${NEW_GLIBC_PATH}"/lib | grep ld-linux*)
 
 # If the ld-linux shared object library cannot be found, then look under a "lib64" folder
-if [[ -z ${ld_linux_lib_name} ]];
+if [[ -z ${ld_linux_lib_name} ]]; then
     ld_linux_lib_name=$(ls "${NEW_GLIBC_PATH}"/lib64 | grep ld-linux*)
 
     if [[ -z ${ld_linux_lib_name} ]]; then
