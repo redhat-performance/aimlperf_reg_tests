@@ -66,3 +66,13 @@ To build 'glibc',
 $ cd playbooks/glibc_installer
 $ ansible-playbook -i hosts play.yaml --extra-vars="{cc: '/path/to/your/newly/installed/gcc', make: '/path/to/your/newly/installed/make', bison: '/path/to/your/newly/installed/bison', makeinfo: '/path/to/your/newly/installed/makeinfo'}"
 ```
+
+### glibc\_updater
+
+**This playbook is potentially EXTREMELY DESTRUCTIVE**. Do NOT run this playbook unless you are okay with replacing the RHEL glibc installation with the custom one you've built using the `glibc_installer`. Note that you *must* run `scripts/patch_ansible-playbook_new_glibc.sh` before running this playbook.
+
+To ensure that this playbook is not accidentally run, there is a varible `overwrite_rhel_glibc` that is set to `"no"`. Use `sed` or `awk` (or whatever tool you'd like) to change the variable to `"yes"` within a container. Or, manually change it yourself.
+
+## scripts
+
+This folder contains one script so far: `patch_python_new_glibc.sh`. It modifies a user-specified Python executable such that the executable now uses your *new* glibc, rather than the existing RHEL glibc. In order to run it, it takes two arguments: (1) a path that points to your new glibc installation, and (2) a path to the Python executable to 'patch'

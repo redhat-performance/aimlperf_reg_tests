@@ -44,6 +44,7 @@
           - bzip2
           - gcc
           - gcc-c++
+          - patchelf
           - wget
         state: present
 
@@ -115,14 +116,3 @@
         target: install
         chdir: '{{ glibc_build_path }}/glibc-build'
 
-    # For building NumPy, we have to create a symlink to {{ glibc_install_prefix }}/include/endian.h since NumPy has a bug (due to hardcoding)
-    - name: Create dummy {{ glibc_install_prefix }}/include/sys folder
-      file:
-        state: directory
-        path: '{{ glibc_install_prefix }}/include/sys'
-
-    - name: Create symlink to {{ glibc_install_prefix }}/include/endian.h
-      file:
-        state: link
-        src: '{{ glibc_install_prefix }}/include/endian.h'
-        dest: '{{ glibc_install_prefix }}/include/sys/endian.h'

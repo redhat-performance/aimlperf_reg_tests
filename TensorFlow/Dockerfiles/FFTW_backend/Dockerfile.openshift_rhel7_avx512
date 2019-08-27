@@ -44,23 +44,32 @@ ENV MAKE_INSTALLER_PLAYBOOK=${HOME}/playbooks/make_installer
 ENV BISON_INSTALLER_PLAYBOOK=${HOME}/playbooks/bison_installer
 ENV TEXINFO_INSTALLER_PLAYBOOK=${HOME}/playbooks/texinfo_installer
 ENV GLIBC_INSTALLER_PLAYBOOK=${HOME}/playbooks/glibc_installer
+ENV GLIBC_UPDATER_PLAYBOOK=${HOME}/playbooks/glibc_updater
 ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
 ENV FFTW_INSTALLATION=${HOME}/playbooks/FFTW_installation
 ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
 ENV TENSORFLOW_INSTALLATION=${HOME}/playbooks/TensorFlow_installation
 ENV TENSORFLOW_BENCHMARKS=${HOME}/playbooks/TensorFlow_benchmarks
 
-# Prepare for playbook installers
+# Set 'scripts' folder (for copying Python patcher script)
+ENV SCRIPTS=${HOME}/scripts
+
+# Set Python executable
+ENV PYTHON_EXECUTABLE=/usr/bin/python3
+
+# Prepare for playbook installers and Python patcher script
 RUN mkdir -p ${GCC_INSTALLER_PLAYBOOK} && \
     mkdir -p ${MAKE_INSTALLER_PLAYBOOK} && \
     mkdir -p ${BISON_INSTALLER_PLAYBOOK} && \
     mkdir -p ${TEXINFO_INSTALLER_PLAYBOOK} && \
     mkdir -p ${GLIBC_INSTALLER_PLAYBOOK} && \
+    mkdir -p ${GLIBC_UPDATER_PLAYBOOK} && \
     mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
     mkdir -p ${FFTW_INSTALLATION} && \
     mkdir -p ${TF_PREREQS_PLAYBOOK} && \
     mkdir -p ${TENSORFLOW_INSTALLATION} && \
     mkdir -p ${TENSORFLOW_BENCHMARKS} && \
+    mkdir -p ${SCRIPTS} && \
     mkdir -p ${HOME}/.cache
 
 # Copy playbooks
@@ -69,11 +78,15 @@ COPY misc/playbooks/make_installer ${MAKE_INSTALLER_PLAYBOOK}
 COPY misc/playbooks/bison_installer ${BISON_INSTALLER_PLAYBOOK}
 COPY misc/playbooks/texinfo_installer ${TEXINFO_INSTALLER_PLAYBOOK}
 COPY misc/playbooks/glibc_installer ${GLIBC_INSTALLER_PLAYBOOK}
+COPY misc/playbooks/glibc_updater ${GLIBC_UPDATER_PLAYBOOK}
 COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
 COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
 COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
 COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
 COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
+
+# Copy Python patcher script
+COPY misc/scripts/patch_python_new_glibc.sh ${SCRIPTS}
 
 # Set build directory
 ENV TOOLS_BUILD_PATH=${HOME}/build
@@ -125,6 +138,22 @@ RUN cd ${GLIBC_INSTALLER_PLAYBOOK} && \
     rm -rf ${GLIBC_INSTALLER_PLAYBOOK} && \
     cd .. && \
     rm -rf ${TOOLS_BUILD_PATH}
+
+# Now update Python
+RUN cd ${SCRIPTS} && \
+    sh patch_python_new_glibc.sh "${TOOLS_INSTALL_PATH}" "${PYTHON_EXECUTABLE}" && \
+    cd .. && \
+    rm -rf ${SCRIPTS}
+
+# Update glibc
+RUN cd ${GLIBC_UPDATER_PLAYBOOK} && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{new_glibc_install_path: '${TOOLS_INSTALL_PATH}'}" && \
+    cd .. && \
+    rm -rf ${GLIBC_UPDATER_PLAYBOOK}
+
+# Patch sys/endian.h for NumPy build
+RUN mkdir ${TOOLS_INSTALL_PATH}/sys && \
+    ln -s ${TOOLS_INSTALL_PATH}/endian.h ${TOOLS_INSTALL_PATH}/sys/endian.h
 
 # Give user permissions to modify the 'macros' file + other files to run tests
 RUN chmod 777 /usr/libexec/s2i/run && \

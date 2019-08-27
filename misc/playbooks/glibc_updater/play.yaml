@@ -1,0 +1,69 @@
+---
+
+#######
+####### WARNING: This playbook is potentially EXTREMELY destructive. Do NOT run this on bare metal. Run it in a container
+#######
+
+- hosts: localhost
+  connection: local
+
+  vars:
+
+    # Points to where the new glibc is installed
+    new_glibc_install_path: '{{ new_glibc_install_path | default("/usr/local") }}'
+
+    # Edit this variable here via 'sed' or 'awk' if using this playbook in a script or a container. Set
+    # its value to 'yes' if you would like to overwrite the RHEL glibc
+    overwrite_rhel_glibc: 'no'
+
+  tasks:
+
+    # Print out if we're going to overwrite the RHEL glibc
+    - debug:
+        msg: 'Overwrite RHEL glibc? {{ overwrite_rhel_glibc }}'
+
+    # Only execute if you're okay with overwriting the original glibc!
+    - block:
+
+      # Find old glibc path
+      - name: Find old glibc path
+        find:
+          paths: ['/usr/lib']
+          file_type: directory
+          use_regex: yes
+          patterns: ['.*x86_64.*']
+        register: old_glibc_path
+
+      # Print out where the old glibc path is
+      - debug:
+          msg: 'Old glibc installation found: {{ old_glibc_path.files[0].path }}'
+
+      # Get all glibc shared object libraries
+      - name: Get all old glibc shared object libraries
+        find:
+          paths: '{{ old_glibc_path.files[0].path }}/lib64'
+          file_type: file
+          use_regex: yes
+          patterns: ['.*.so.*']
+        register: old_glibc_libraries
+
+      # Remove all old glibc shared object libraries so we can create new symlinks
+      - name: Remove all old glibc shared object libraries so we can create symlinks to the new glibc
+        command: rm {{ item.path }}
+        with_items: '{{ old_glibc_libraries.files }}'
+
+      # Get filenames
+      - name: Get names of all the files
+        shell: 'ls {{ item.path }} | rev | cut -d "/" -f 1 | rev'
+        with_items: '{{ old_glibc_libraries.files }}'
+        register: all_glibc_lib_names
+
+      # Now create the symlinks
+      - name: Create symlinks to point to the new glibc
+        file:
+          state: link
+          src: '{{ old_glibc_path.files[0].path }}/lib64/{{ item.stdout_lines[0] }}'
+          dest: '{{ new_glibc_install_path }}/lib64/{{ item.stdout_lines[0] }}'
+        with_items: '{{ all_glibc_lib_names.results }}'
+      
+      when: overwrite_rhel_glibc == 'yes'
