@@ -137,16 +137,12 @@ RUN cd ${GLIBC_INSTALLER_PLAYBOOK} && \
     cd .. && \
     rm -rf ${GLIBC_INSTALLER_PLAYBOOK} && \
     cd .. && \
-    rm -rf ${TOOLS_BUILD_PATH}
-
-# Now update Python
-RUN cd ${SCRIPTS} && \
+    rm -rf ${TOOLS_BUILD_PATH} && \
+    cd ${SCRIPTS} && \
     sh patch_python_new_glibc.sh "${TOOLS_INSTALL_PATH}" "${PYTHON_EXECUTABLE}" && \
     cd .. && \
-    rm -rf ${SCRIPTS}
-
-# Update glibc
-RUN cd ${GLIBC_UPDATER_PLAYBOOK} && \
+    rm -rf ${SCRIPTS} && \
+    cd ${GLIBC_UPDATER_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{new_glibc_install_path: '${TOOLS_INSTALL_PATH}'}" && \
     cd .. && \
     rm -rf ${GLIBC_UPDATER_PLAYBOOK}
