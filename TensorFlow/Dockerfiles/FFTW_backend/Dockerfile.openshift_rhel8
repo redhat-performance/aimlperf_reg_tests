@@ -1,4 +1,4 @@
-FROM image-registry.openshift-image-registry.svc:5000/rhel8-s2i-core:latest
+FROM rhel8-s2i-core:latest
 MAINTAINER Courtney Pacheco <cpacheco@redhat.com>
 ENV LANG=en_US.utf8
 USER root
