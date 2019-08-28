@@ -2,7 +2,70 @@
 
 ## Overview
 
-This folder contains files used for launching the [official TensorFlow High-Performance CNN benchmarks](https://github.com/tensorflow/benchmarks/tree/master/scripts/tf_cnn_benchmarks) as an app in OpenShift on AWS. To run, first make sure you've set up an OpenShift AWS instance and exposed your image registry (Docker, CRI-O, etc.). The instance can be either a CPU or GPU type. Once your OpenShift AWS is ready, run:
+This folder contains files used for launching the [official TensorFlow High-Performance CNN benchmarks](https://github.com/tensorflow/benchmarks/tree/master/scripts/tf_cnn_benchmarks) as an app in OpenShift on AWS. If you wish to build and run TensorFlow on RHEL 8, follow the instructions in the next section carefully. They are required. Otherwise, for RHEL 7 builds, you can skip to the **Basics** section.
+
+## Using redhat.io Images (REQUIRED FOR RHEL 8 BUILDS)
+
+For RHEL 8, you will need to use one of the images located in the container catalog, under the name registry.redhat.io.
+
+To use images from the redhat.io image registry, you will need to do the following:
+
+  1. Download your secret. The "secret" should be named something along the lines of "<your-username>-secret.yaml" and save it to `../../secrets`.
+  2. Submit your secret to the cluster
+  3. Create a template with `setup/rhel8_s2i_image_buildconfig.yaml` to add the image to the repository
+  4. Import the image
+
+For more information on (1.) and how to acquire a secret, visit [The Container Catalog](https://access.redhat.com/containers/). The YAML file should look something like this:
+
+```
+apiVersion: v1
+kind: Secret
+metadata:
+  name: 1234567-USERNAME-pull-secret
+data:
+  .dockerconfigjson: <hash>
+type: kubernetes.io/dockerconfigjson
+```
+
+but `1234567` will be a very specific 7-digit ID number, `USERNAME` is your registry username, and `<hash>` is a long string that contains your secret for accessing the redhat.io registry.
+
+
+Once you've acquired your "secret" YAML file, you can add it to your `openshift-image-registry` namespace via:
+
+```
+$ oc project openshift-image-registry
+$ oc create -f ../../secrets/redhat_io_registry.yaml
+```
+
+Now, add the information to the OpenShift Image Registry: 
+
+```
+$ oc new-app --template="rhel8-image-template" \
+             --param=REDHAT_IO_REGISTRY="registry.redhat.io/rhel8/s2i-core" \
+             --param=TAG=latest \
+             --param=PULL_SECRET=1234567-USERNAME-pull-secret
+```
+
+Finally, import the image:
+
+```
+$ oc import-image rhel8-s2i-core
+```
+
+And check that the image has been pulled:
+
+```
+$ oc get is
+NAME                  IMAGE REPOSITORY                       TAGS     UPDATED
+rhel8-s2i-core        registry.redhat.io/rhel8/s2i-core      latest   17 minutes ago
+```
+
+Success! The RHEL 8 s2i image has successfully been pulled into the OpenShift Image Repository! Now you can move onto the "Basics" section below.
+
+
+## Basics
+
+To run, first make sure you've set up an OpenShift AWS instance and exposed your image registry (Docker, CRI-O, etc.). The instance can be either a CPU or GPU type. Once your OpenShift AWS is ready, run:
 
 ```
 $ sh run_me.sh -v <rhel_version> -v <blas_backend_to_use> -d <num_devices_to_use>
@@ -14,15 +77,22 @@ e.g.,
 $ sh run_me.sh -v 7 -b fftw -d 24
 ```
 
+or 
+
+```
+$ sh run_me.sh -v 8 -b fftw -d 24
+```
+
 The above command will load the templates from the `templates` folder into a random AWS instance, create a build image special for the TensorFlow benchmarks, then run the benchmarks on the number of CPUs specified by `-d`.
 
-Note that the default C compiler that will be used to build FFTW, NumPy, and TensorFlow is set to `/usr/bin/gcc`. If you wish to use a *different* `gcc` installation, use the `-c` option to pass in its path. (Note: this is not the gcc on your machine, but rather, the gcc that is in your s2i image.)
+Note that the default C compiler that will be used to build FFTW, NumPy, and TensorFlow is set to `/usr/bin/gcc`. If you're building a RHEL 7 image (i.e., not RHEL 8) and wish to use a *different* `gcc` installation such that you can build with AVX512\* instructions, use the `-c` option to pass in its path. (Note: this is not the gcc on your machine, but rather, the gcc that is in your s2i image.)
 
 ## How it Works
 
-By default, your OpenShift image will be named `tensorflow-rhel7` and will be saved to your exposed OpenShift image registry. (NOTE: You don't need to tell the `run_me.sh` script the link to your registry since the script automatically determines the link for you. However, if you have *multiple* registries for whatever reason, you may want to edit which registry to use. So, edit the `REGISTRY` variable.)
+By default, your OpenShift image will be named `tensorflow-rhel7` for RHEL 7 or `tensorflow-rhel8` for RHEL 8, and will be saved to your exposed OpenShift image registry. (NOTE: You don't need to tell the `run_me.sh` script the link to your registry since the script automatically determines the link for you. However, if you have *multiple* registries for whatever reason, you may want to edit which registry to use. So, edit the `REGISTRY` variable.)
 
 You can run `run_me.sh` multiple times if you want. It is safe to do so, as it cleans up the environment every time you want to start a new build.
+
 
 ## Advanced Usage: Node Feature Discovery
 
@@ -37,19 +107,23 @@ or
 $ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -x <avx_instruction_set_name> -d <num_devices_to_use> [optional args]
 ```
 
+(And of course, you can use RHEL 8 instead of RHEL 7 by passing in the value `8` when using the `-v` option.)
+
 Using the `-n` option calls for NFD to be used when building and running the TensorFlow benchmark app. Replace `<instance_type>` with the AWS instance type you want to use (e.g., m4.4xlarge, m4.large, p2.8xlarge etc.), or `<avx_instruction_set_name>` with the AVX instructions you want to use (either `no_avx`, `avx`, `avx2`, or `avx512`). Note that you cannot use both an instance type and AVX instructions at the same time. If you want to use a specific number of CPUs or GPUs, then use `-i` to choose an instance with the number of CPUs/GPUs you want to use.
 
-If you're using AVX512 instructions, you will need to pass in the path to the new gcc to match the gcc version you specified in `../Dockerfiles/FFTW_backend/Dockerfile.openshift_rhel7_avx512`. (The default gcc path specified in that file is `/usr/local/gcc-${GCC_VERSION}/bin/gcc-${GCC_VERSION}`.) In other words, if you specified version `9.2.0`,
+If you're using AVX512 instructions with RHEL 7, you will need to pass in the path to the new gcc to match the gcc version you specified in `../Dockerfiles/FFTW_backend/Dockerfile.openshift_rhel7_avx512`. (The default gcc path specified in that file is `/usr/local/gcc-${GCC_VERSION}/bin/gcc-${GCC_VERSION}`.) In other words, if you specified version `9.2.0`,
 
 ```
 $ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -x avx512 -c '/usr/local/gcc-9.2.0/bin/gcc-9.2.0' -d <num_devices_to_use> [optional args]
 ```
 
+Note that this specific RHEL 7 AVX512 image build will take a **significant** amount of time, on the order of a *few hours*. This is normal.
+
 ## Automatically creating a Node
 
 If you wish to create a MachineSet and run the pod on a node with a specific instance type, use `../../helper_scripts/OpenShift/create_machineset.sh` to create a YAML file. Or you can create your own YAML file. The script is provided as a convenience.
 
-Once your YAML file is created,
+Once your YAML file has been generated,
 
 ```
 $ oc create -f <YAML_filename>
@@ -62,7 +136,7 @@ $ cd ../../helper_scripts/OpenShift
 $ sh create_machineset.sh -h
 ```
 
-To get your AMI ID, either log into your [AWS console](https://aws.amazon.com/console/) and find your cluster, **or** 
+To get your AMI ID and cluster ID, either log into your [AWS console](https://aws.amazon.com/console/) and find your cluster, **or** 
 
 ```
 $ aws iam list-instance-profiles --output json | grep <your_cluster_name_or_partial_cluster_name> -B 18

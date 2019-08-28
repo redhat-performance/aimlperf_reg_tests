@@ -6,7 +6,7 @@ usage() {
     echo ""
     echo "Usage: $0 [-v rhel_version] [-b backend] [-d number_of_devices] [-n] [-t instance_type] [-r image_registry] [-s namespace] [-i custom_imagestream_name] [-a custom_app_name] [-x instruction_set] [-p] [-c gcc_path] [-m memory_size] [-g]"
     echo "  REQUIRED:"
-    echo "  -v  Version of RHEL to use. Choose from: {7}. (Will be adding RHEL 8 in the future.)"
+    echo "  -v  Version of RHEL to use. Choose from: {7, 8}."
     echo ""
     echo "  -b  NumPy backend to use with TensorFlow. Choose from: {fftw, openblas}" 
     echo ""
@@ -14,7 +14,7 @@ usage() {
     echo ""
     echo ""
     echo "  OPTIONAL:"
-    echo "  -c  C compiler (gcc). e.g., '/usr/bin/gcc'"
+    echo "  -c  C compiler (gcc). Only usable with RHEL 7 when using the -x argument. (e.g., '/usr/bin/gcc')"
     echo ""
     echo "  -n  Use NFD. (Requires option -i *or* -x to be used!)"
     echo "      -i  Custom ImageStream name (this is what your image will be named). Default: fftw-rhel<rhel-version>"
@@ -103,9 +103,18 @@ done
 shift $((OPTIND-1))
 
 # Check RHEL versioning
-if [[ ${RHEL_VERSION} != 7 ]]; then
-    echo "Invalid version of RHEL. Choose from: {7} (Note: RHEL 8 coming)"
+if [[ ${RHEL_VERSION} != 7 ]] && [[ ${RHEL_VERSION} != 8 ]]; then
+    echo "Invalid version of RHEL. Choose from: {7, 8}"
     exit 1
+fi
+
+# If using RHEL 8, check if 'rhel8-s2i-core' exists
+if [[ ${RHEL_VERSION} == 8 ]]; then
+    RHEL8_S2I_CORE=$(oc get is rhel8-s2i-core)
+    if [[ -z ${RHEL8_S2I_CORE} ]]; then
+        echo "Could not find the rhel8-s2i-core ImageStream. Have you imported the image yet? See README.md for more information."
+        exit 1
+    fi
 fi
 
 # Check backend choice
@@ -115,11 +124,6 @@ if [[ ${BACKEND} != "fftw" ]] && [[ ${BACKEND} != "openblas" ]]; then
 elif [[ ${BACKEND} == "openblas" ]]; then
     echo "OpenBLAS backend build not implemented yet."
     exit 1
-fi
-
-# Check C compiler "GCC"
-if [[ -z ${GCC} ]]; then
-    GCC="/usr/bin/gcc"
 fi
 
 # Check NFD options
@@ -134,6 +138,14 @@ elif [[ ${NFD} == "nfd" ]] && [[ ! -z ${AVX} ]] && [[ ! -z ${INSTANCE_TYPE} ]]; 
 elif [[ ${NFD} == "nfd" ]] && [[ -z ${AVX} ]] && [[ -z ${INSTANCE_TYPE} ]]; then
     echo "Please specify either AVX instructions or instance type, but not both."
     exit 1
+fi
+
+# Check C compiler "GCC" if using RHEL 7
+if [[ ${AVX} == "avx512" ]] && [[ -z ${GCC} ]] && [[ ${RHEL_VERSION} == 7 ]]; then
+    echo "ERROR. For RHEL 7, please specify a path to gcc with the -c option when using '-x avx512'"
+    exit 1
+elif [[ -z ${GCC} ]]; then
+    GCC="/usr/bin/gcc"
 fi
 
 # Check number of devices passed in
@@ -187,18 +199,42 @@ fi
 
 # Initialize image name (if not specified)
 if [[ -z ${IS_NAME} ]]; then
-    if [[ ${RHEL_VERSION} == 7 ]] && [[ ! -z ${AVX} ]]; then
-        IS_NAME="tensorflow-${BACKEND}-rhel7-${AVX}"
-    elif [[ ${RHEL_VERSION} == 7 ]] && [[ ${USE_GPU} == "true" ]]; then
-        IS_NAME="tensorflow-${BACKEND}-rhel7-gpu"
+
+    # For RHEL 8...
+    if [[ ${RHEL_VERSION} == 8 ]]; then
+        if [[ ! -z ${AVX} ]]; then
+            IS_NAME="tensorflow-${BACKEND}-rhel8-${AVX}"
+        elif [[ ${USE_GPU} == "true" ]]; then
+            IS_NAME="tensorflow-${BACKEND}-rhel8-gpu"
+        else
+            IS_NAME="tensorflow-${BACKEND}-rhel8"
+        fi
+
+    # Otherwise, for RHEL 7...
     else
-        IS_NAME="tensorflow-${BACKEND}-rhel7"
+        if [[ ! -z ${AVX} ]]; then
+            IS_NAME="tensorflow-${BACKEND}-rhel7-${AVX}"
+        elif [[ ${USE_GPU} == "true" ]]; then
+            IS_NAME="tensorflow-${BACKEND}-rhel7-gpu"
+        else
+            IS_NAME="tensorflow-${BACKEND}-rhel7"
+        fi
     fi
 fi
 
 # Initialize app name (if not specified)
 if [[ -z ${APP_NAME} ]]; then
-    if [[ ${RHEL_VERSION} == 7 ]]; then
+    if [[ ${RHEL_VERSION} == 8 ]]; then
+        if [[ ! -z ${CPU_MANAGER} ]] && [[ ! -z ${AVX} ]]; then
+            APP_NAME="tensorflow-s2i-benchmark-app-rhel8-${AVX}-cpu-managed"
+        elif [[ ! -z ${AVX} ]]; then
+            APP_NAME="tensorflow-s2i-benchmark-app-rhel8-${AVX}"
+        elif [[ ${USE_GPU} == "true" ]]; then
+            APP_NAME="tensorflow-s2i-benchmark-app-rhel8-gpu"
+        else
+            APP_NAME="tensorflow-s2i-benchmark-app-rhel8"
+        fi
+    else
         if [[ ! -z ${CPU_MANAGER} ]] && [[ ! -z ${AVX} ]]; then
             APP_NAME="tensorflow-s2i-benchmark-app-rhel7-${AVX}-cpu-managed"
         elif [[ ! -z ${AVX} ]]; then
@@ -275,15 +311,8 @@ if [[ ${USE_GPU} == "true" ]]; then
 
 # If the RHEL version is 7 and we're *not* using GPUs, then set the template name and file to point to the RHEL 7 ones
 elif [[ ${RHEL_VERSION} == 7 ]]; then
-
-    # Check if we're using AVX512 instructions, because we need to use a special Dockerfile for that
-    if [[ ${AVX} == "avx512" ]]; then
-        build_image_template_name="${build_image_template_name_prefix}7-avx512"
-        build_image_template_file="${build_image_template_filename_prefix}7-avx512.yaml"
-    else
-        build_image_template_name="${build_image_template_name_prefix}7"
-        build_image_template_file="${build_image_template_filename_prefix}7.yaml"
-    fi
+    build_image_template_name="${build_image_template_name_prefix}7"
+    build_image_template_file="${build_image_template_filename_prefix}7.yaml"
 
 # Otherwise, point to the RHEL 8 ones
 else

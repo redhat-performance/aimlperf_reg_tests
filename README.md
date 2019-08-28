@@ -32,3 +32,11 @@ $ sh gpu_setup.sh
 ## Miscellaneous Files
 
 Under the `misc` folder are miscellaneous files for doing various things. Currently, there are a few playbooks for installing `gcc` and `glibc`, along with their dependencies. Running these playbooks is optional, but doing so enables you to install whatever version of `gcc` (and `glibc`) you'd like, which may be useful if your current version of TensorFlow, etc. does not support your existing version of `gcc` (e.g., more recent versions of TensorFlow do not support gcc-4.8.x if trying to build with AVX-512 instructions).
+
+## Secrets
+
+The `secrets` folder contains secrets for various things. For example, you will need a secret to pull images from the redhat.io registry if you wish to use RHEL 8 s2i images.
+
+You can read more information on this by reading the `secrets/README.md` file. Instructions on where/how to obtain these secrets files are listed in the README.
+
+Note that there are no actual "secrets" files contained in this folder, only sample files to show the format of such files.

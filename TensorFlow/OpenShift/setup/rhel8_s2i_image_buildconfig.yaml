@@ -1,0 +1,39 @@
+apiVersion: "v1"
+
+kind: "Template"
+
+metadata:
+  annotations:
+    description: "Template to add a RHEL 8 image to the OpenShift image repository (from registry.redhat.io)"
+    tags: "rhel8-image-template"
+  name: "rhel8-image-template"
+
+objects:
+- apiVersion: "v1"
+  kind: "ImageStream"
+  metadata:
+    name: "${IMAGESTREAM_NAME}"
+    namespace: "openshift-image-registry"
+  spec:
+    dockerImageRepository: "${REDHAT_IO_REGISTRY}"
+    tags:
+      - tag: "${TAG}"
+    imagePullSecrets:
+      - name: "${PULL_SECRET}"
+
+parameters:
+- description: "ImageStream name"
+  name: "IMAGESTREAM_NAME"
+  value: "rhel8-s2i-core"
+  required: true
+- description: "redhat.io registry. e.g., registry.redhat.io/rhel8/s2i-core"
+  name: "REDHAT_IO_REGISTRY"
+  value: "registry.redhat.io/rhel8/s2i-core"
+  required: true
+- description: "Tag of the image. (Default: 'latest')"
+  name: "TAG"
+  value: "latest"
+  required: true
+- description: "Name of the pull secret"
+  name: "PULL_SECRET"
+  required: true
