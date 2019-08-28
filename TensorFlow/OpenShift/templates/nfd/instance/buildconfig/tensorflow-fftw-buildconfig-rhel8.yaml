@@ -20,10 +20,13 @@ objects:
       git:
         uri: "https://github.com/redhat-performance/aimlperf_reg_tests.git"
         ref: "master"
+    dockerImageRepository: "registry.redhat.io/rhel8/s2i-core"
     strategy: 
       type: "Docker"
       dockerStrategy:
         dockerfilePath: "TensorFlow/Dockerfiles/FFTW_backend/Dockerfile.openshift_rhel8"
+        pullSecret:
+          name: "${PULL_SECRET}"
     output: 
       to:
         kind: "ImageStreamTag"
@@ -50,3 +53,7 @@ parameters:
 - description: "AWS instance type"
   name: "INSTANCE_TYPE"
   value: "m4.4xlarge"
+  required: true
+- description: "Pull secret"
+  name: "PULL_SECRET"
+  required: true

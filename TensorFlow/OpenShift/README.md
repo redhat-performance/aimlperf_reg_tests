@@ -29,39 +29,11 @@ type: kubernetes.io/dockerconfigjson
 
 but `1234567` will be a very specific 7-digit ID number, `USERNAME` is your registry username, and `<hash>` is a long string that contains your secret for accessing the redhat.io registry.
 
-
-Once you've acquired your "secret" YAML file, you can add it to your `openshift-image-registry` namespace via:
-
-```
-$ oc project openshift-image-registry
-$ oc create -f ../../secrets/redhat_io_registry.yaml
-```
-
-Now, add the information to the OpenShift Image Registry: 
+You should save this file as `../../secrets/redhat_io_registry.yaml`. Now run:
 
 ```
-$ oc new-app --template="rhel8-image-template" \
-             --param=REDHAT_IO_REGISTRY="registry.redhat.io/rhel8/s2i-core" \
-             --param=TAG=latest \
-             --param=PULL_SECRET=1234567-USERNAME-pull-secret
+$ sh setup/add_registry_secret.sh
 ```
-
-Finally, import the image:
-
-```
-$ oc import-image rhel8-s2i-core
-```
-
-And check that the image has been pulled:
-
-```
-$ oc get is
-NAME                  IMAGE REPOSITORY                       TAGS     UPDATED
-rhel8-s2i-core        registry.redhat.io/rhel8/s2i-core      latest   17 minutes ago
-```
-
-Success! The RHEL 8 s2i image has successfully been pulled into the OpenShift Image Repository! Now you can move onto the "Basics" section below.
-
 
 ## Basics
 
