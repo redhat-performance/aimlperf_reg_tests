@@ -1,4 +1,4 @@
-FROM rhel8-s2i-core
+FROM registry.redhat.io/rhel8/s2i-core
 MAINTAINER Courtney Pacheco <cpacheco@redhat.com>
 ENV LANG=en_US.utf8
 USER root
