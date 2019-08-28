@@ -15,7 +15,7 @@ while IFS=" " read -r t || [ -n "$t" ]
 do
    if [[ ${t} == "name:"* ]]; then
        found_name="true"
-       res="$(echo ${t} | cut -d ' ' -f 2)"
+       pull_secret="$(echo ${t} | cut -d ' ' -f 2)"
        break
    fi
 done < "${REGISTRY_SECRET_FILE}"
