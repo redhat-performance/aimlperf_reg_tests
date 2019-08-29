@@ -64,7 +64,7 @@
 - name: If using RHEL 8, get FFTW3 source rpm
   shell: |
     cd {{ BUILD_DIR }}
-    yumdownloader --source fftw
+    yumdownloader --source fftw3
   when: RHEL_VERSION == "8"
 
 - name: If using RHEL 8, unpack source rpm and place the spec file in '{{ BUILD_DIR }}'
