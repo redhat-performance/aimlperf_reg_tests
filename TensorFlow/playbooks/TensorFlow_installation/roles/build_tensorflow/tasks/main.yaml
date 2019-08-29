@@ -89,7 +89,7 @@
   register: ENABLE_AVX2
 
 - name: Set AVX512 copt flag
-  shell: if (( '{{ GCC_MAIN_VERSION.stdout }}' < '{{ TENSORFLOW_AVX512_MIN_GCC_VER }}' )); then echo ""; elif (( '{{ GCC_RELEASE.stdout }}' < '{{ TENSORFLOW_AVX512_MIN_GCC_REL }}' )); then echo ""; elif [[ ! -z '{{ HAVE_AVX512F.stdout }}' ]]; then echo "--copt=-mavx512f"; elif [[ ! -z '{{ HAVE_AVX512DQ.stdout }}' ]]; then echo "--copt=-mavx512dq"; elif [[ ! -z '{{ HAVE_AVX512CD.stdout }}' ]]; then echo "--copt=-mavx512cd"; else echo ""; fi
+  shell: if (( '{{ GCC_MAIN_VERSION.stdout }}' < '{{ TENSORFLOW_AVX512_MIN_GCC_VER }}' )); then echo ""; elif (( '{{ GCC_RELEASE.stdout }}' < '{{ TENSORFLOW_AVX512_MIN_GCC_REL }}' )) && (( '{{ GCC_MAIN_VERSION.stdout }}' == '{{ TENSORFLOW_AVX512_MIN_GCC_VER }}' )); then echo ""; elif [[ ! -z '{{ HAVE_AVX512F.stdout }}' ]]; then echo "--copt=-mavx512f"; elif [[ ! -z '{{ HAVE_AVX512DQ.stdout }}' ]]; then echo "--copt=-mavx512dq"; elif [[ ! -z '{{ HAVE_AVX512CD.stdout }}' ]]; then echo "--copt=-mavx512cd"; else echo ""; fi
   register: ENABLE_AVX512
 
 - name: Set FMA copt flag
