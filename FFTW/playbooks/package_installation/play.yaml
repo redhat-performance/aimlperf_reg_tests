@@ -44,7 +44,6 @@
   - name: Install dnf prereqs (if using RHEL 8)
     dnf:
       name:
-        - bc
         - binutils
         - cpio
         - cpp
