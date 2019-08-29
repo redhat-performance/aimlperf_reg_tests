@@ -12,5 +12,10 @@
       - wheel
     executable: pip3
 
-- name: Install remaining TensorFlow requirements
+- name: RHEL 7 --> Install remaining TensorFlow requirements
   yum: pkg=glibc
+  when: RHEL_VERSION == '7'
+
+- name: RHEL 8 --> Install remaining TensorFlow requirements
+  dnf: pkg=glibc
+  when: RHEL_VERSION == '8'

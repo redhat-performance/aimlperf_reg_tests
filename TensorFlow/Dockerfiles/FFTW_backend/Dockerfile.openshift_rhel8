@@ -30,7 +30,7 @@ ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
 RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK}
 COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8'}" && \
     cd .. && \
     rm -rf ${FFTW_PREREQS_PLAYBOOK}
 
@@ -39,7 +39,7 @@ ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
 RUN mkdir -p ${TF_PREREQS_PLAYBOOK}
 COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
 RUN cd ${TF_PREREQS_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes'}" && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8', use_s2i: 'yes'}" && \
     cd .. && \
     rm -rf ${TF_PREREQS_PLAYBOOK}
 
