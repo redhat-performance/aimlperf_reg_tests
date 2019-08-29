@@ -52,7 +52,7 @@
       - make
       - python36-devel
       - subversion
-  when: RHEL_VERSION == '8'
+  when: RHEL_VERSION == '8' and USE_S2I == 'no'
 
 - name: Install yum NumPy requirements for RHEL 8 (for UBI and s2i images only)
   dnf:
