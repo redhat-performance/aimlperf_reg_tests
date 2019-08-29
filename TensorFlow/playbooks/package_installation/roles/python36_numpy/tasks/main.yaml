@@ -69,212 +69,187 @@
       - zlib-devel
   when: RHEL_VERSION == '8'
 
-- name: Install pip NumPy requirements for RHEL 7/8 (for UBI and s2i images only)
-  pip:
-    name: Cython
-    executable: pip3
-  when: USE_S2I == 'yes'
+# For s2i and ubi7/ubi8 only
+- block:
+  - name: Install pip NumPy requirements for RHEL 7/8 (for UBI and s2i images only)
+    pip:
+      name: Cython
+      executable: pip3
 
-- name: << s2i/ubi only >> Create APR build directory
-  file:
-    state: directory
-    path: '{{ APR_BUILD_DIR }}'
+  - name: << s2i/ubi only >> Create APR build directory
+    file:
+      state: directory
+      path: '{{ APR_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Get APR (Apache Portable Runtime)
-  unarchive:
-    src: https://archive.apache.org/dist/apr/apr-1.6.5.tar.gz
-    dest: '{{ APR_BUILD_DIR }}'
-    remote_src: yes
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Get APR (Apache Portable Runtime)
+    unarchive:
+      src: https://archive.apache.org/dist/apr/apr-1.6.5.tar.gz
+      dest: '{{ APR_BUILD_DIR }}'
+      remote_src: yes
 
-- name: << s2i/ubi only >> Configure APR
-  shell: |
-    cd {{ APR_BUILD_DIR }}/apr-1.6.5
-    ./configure
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Configure APR
+    shell: |
+      cd {{ APR_BUILD_DIR }}/apr-1.6.5
+      ./configure
 
-- name: << s2i/ubi only >> Make APR
-  make:
-    target: all
-    chdir: '{{ APR_BUILD_DIR }}/apr-1.6.5'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Make APR
+    make:
+      target: all
+      chdir: '{{ APR_BUILD_DIR }}/apr-1.6.5'
 
-- name: << s2i/ubi only >> Install APR
-  make:
-    target: install
-    chdir: '{{ APR_BUILD_DIR }}/apr-1.6.5'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Install APR
+    make:
+      target: install
+      chdir: '{{ APR_BUILD_DIR }}/apr-1.6.5'
 
-- name: << s2i/ubi only >> Create APR-util build directory
-  file:
-    state: directory
-    path: '{{ APR_UTIL_BUILD_DIR }}'
+  - name: << s2i/ubi only >> Create APR-util build directory
+    file:
+      state: directory
+      path: '{{ APR_UTIL_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Get APR-util
-  unarchive:
-    src: http://apache.mirrors.hoobly.com//apr/apr-util-1.6.1.tar.gz
-    dest: '{{ APR_UTIL_BUILD_DIR }}'
-    remote_src: yes
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Get APR-util
+    unarchive:
+      src: http://apache.mirrors.hoobly.com//apr/apr-util-1.6.1.tar.gz
+      dest: '{{ APR_UTIL_BUILD_DIR }}'
+      remote_src: yes
 
-- name: << s2i/ubi only >> Configure APR-util
-  shell: |
-    cd {{ APR_UTIL_BUILD_DIR }}/apr-util-1.6.1
-    ./configure --with-apr=/usr/local/apr
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Configure APR-util
+    shell: |
+      cd {{ APR_UTIL_BUILD_DIR }}/apr-util-1.6.1
+      ./configure --with-apr=/usr/local/apr
 
-- name: << s2i/ubi only >> Make APR-util
-  make:
-    target: all
-    chdir: '{{ APR_UTIL_BUILD_DIR }}/apr-util-1.6.1'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Make APR-util
+    make:
+      target: all
+      chdir: '{{ APR_UTIL_BUILD_DIR }}/apr-util-1.6.1'
 
-- name: << s2i/ubi only >> Install APR-util
-  make:
-    target: install
-    chdir: '{{ APR_UTIL_BUILD_DIR }}/apr-util-1.6.1'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Install APR-util
+    make:
+      target: install
+      chdir: '{{ APR_UTIL_BUILD_DIR }}/apr-util-1.6.1'
 
-- name: << s2i/ubi only >> Create SQLite build directory
-  file:
-    state: directory
-    path: '{{ SQLITE_BUILD_DIR }}'
+  - name: << s2i/ubi only >> Create SQLite build directory
+    file:
+      state: directory
+      path: '{{ SQLITE_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Get SQLite
-  unarchive:
-    src: https://www.sqlite.org/2019/sqlite-autoconf-3280000.tar.gz
-    dest: '{{ SQLITE_BUILD_DIR }}'
-    remote_src: yes
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Get SQLite
+    unarchive:
+      src: https://www.sqlite.org/2019/sqlite-autoconf-3280000.tar.gz
+      dest: '{{ SQLITE_BUILD_DIR }}'
+      remote_src: yes
 
-- name: << s2i/ubi only >> Configure SQLite
-  shell: |
-    cd {{ SQLITE_BUILD_DIR }}/sqlite-autoconf-3280000
-    ./configure
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Configure SQLite
+    shell: |
+      cd {{ SQLITE_BUILD_DIR }}/sqlite-autoconf-3280000
+      ./configure
 
-- name: << s2i/ubi only >> Make SQLite
-  make:
-    target: all
-    chdir: '{{ SQLITE_BUILD_DIR }}/sqlite-autoconf-3280000'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Make SQLite
+    make:
+      target: all
+      chdir: '{{ SQLITE_BUILD_DIR }}/sqlite-autoconf-3280000'
 
-- name: << s2i/ubi only >> Install SQLite
-  make:
-    target: install
-    chdir: '{{ SQLITE_BUILD_DIR }}/sqlite-autoconf-3280000'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Install SQLite
+    make:
+      target: install
+      chdir: '{{ SQLITE_BUILD_DIR }}/sqlite-autoconf-3280000'
 
-- name: << s2i/ubi only >> Create LZ4 build directory
-  file:
-    state: directory
-    path: '{{ LZ4_BUILD_DIR }}'
+  - name: << s2i/ubi only >> Create LZ4 build directory
+    file:
+      state: directory
+      path: '{{ LZ4_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Get LZ4 library
-  git:
-    repo: https://github.com/lz4/lz4.git
-    dest: '{{ LZ4_BUILD_DIR }}'
-    version: '{{ LZ4_VERSION }}'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Get LZ4 library
+    git:
+      repo: https://github.com/lz4/lz4.git
+      dest: '{{ LZ4_BUILD_DIR }}'
+      version: '{{ LZ4_VERSION }}'
 
-- name: << s2i/ubi only >> Make LZ4 library
-  make:
-    target: all
-    chdir: '{{ LZ4_BUILD_DIR }}'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Make LZ4 library
+    make:
+      target: all
+      chdir: '{{ LZ4_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Install LZ4 library
-  make:
-    target: install
-    chdir: '{{ LZ4_BUILD_DIR }}'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Install LZ4 library
+    make:
+      target: install
+      chdir: '{{ LZ4_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Create directory for utf8proc
-  file:
-    state: directory
-    path: '{{ UTF8PROC_BUILD_DIR }}'
+  - name: << s2i/ubi only >> Create directory for utf8proc
+    file:
+      state: directory
+      path: '{{ UTF8PROC_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Get utf8proc
-  git:
-    repo: https://github.com/JuliaStrings/utf8proc.git
-    dest: '{{ UTF8PROC_BUILD_DIR }}'
-    version: '{{ UTF8PROC_VERSION }}'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Get utf8proc
+    git:
+      repo: https://github.com/JuliaStrings/utf8proc.git
+      dest: '{{ UTF8PROC_BUILD_DIR }}'
+      version: '{{ UTF8PROC_VERSION }}'
 
-- name: << s2i/ubi only >> Make utf8proc
-  make:
-    target: all
-    chdir: '{{ UTF8PROC_BUILD_DIR }}'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Make utf8proc
+    make:
+      target: all
+      chdir: '{{ UTF8PROC_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Install utf8proc
-  make:
-    target: install
-    chdir: '{{ UTF8PROC_BUILD_DIR }}'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Install utf8proc
+    make:
+      target: install
+      chdir: '{{ UTF8PROC_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Create subversion build directory
-  file:
-    state: directory
-    path: '{{ SUBVERSION_BUILD_DIR }}'
+  - name: << s2i/ubi only >> Create subversion build directory
+    file:
+      state: directory
+      path: '{{ SUBVERSION_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Get subversion
-  unarchive:
-    src: http://apache.mirrors.tds.net/subversion/subversion-1.12.0.tar.gz
-    dest: '{{ SUBVERSION_BUILD_DIR }}'
-    remote_src: yes
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Get subversion
+    unarchive:
+      src: http://apache.mirrors.tds.net/subversion/subversion-1.12.0.tar.gz
+      dest: '{{ SUBVERSION_BUILD_DIR }}'
+      remote_src: yes
 
-- name: << s2i/ubi only >> Configure Subversion
-  shell: |
-    cd {{ SUBVERSION_BUILD_DIR }}/subversion-1.12.0
-    ./configure
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Configure Subversion
+    shell: |
+      cd {{ SUBVERSION_BUILD_DIR }}/subversion-1.12.0
+      ./configure
 
-- name: << s2i/ubi only >> Make subversion
-  make:
-    target: all
-    chdir: '{{ SUBVERSION_BUILD_DIR }}/subversion-1.12.0'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Make subversion
+    make:
+      target: all
+      chdir: '{{ SUBVERSION_BUILD_DIR }}/subversion-1.12.0'
 
-- name: << s2i/ubi only >> Install subversion
-  make:
-    target: install
-    chdir: '{{ SUBVERSION_BUILD_DIR }}/subversion-1.12.0'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Install subversion
+    make:
+      target: install
+      chdir: '{{ SUBVERSION_BUILD_DIR }}/subversion-1.12.0'
 
-- name: << s2i/ubi only >> Remove APR build folder
-  file:
-    state: absent
-    path: '{{ APR_BUILD_DIR }}'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Remove APR build folder
+    file:
+      state: absent
+      path: '{{ APR_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Remove apr-utils build folder
-  file:
-    state: absent
-    path: '{{ APR_UTIL_BUILD_DIR }}'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Remove apr-utils build folder
+    file:
+      state: absent
+      path: '{{ APR_UTIL_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Remove SQLite build folder
-  file:
-    state: absent
-    path: '{{ SQLITE_BUILD_DIR }}'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Remove SQLite build folder
+    file:
+      state: absent
+      path: '{{ SQLITE_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Remove LZ4 build folder
-  file:
-    state: absent
-    path: '{{ LZ4_BUILD_DIR }}'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Remove LZ4 build folder
+    file:
+      state: absent
+      path: '{{ LZ4_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Remove utf8proc build folder
-  file:
-    state: absent
-    path: '{{ UTF8PROC_BUILD_DIR }}'
-  when: USE_S2I == 'yes'
+  - name: << s2i/ubi only >> Remove utf8proc build folder
+    file:
+      state: absent
+      path: '{{ UTF8PROC_BUILD_DIR }}'
 
-- name: << s2i/ubi only >> Remove subversion build folder
-  file:
-    state: absent
-    path: '{{ SUBVERSION_BUILD_DIR }}'
+  - name: << s2i/ubi only >> Remove subversion build folder
+    file:
+      state: absent
+      path: '{{ SUBVERSION_BUILD_DIR }}'
+
   when: USE_S2I == 'yes'
