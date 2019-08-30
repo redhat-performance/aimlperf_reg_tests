@@ -148,7 +148,8 @@ RUN cd ${GLIBC_INSTALLER_PLAYBOOK} && \
     rm -rf ${GLIBC_UPDATER_PLAYBOOK}
 
 # Patch sys/endian.h for NumPy build
-RUN ln -s ${TOOLS_INSTALL_PATH}/sys/endian.h ${TOOLS_INSTALL_PATH}/incude/endian.h
+RUN PATH_TO_ENDIAN_H=$(find "/usr" -name "endian.h")
+    ln -s ${PATH_TO_ENDIAN_H} ${TOOLS_INSTALL_PATH}/include/sys/endian.h
 
 # Give user permissions to modify the 'macros' file + other files to run tests
 RUN chmod 777 /usr/libexec/s2i/run && \
