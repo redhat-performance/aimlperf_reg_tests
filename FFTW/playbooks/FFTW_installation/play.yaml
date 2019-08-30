@@ -9,6 +9,7 @@
     INSTALL_DIR: '{{ install_dir | default("${HOME}/custom_fftw") }}'
     RHEL_VERSION: '{{ rhel_version | default("7") }}'
     CC: '{{ cc | default("/usr/bin/gcc") }}'
+    FFTW3_VERSION: '{{ fftw3_version | default("3.3.8") }}'
 
   roles:
     # Creates necessary directories for building and installing FFTW
