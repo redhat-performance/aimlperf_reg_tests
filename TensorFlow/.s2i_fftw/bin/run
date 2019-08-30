@@ -101,18 +101,26 @@ cd ${HOME}/playbooks/TensorFlow_installation
 TENSORFLOW_INSTALL_DIR="${HOME}/tensorflow"
 
 # Get the gcc libs
-GCC_EXECUTABLE_NAME=$(echo ${CC} | rev | cut -d'/' -f1 | rev)
-GCC_LIBS=''
-IN=${CC}
-files_folders=$(echo $IN | tr "/" "\n")
-for f in ${files_folders}; do
+# If we're using a custom gcc, then
+if [[ ${CC} != "/usr/bin/gcc" ]]; then
+    GCC_EXECUTABLE_NAME=$(echo ${CC} | rev | cut -d'/' -f1 | rev)
+    GCC_LIBS=''
+    IN=${CC}
+    files_folders=$(echo $IN | tr "/" "\n")
+    for f in ${files_folders}; do
 
-    if [[ ${f} == ${GCC_EXECUTABLE_NAME} ]]; then
-        break;
-    fi
+        if [[ ${f} == ${GCC_EXECUTABLE_NAME} ]]; then
+            break;
+        fi
 
-    GCC_LIBS="${GCC_LIBS}/${f}"
-done
+        GCC_LIBS="${GCC_LIBS}/${f}"
+    done
+
+# Otherwise, the gcc libs are just under /usr/lib/x86_64*
+else
+    x86_64_folder=$(ls /usr/lib | grep x86_64)
+    GCC_LIBS="/usr/lib/${x86_64_folder}"
+fi
 
 # Now build and install TensorFlow
 if [[ ${DEVICE} == "cpu" ]]; then
