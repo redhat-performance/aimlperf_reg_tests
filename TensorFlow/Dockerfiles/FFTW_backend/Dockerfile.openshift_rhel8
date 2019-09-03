@@ -68,7 +68,7 @@ RUN chmod 777 /usr/libexec/s2i/run && \
     mkdir -p /opt/app-root/src/.ansible/tmp && \
     chmod 777 /opt/app-root/src/.ansible/tmp && \
     chmod 777 /opt/app-root/src/.ansible && \
-    chmod 777 /opt/app-root/src/.cache && \
+    chmod -R 777 /opt/app-root/src/.cache && \
     chmod 777 /opt/app-root/src && \
     chmod 777 /opt/app-root
 
