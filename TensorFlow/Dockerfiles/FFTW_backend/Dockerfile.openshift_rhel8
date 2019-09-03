@@ -17,46 +17,50 @@ LABEL io.openshift.expose-services="8080:http"
 # Copy s2i assemble + run
 COPY TensorFlow/.s2i_fftw/bin/ /usr/libexec/s2i
 
+# Set playbook paths
+ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
+ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
+ENV FFTW_INSTALLATION=${HOME}/playbooks/FFTW_installation
+ENV TENSORFLOW_INSTALLATION=${HOME}/playbooks/TensorFlow_installation
+ENV TENSORFLOW_BENCHMARKS=${HOME}/playbooks/TensorFlow_benchmarks
+
+# Create folders for playbooks and folder for playbooks cache
+RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
+    mkdir -p ${TF_PREREQS_PLAYBOOK} && \
+    mkdir -p ${FFTW_INSTALLATION} && \
+    mkdir -p ${TENSORFLOW_INSTALLATION} && \
+    mkdir -p ${TENSORFLOW_BENCHMARKS} && \
+    mkdir -p ${HOME}/.cache
+
+# Copy playbooks and scripts
+COPY helper_scripts/Ansible/install_ansible_from_source.sh ${HOME}
+COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
+COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
+COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
+COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
+COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
+
 # Put on port 8080
 EXPOSE 8080
 
 # Install Ansible
-COPY helper_scripts/Ansible/install_ansible_from_source.sh ${HOME}
 RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
     rm install_ansible_from_source.sh
 
 # Install FFTW prerequisites via Ansible
-ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
-RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK}
-COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8'}" && \
     cd .. && \
     rm -rf ${FFTW_PREREQS_PLAYBOOK}
 
 # Install TensorFlow prerequisites via Ansible
-ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
-RUN mkdir -p ${TF_PREREQS_PLAYBOOK}
-COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
 RUN cd ${TF_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8', use_s2i: 'yes'}" && \
     cd .. && \
     rm -rf ${TF_PREREQS_PLAYBOOK}
 
-# Copy FFTW installation playbook and create dir for installation
-ENV FFTW_INSTALLATION=${HOME}/playbooks/FFTW_installation
-RUN mkdir -p ${FFTW_INSTALLATION}
-COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
-
-# Copy TensorFlow installation playbook and create dirs for installation
-ENV TENSORFLOW_INSTALLATION=${HOME}/playbooks/TensorFlow_installation
-RUN mkdir -p ${TENSORFLOW_INSTALLATION} ${HOME}/.cache
-COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
-
-# Create a folder for the benchmark tests and copy the tests to the new folder
-ENV TENSORFLOW_BENCHMARKS=${HOME}/playbooks/TensorFlow_benchmarks
-RUN mkdir -p ${TENSORFLOW_BENCHMARKS}
-COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
+# Set up symbolic linking for Python so that TensorFlow build doesn't fail when s2i script is called
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Give user permissions to modify the 'macros' file + other files to run tests
 RUN chmod 777 /usr/libexec/s2i/run && \
