@@ -4,13 +4,17 @@ usage() {
     echo "This script launches the TensorFlow CNN High-Performance benchmark app on an AWS OpenShift cluster for RHEL 7 only (for now). Node Feature Discovery may optionally be used for selecting specific nodes, and CPU Manager may optionally be used as well."
     echo ""
     echo ""
-    echo "Usage: $0 [-v rhel_version] [-b backend] [-d number_of_devices] [-n] [-t instance_type] [-r image_registry] [-s namespace] [-i custom_imagestream_name] [-a custom_app_name] [-x instruction_set] [-p] [-c gcc_path] [-m memory_size] [-g]"
+    echo "Usage: $0 [-v rhel_version] [-b backend] [-d number_of_devices] [-s secret_name] [-n] [-t instance_type] [-r image_registry] [-e namespace] [-i custom_imagestream_name] [-a custom_app_name] [-x instruction_set] [-p] [-c gcc_path] [-m memory_size] [-g]"
     echo "  REQUIRED:"
     echo "  -v  Version of RHEL to use. Choose from: {7, 8}."
     echo ""
     echo "  -b  NumPy backend to use with TensorFlow. Choose from: {fftw, openblas}" 
     echo ""
     echo "  -d  Number of devices to use. Must be an integer"
+    echo ""
+    echo ""
+    echo "  REQUIRED FOR RHEL 8 BUILDS:"
+    echo "  -s  Pull secret name for pulling images from registry.redhat.io. (You must have already created and loaded the secret into OpenShift.)"
     echo ""
     echo ""
     echo "  OPTIONAL:"
@@ -24,7 +28,7 @@ usage() {
     echo ""
     echo "  -r  OpenShift Image Registry URL (e.g., image-registry.openshift-image-registry.svc:5000). If you do not use this flag, the registry defaults whatever \"oc registry info\" outputs."
     echo ""
-    echo "  -s  Namespace to use."
+    echo "  -e  Namespace to use"
     echo ""
     echo "  -a  Custom app name (this is what your app will be named). Default: tensorflow-s2i-benchmark-app-rhel7"
     echo ""
@@ -62,7 +66,7 @@ do
       r)
           OC_REGISTRY=${OPTARG}
           ;;
-      s)
+      e)
           NAMESPACE=${OPTARG}
           ;;
       i)
@@ -94,6 +98,9 @@ do
           ;;
       c)
           GCC=${OPTARG}
+          ;;
+      s)
+          SECRET=${OPTARG}
           ;;
       *)
           usage
@@ -344,14 +351,29 @@ oc delete build "${build_image_template_name}-1"
 fi
 if [[ "${NFD}" == "nfd" ]]; then
     if [[ ! -z "${AVX}" ]]; then
-        oc new-app --template="${build_image_template_name}" \
-                   --param=IMAGESTREAM_NAME=$IS_NAME \
-                   --param=REGISTRY=$OC_REGISTRY
+        if [[ "${RHEL_VERSION}" == "7" ]]; then
+            oc new-app --template="${build_image_template_name}" \
+                       --param=IMAGESTREAM_NAME=$IS_NAME \
+                       --param=REGISTRY=$OC_REGISTRY
+        else
+            oc new-app --template="${build_image_template_name}" \
+                       --param=IMAGESTREAM_NAME=$IS_NAME \
+                       --param=REGISTRY=$OC_REGISTRY \
+                       --param=PULL_SECRET=$SECRET
+        fi
     else
-        oc new-app --template="${build_image_template_name}" \
-                   --param=IMAGESTREAM_NAME=$IS_NAME \
-                   --param=REGISTRY=$OC_REGISTRY \
-                   --param=INSTANCE_TYPE=$INSTANCE_TYPE
+        if [[ "${RHEL_VERSION}" == "7" ]]; then
+            oc new-app --template="${build_image_template_name}" \
+                       --param=IMAGESTREAM_NAME=$IS_NAME \
+                       --param=REGISTRY=$OC_REGISTRY \
+                       --param=INSTANCE_TYPE=$INSTANCE_TYPE
+        else
+            oc new-app --template="${build_image_template_name}" \
+                       --param=IMAGESTREAM_NAME=$IS_NAME \
+                       --param=REGISTRY=$OC_REGISTRY \
+                       --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                       --param=PULL_SECRET=$SECRET
+        fi
     fi
 else
     oc new-app --template="${build_image_template_name}" --param=IMAGESTREAM_NAME=$IS_NAME --param=REGISTRY=$OC_REGISTRY
