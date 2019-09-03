@@ -108,15 +108,6 @@ if [[ ${RHEL_VERSION} != 7 ]] && [[ ${RHEL_VERSION} != 8 ]]; then
     exit 1
 fi
 
-# If using RHEL 8, check if 'rhel8-s2i-core' exists
-if [[ ${RHEL_VERSION} == 8 ]]; then
-    RHEL8_S2I_CORE=$(oc get is rhel8-s2i-core)
-    if [[ -z ${RHEL8_S2I_CORE} ]]; then
-        echo "Could not find the rhel8-s2i-core ImageStream. Have you imported the image yet? See README.md for more information."
-        exit 1
-    fi
-fi
-
 # Check backend choice
 if [[ ${BACKEND} != "fftw" ]] && [[ ${BACKEND} != "openblas" ]]; then
     echo "Invalid backend choice '${BACKEND}'. Choose from: {fftw,openblas}"
