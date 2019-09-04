@@ -158,6 +158,39 @@ elif (( NUM_DEVICES <= 0 )); then
     exit 1
 fi
 
+# Check the instance type, if passed in
+if [[ ! -z ${INSTANCE_TYPE} ]]; then
+
+    instance_type_label="beta.kubernetes.io/instance-type=${INSTANCE_TYPE}"
+    matching_nodes=$(oc describe node -l $instance_type_label)
+
+    # If the instance type does not exist, throw an error
+    if [[ -z ${matching_nodes} ]]; then
+        echo "ERROR. No nodes found for instance type ${INSTANCE_TYPE}"
+        exit 1
+    fi
+
+    # If the instance type is found, check its CPU count. Note that it doesn't matter *which* node
+    # we look at. All the nodes are the same in terms of how many CPUs, etc. they have
+    if [[ "${USE_GPU}" == "false" ]]; then
+
+        # Find the names of the matching nodes
+        matching_node_names=$(echo "$matching_nodes" | grep "Name:")
+
+        # All matching nodes are identical, so just grab the first node's name
+        first_node=$(echo $matching_node_names | cut -d ' ' -f 2)
+
+        # Now grab the number of CPUs
+        num_cpus=$(oc describe node/"$first_node" | grep "Capacity" -A2 | grep "cpu:" | rev | cut -d' ' -f1 | rev)
+
+        # Check if the CPU count the user entered is less than or equal to the number of CPUs found
+        if (( NUM_DEVICES > num_cpus )); then
+            echo "ERROR. The number of devices passed in exceeds the number of available devices. You entered $NUM_DEVICES, but the max number of devices for this instance type is $num_cpus."
+            exit 1
+        fi
+    fi
+fi
+
 # Check CPU Manager options
 if [[ ${CPU_MANAGER} ]] && [[ ${USE_GPU} == "false" ]]; then
     if [[ -z ${MEMORY_SIZE} ]]; then
