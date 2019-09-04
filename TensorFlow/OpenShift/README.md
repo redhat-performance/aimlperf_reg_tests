@@ -79,7 +79,7 @@ $ sh ../../helper_scripts/OpenShift/nfd_setup.sh
 Once the above operator has been deployed, run one of the the following commands to define which instance you would like to run the app on:
 
 ```
-$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -i <instance_type> -d <num_devices_to_use> [optional args]
+$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -t <instance_type> -d <num_devices_to_use> [optional args]
 ```
 
 or
@@ -201,5 +201,5 @@ $ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -x <avx_instruction_set_name> -p
 or
 
 ```
-$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -i <instance_type> -p -d <num_cpus> -m <nG> [optional args]
+$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -t <instance_type> -p -d <num_cpus> -m <nG> [optional args]
 ```
