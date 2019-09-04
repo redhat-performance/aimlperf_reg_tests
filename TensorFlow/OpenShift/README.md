@@ -68,11 +68,20 @@ You can run `run_me.sh` multiple times if you want. It is safe to do so, as it c
 
 ## Advanced Usage: Node Feature Discovery
 
-Note that if you want to build using [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery/) and run on a specific node, make sure you have it installed prior to running one of the the following commands:
+Note that if you want to build using [Node Feature Discovery](https://github.com/kubernetes-sigs/node-feature-discovery/) and run on a specific node, make sure you have it installed/deployed it prior to running the main script in this folder (`run_me.sh`).
+
+To deploy the NFD Operator,
+
+```
+$ sh ../../helper_scripts/OpenShift/nfd_setup.sh
+```
+
+Once the above operator has been deployed, run one of the the following commands to define which instance you would like to run the app on:
 
 ```
 $ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -i <instance_type> -d <num_devices_to_use> [optional args]
 ```
+
 or
 
 ```
