@@ -24,6 +24,8 @@ objects:
       type: "Docker"
       dockerStrategy:
         dockerfilePath: "TensorFlow/Dockerfiles/FFTW_backend/Dockerfile.openshift_rhel7_cuda10"
+        pullSecret:
+          name: "${PULL_SECRET}"
     output: 
       to:
         kind: "ImageStreamTag"
@@ -50,3 +52,6 @@ parameters:
 - description: "AWS instance type"
   name: "INSTANCE_TYPE"
   value: "m4.4xlarge"
+- description: "Pull secret"
+  name: "PULL_SECRET"
+  required: true
