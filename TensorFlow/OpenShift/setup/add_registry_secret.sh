@@ -10,7 +10,7 @@ fi
 # Now, add the secret
 oc create -f "${REGISTRY_SECRET_FILE}" --namespace=openshift-image-registry
 
-# Get pull secret name
+# Get pull secret name by first changing to the 'openshift-image-registry' project
 while IFS=" " read -r t || [ -n "$t" ]
 do
    if [[ ${t} == "name:"* ]]; then
@@ -27,4 +27,4 @@ if [[ -z "${found_name}" ]]; then
 fi
 
 # Update the image pull secrets
-oc secrets add serviceaccount/default secrets/"${pull_secret}" --for=pull
+oc secrets add serviceaccount/default secrets/"${pull_secret}" --for=pull --namespace=openshift-image-registry
