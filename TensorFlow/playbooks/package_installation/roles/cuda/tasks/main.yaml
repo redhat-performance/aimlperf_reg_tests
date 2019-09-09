@@ -32,6 +32,22 @@
 - debug:
     var: CUDA_NETWORK_RPM
 
+- name: RHEL 7 --> Install CUDA required packages
+  yum:
+    name:
+      - mesa-libGLU-devel
+      - libXi-devel
+      - libXmu-devel
+  when: RHEL_VERSION == "7"
+
+- name: RHEL 8 --> Install CUDA required packages
+  dnf:
+    name:
+      - mesa-libGLU-devel
+      - libXi-devel
+      - libXmu-devel
+  when: RHEL_VERSION == "8"
+
 - name: Create CUDA tmp dir
   file:
     state: directory
