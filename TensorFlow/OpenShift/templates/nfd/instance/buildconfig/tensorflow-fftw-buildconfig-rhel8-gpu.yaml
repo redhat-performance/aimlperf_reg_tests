@@ -3,13 +3,13 @@ kind: "Template"
 metadata:
   annotations:
     description: "Template to make a TensorFlow build image with an FFTW NumPy backend"
-    tags: "tensorflow-fftw-build-image-rhel7-gpu"
-  name: "tensorflow-fftw-build-image-rhel7-gpu"
+    tags: "tensorflow-fftw-build-image-rhel8-gpu"
+  name: "tensorflow-fftw-build-image-rhel8-gpu"
 objects:
 - apiVersion: "v1"
   kind: "BuildConfig"
   metadata:
-    name: "tensorflow-fftw-build-image-rhel7-gpu" 
+    name: "tensorflow-fftw-build-image-rhel8-gpu" 
   spec:
     runPolicy: "Serial" 
     triggers: 
