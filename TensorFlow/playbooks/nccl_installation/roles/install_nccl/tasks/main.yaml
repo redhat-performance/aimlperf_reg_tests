@@ -3,32 +3,37 @@
 - name: Delete NCCL tmp dir (if it exists)
   file:
     state: absent
-    path: /tmp/nccl
+    path: '{{ nccl_download_dir }}'
 
 - name: Create NCCL tmp dir
   file:
     state: directory
-    path: /tmp/nccl
+    path: '{{ nccl_download_dir }}'
 
 - name: Download NCCL OS agnostic installer
   unarchive:
-    src: '{{ NCCL_AGNOSTIC_LOCAL_INSTALLER }}'
+    src: '{{ nccl_agnostic_local_installer }}'
     remote_src: yes
-    dest: /tmp/nccl
+    dest: '{{ nccl_download_dir }}'
     extra_opts: [--strip-components=1]
 
 - debug:
-    var: NCCL_INSTALL_PATH
+    var: nccl_agnostic_install_path
 
-- name: Remove {{ NCCL_INSTALL_PATH }} if it exists
+- name: Remove {{ nccl_agnostic_install_path }} if it exists
   file:
     state: absent
-    path: '{{ NCCL_INSTALL_PATH }}'
+    path: '{{ nccl_agnostic_install_path }}'
 
-- name: Create {{ NCCL_INSTALL_PATH }}
+- name: Create {{ nccl_agnostic_install_path }}
   file:
     state: directory
-    path: '{{ NCCL_INSTALL_PATH }}'
+    path: '{{ nccl_agnostic_install_path }}'
 
-- name: Move /tmp/nccl contents to {{ NCCL_INSTALL_PATH }}
-  command: mv '/tmp/nccl' '{{ NCCL_INSTALL_PATH }}'
+- name: Move /tmp/nccl contents to {{ nccl_agnostic_install_path }}
+  command: mv '{{ nccl_download_dir }}' '{{ nccl_agnostic_install_path }}'
+
+- name: Delete NCCL download dir because we don't need it anymore
+  file:
+    state: absent
+    path: '{{ nccl_download_dir }}'
