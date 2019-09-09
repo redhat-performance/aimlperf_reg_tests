@@ -1,5 +1,8 @@
 ---
 
+##################################
+#       Do some CUDA checks      #
+##################################
 - name: RHEL 7 --> Install lspci
   yum: pkg=pciutils
   when: RHEL_VERSION == "7"
@@ -32,22 +35,136 @@
 - debug:
     var: CUDA_NETWORK_RPM
 
-- name: RHEL 7 --> Install CUDA required packages
-  yum:
-    name:
-      - mesa-libGLU-devel
-      - libXi-devel
-      - libXmu-devel
-  when: RHEL_VERSION == "7"
+##################################
+#       Install build reqs       #
+##################################
+# CUDA requires Mesa, but Mesa does not come with ubi, so let's build it
+- name: Install meson for building Mesa
+  pip:
+    name: meson
+    executable: pip3
 
-- name: RHEL 8 --> Install CUDA required packages
-  dnf:
-    name:
-      - mesa-libGLU-devel
-      - libXi-devel
-      - libXmu-devel
-  when: RHEL_VERSION == "8"
+# Do the same with ninja
+- name: Install ninja for building Mesa
+  pip:
+    name: ninja
+    executable: pip3
 
+##################################
+#           Build Mesa           #
+##################################
+- name: Remove Mesa build dir if it exists
+  file:
+    state: absent
+    path: '{{ MESA_BUILD_DIR }}'
+
+- name: Recreate (or create) Mesa build dir
+  file:
+    state: directory
+    path: '{{ MESA_BUILD_DIR }}'
+
+- name: Download Mesa tarball
+  unarchive:
+    src: 'https://mesa.freedesktop.org/archive/mesa-{{ MESA_VERSION }}.tar.xz'
+    dest: '{{ MESA_BUILD_DIR }}'
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+- name: Build and install Mesa
+  shell: |
+    cd {{ MESA_BUILD_DIR }}
+    meson build
+    ninja -C build
+    ninja -C build install
+
+- name: Remove Mesa build directory
+  file:
+    state: absent
+    path: '{{ MESA_BUILD_DIR }}'
+
+##################################
+#           Build libXi          #
+##################################
+- name: Remove libXi dir if it exists
+  file:
+    state: absent
+    path: '{{ LIBXI_BUILD_DIR }}'
+
+- name: Recreate (or create) libXi dir
+  file:
+    state: directory
+    path: '{{ LIBXI_BUILD_DIR }}'
+
+- name: Download libXi tarball
+  unarchive:
+    src: 'https://www.x.org/releases/individual/lib/libXi-{{ LIBXI_VERSION }}.tar.bz2'
+    dest: '{{ LIBXI_BUILD_DIR }}'
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+- name: Configure libXi
+  shell: |
+    cd {{ LIBXI_BUILD_DIR }}
+    ./configure
+
+- name: Make libXi
+  make:
+    chdir: '{{ LIBXI_BUILD_DIR }}'
+    target: all
+
+- name: Install libXi
+  make:
+    chdir: '{{ LIBXI_BUILD_DIR }}'
+    target: install
+
+- name: Remove libXi build folder
+  file:
+    state: absent
+    path: '{{ LIBXI_BUILD_DIR }}'
+
+##################################
+#           Build libXmu         #
+##################################
+- name: Remove libXmu dir if it exists
+  file:
+    state: absent
+    path: '{{ LIBXMU_BUILD_DIR }}'
+
+- name: Recreate (or create) libXmu dir
+  file:
+    state: directory
+    path: '{{ LIBXMU_BUILD_DIR }}'
+
+- name: Download libXi tarball
+  unarchive:
+    src: 'https://www.x.org/releases/individual/lib/libXmu-{{ LIBXMU_VERSION }}.tar.bz2'
+    dest: '{{ LIBXMU_BUILD_DIR }}'
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+- name: Configure libXmu
+  shell: |
+    cd {{ LIBXMU_BUILD_DIR }}
+    ./configure
+
+- name: Make libXmu
+  make:
+    chdir: '{{ LIBXMU_BUILD_DIR }}'
+    target: all
+
+- name: Install libXmu
+  make:
+    chdir: '{{ LIBXMU_BUILD_DIR }}'
+    target: install
+
+- name: Remove libXmu build folder
+  file:
+    state: absent
+    path: '{{ LIBXMU_BUILD_DIR }}'
+
+##################################
+#          Install CUDA          #
+##################################
 - name: Create CUDA tmp dir
   file:
     state: directory
