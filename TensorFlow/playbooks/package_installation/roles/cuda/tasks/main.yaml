@@ -39,8 +39,7 @@
 
 - name: Download CUDA toolkit network rpm
   get_url:
-    src: '{{ CUDA_NETWORK_RPM }}'
-    remote_src: yes
+    url: '{{ CUDA_NETWORK_RPM }}'
     dest: '{{ CUDA_TMP_DIR }}'
 
 - name: Find CUDA rpm
