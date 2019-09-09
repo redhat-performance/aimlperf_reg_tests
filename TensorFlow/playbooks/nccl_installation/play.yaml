@@ -7,13 +7,16 @@
   vars:
 
     # This is the path to the CUDA installation you want to use
-    CUDA_INSTALLATION: '{{ cuda_installation | default("/usr/local/cuda")'
+    cuda_path: '{{ cuda_install_path | default("/usr/local/cuda")'
 
     # This is the URL where Ansible will download the NCCL OS agnostic local installer
-    NCCL_AGNOSTIC_LOCAL_INSTALLER: '{{ nccl_installer | default("") }}'
+    nccl_agnostic_local_installer: '{{ nccl_installer | default("") }}'
 
     # This is where we will install NCCL to
-    NCCL_INSTALL_PATH: '{{ nccl_install_path | default("/home/nccl") }}'
+    nccl_agnostic_install_path: '{{ nccl_install_path | default("/home/nccl") }}'
+
+    # Set RHEL version
+    rhel_version: '{{ rhel_ver | default("7") }}'
 
   roles:
 
