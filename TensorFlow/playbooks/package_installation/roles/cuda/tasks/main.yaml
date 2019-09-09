@@ -50,13 +50,16 @@
 
 - name: Install CUDA rpm
   yum:
-    name: item.path
+    name: '{{ item.path }}'
   with_items: '{{ cuda_rpms["files"] }}'
 
 - name: Yum clean expire-cache
   command: yum clean expire-cache
 
-- name: Install CUDA
-  yum:
-    name:
-      - cuda
+- name: RHEL 7 --> Install CUDA
+  yum: pkg=cuda
+  when: RHEL_VERSION == "7"
+
+- name: RHEL 8 --> Install CUDA
+  dnf: pkg=cuda
+  when: RHEL_VERSION == "8"
