@@ -71,9 +71,10 @@ echo ""
 #       INSTALL NCCL IF USING GPUS       #
 ##########################################
 NCCL_INSTALL_PATH="${HOME}/nccl"
+CUDA_PATH="/usr/local/cuda"
 if [[ ${DEVICE} == "gpu" ]]; then
     cd ${HOME}/playbooks/nccl_installation
-    ansible-playbook -i hosts play.yaml --extra-vars="{nccl_install_path: '${NCCL_INSTALL_PATH}', nccl_installer: '${NCCL}', cuda_path: '/usr/local/cuda'}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', nccl_install_path: '${NCCL_INSTALL_PATH}', nccl_installer: '${NCCL}', cuda_install_path: '${CUDA_PATH}'}"
     echo ""
     echo "<< SUCCESS >> NCCL installed!"
     echo ""
@@ -82,10 +83,9 @@ fi
 ##########################################
 #      INSTALL CUDNN IF USING GPUS       #
 ##########################################
-CUDNN_INSTALL_PATH="${HOME}/cuDNN"
 if [[ ${DEVICE} == "gpu" ]]; then
     cd ${HOME}/playbooks/cudnn_installation
-    ansible-playbook -i hosts play.yaml --extra-vars="{cudnn_install_path: '${CUDNN_INSTALL_PATH}', cudnn: '${CUDNN}', cuda_path: '/usr/local/cuda'}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', cudnn: '${CUDNN}', cuda_install_path: '${CUDA_PATH}'}"
     echo ""
     echo "<< SUCCESS >> cuDNN installed!"
     echo ""
