@@ -2,11 +2,11 @@
 
 - name: RHEL 7 --> Install lspci
   yum: pkg=pciutils
-  when: RHEL_VERSION == 7
+  when: RHEL_VERSION == "7"
 
 - name: RHEL 8 --> Install lspci
   dnf: pkg=pciutils
-  when: RHEL_VERSION == 8
+  when: RHEL_VERSION == "8"
 
 - block:
   - name: 'End play if CUDA network rpm is missing'
