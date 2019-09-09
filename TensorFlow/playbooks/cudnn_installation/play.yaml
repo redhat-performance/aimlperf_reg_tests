@@ -6,14 +6,14 @@
 
   vars:
 
+    # Add variable to define whether to use RHEL 7 or 8
+    rhel_version: '{{ rhel_ver | default("7") }}'
+
     # This is the path to the CUDA installation you want to use
-    CUDA_INSTALLATION: '{{ cuda_installation | default("/usr/local/cuda")'
+    cuda_path: '{{ cuda_install_path | default("/usr/local/cuda")'
 
     # This is the URL where Ansible will download cuDNN
-    CUDNN: '{{ cudnn | default("") }}'
-
-    # This is where we will install CUDNN to
-    CUDNN_INSTALL_PATH: '{{ cudnn_install_path | default("/home/cuDNN") }}'
+    cudnn_url: '{{ cudnn | default("") }}'
 
   roles:
 
