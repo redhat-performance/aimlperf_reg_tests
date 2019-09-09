@@ -170,21 +170,42 @@ if [[ ! -z ${INSTANCE_TYPE} ]]; then
         exit 1
     fi
 
+    # Find the names of the matching nodes
+    matching_node_names=$(echo "$matching_nodes" | grep "Name:")
+
+    # All matching nodes are identical, so just grab the first node's name
+    first_node=$(echo $matching_node_names | cut -d ' ' -f 2)
+
     # If the instance type is found, check its CPU count. Note that it doesn't matter *which* node
     # we look at. All the nodes are the same in terms of how many CPUs, etc. they have
     if [[ "${USE_GPU}" == "false" ]]; then
-
-        # Find the names of the matching nodes
-        matching_node_names=$(echo "$matching_nodes" | grep "Name:")
-
-        # All matching nodes are identical, so just grab the first node's name
-        first_node=$(echo $matching_node_names | cut -d ' ' -f 2)
 
         # Now grab the number of CPUs
         num_cpus=$(oc describe node/"$first_node" | grep "Capacity" -A2 | grep "cpu:" | rev | cut -d' ' -f1 | rev)
 
         # Check if the CPU count the user entered is less than or equal to the number of CPUs found
         if (( NUM_DEVICES > num_cpus )); then
+            echo "ERROR. The number of devices passed in exceeds the number of available devices. You entered $NUM_DEVICES, but the max number of devices for this instance type is $num_cpus."
+            exit 1
+        fi
+
+    # If the instance type is GPU, then we can't get info on number of GPUs (yet), so let's hardcode some
+    elif [[ "${USE_GPU}" == "true" ]]; then 
+
+        # Determine number of GPUs
+        if [[ "${INSTANCE_TYPE}" == "p2.xlarge" ]]; then
+            num_gpus=1
+        elif [[ "${INSTANCE_TYPE}" == "p2.8xlarge" ]]; then
+            num_gpus=8
+        elif [[ "${INSTANCE_TYPE}" == "p2.16xlarge" ]]; then
+            num_gpus=16
+        else
+            num_gpus=444444
+            echo "WARNING: Could not determine number of GPUs. Safety check failed. However, this is not an error and the script can continue running."
+        fi
+
+        # Check if the GPU count the user entered is less than or equal to the number of GPUs found
+        if (( NUM_DEVICES > num_gpus )); then
             echo "ERROR. The number of devices passed in exceeds the number of available devices. You entered $NUM_DEVICES, but the max number of devices for this instance type is $num_cpus."
             exit 1
         fi
@@ -337,8 +358,14 @@ fi
 
 # If we're using GPUs...
 if [[ ${USE_GPU} == "true" ]]; then
-    build_image_template_name="${build_image_template_name_prefix}7-gpu"
-    build_image_template_file="${build_image_template_filename_prefix}7-gpu.yaml"
+
+    if [[ ${RHEL_VERSION} == 7 ]]; then
+        build_image_template_name="${build_image_template_name_prefix}7-gpu"
+        build_image_template_file="${build_image_template_filename_prefix}7-gpu.yaml"
+    else
+        build_image_template_name="${build_image_template_name_prefix}8-gpu"
+        build_image_template_file="${build_image_template_filename_prefix}8-gpu.yaml"
+    fi
 
 # If the RHEL version is 7 and we're *not* using GPUs, then set the template name and file to point to the RHEL 7 ones
 elif [[ ${RHEL_VERSION} == 7 ]]; then
