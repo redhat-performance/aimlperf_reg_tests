@@ -38,17 +38,44 @@
 ##################################
 #       Install build reqs       #
 ##################################
-# CUDA requires Mesa, but Mesa does not come with ubi, so let's build it
-- name: Install meson for building Mesa
+# CUDA requires Mesa, but Mesa and its required packages do not come with ubi, so let's build them
+- name: Install meson, ninja, mako, and CMake for building Mesa
   pip:
-    name: meson
+    name:
+      - cmake
+      - mako
+      - meson
+      - ninja
     executable: pip3
 
-# Do the same with ninja
-- name: Install ninja for building Mesa
-  pip:
-    name: ninja
-    executable: pip3
+- name: Remove VDPAU build folder if it exists
+  file:
+    state: absent
+    path: '{{ VDPAU }}'
+
+- name: Recreate (or create) VDPAU build folder
+  file:
+    state: directory
+    path: '{{ VDPAU }}'
+
+- name: Clone VDPAU git
+  git:
+    repo: https://gitlab.freedesktop.org/vdpau/libvdpau
+    dest: '{{ VDPAU }}'
+    version: '{{ VDPAU_VERSION }}'
+
+- name: Build and install VDPAU
+  shell: |
+    cd {{ VDPAU }}/libvdpau
+    meson builddir
+    cd builddir
+    ninja
+    ninja install
+    
+- name: Remove VDPAU
+  file:
+    state: absent
+    path: '{{ VDPAU }}'
 
 ##################################
 #           Build Mesa           #
@@ -73,9 +100,10 @@
 - name: Build and install Mesa
   shell: |
     cd {{ MESA_BUILD_DIR }}
-    meson build
-    ninja -C build
-    ninja -C build install
+    meson builddir
+    cd builddir
+    ninja
+    ninja install
 
 - name: Remove Mesa build directory
   file:

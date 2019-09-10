@@ -43,6 +43,9 @@ COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
 # Put on port 8080
 EXPOSE 8080
 
+# Set up symbolic linking for Python so that TensorFlow build doesn't fail when s2i script is called
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
 # Install Ansible
 RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
     rm install_ansible_from_source.sh
@@ -58,9 +61,6 @@ RUN cd ${TF_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8', use_s2i: 'yes', use_gpu: 'yes', cuda_rpm: 'http://developer.download.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-rhel8-10-1-local-10.1.243-418.87.00-1.0-1.x86_64.rpm'}" && \
     cd .. && \
     rm -rf ${TF_PREREQS_PLAYBOOK}
-
-# Set up symbolic linking for Python so that TensorFlow build doesn't fail when s2i script is called
-RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Give user permissions to modify the 'macros' file + other files to run tests
 RUN chmod 777 /usr/libexec/s2i/run && \
