@@ -39,7 +39,7 @@
 #       Install build reqs       #
 ##################################
 # CUDA requires Mesa, but Mesa and its required packages do not come with ubi, so let's build them
-- name: Install meson, ninja, mako, and CMake for building Mesa
+- name: Pip install meson, ninja, mako, and CMake for building Mesa
   pip:
     name:
       - cmake
@@ -48,116 +48,29 @@
       - ninja
     executable: pip3
 
-- name: Now we need to build libX11, so let's remove libX11's build dir if it exists
-  file:
-    state: absent
-    path: '{{ LIBX11_BUILD_DIR }}'
+- name: RHEL 7 --> yum install libX11, libX11-common, libExt, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
+  yum:
+    name:
+      - libX11
+      - libX11-common
+      - libExt
+      - libXi
+      - libXmu
+      - libxcb
+      - xorg-x11-proto-devel
+  when: RHEL_VERSION == "7"
 
-- name: Recreate (or create) libX11 build dir
-  file:
-    state: directory
-    path: '{{ LIBX11_BUILD_DIR }}'
-
-- name: Download libX11 tarball
-  unarchive:
-    src: 'https://www.x.org/releases/individual/lib/libX11-{{ LIBX11_VERSION }}.tar.gz'
-    dest: '{{ LIBX11_BUILD_DIR }}'
-    remote_src: yes
-    extra_opts: [--strip-components=1]
-
-- name: Configure libX11
-  shell: |
-    cd {{ LIBX11_BUILD_DIR }}
-    ./configure
-
-- name: Make libX11
-  make:
-    target: all
-    chdir: '{{ LIBX11_BUILD_DIR }}'
-
-- name: Install libX11
-  make:
-    target: install
-    chdir: '{{ LIBX11_BUILD_DIR }}'
-
-- name: Remove libX11 build dir
-  file:
-    state: absent
-    path: '{{ LIBX11_BUILD_DIR }}'
-
-- name: Next step is to build libXext, so let's first remove the libXext build dir if it exists
-  file:
-    state: absent
-    path: '{{ LIBXEXT_BUILD_DIR }}'
-
-- name: Recreate (or create) libXext build dir
-  file:
-    state: directory
-    path: '{{ LIBXEXT_BUILD_DIR }}'
-
-- name:  Download libXext tarball
-  unarchive:
-    src: 'https://www.x.org/releases/individual/lib/libXext-{{ LIBXEXT_VERSION }}.tar.gz'
-    dest: '{{ LIBXEXT_BUILD_DIR }}'
-    remote_src: yes
-    extra_opts: [--strip-components=1]
-
-- name: Configure libXext
-  shell: |
-    cd {{ LIBXEXT_BUILD_DIR }}
-    ./configure
-
-- name: Make libXext
-  make:
-    target: all
-    chdir: '{{ LIBXEXT_BUILD_DIR }}'
-
-- name: Install libXext
-  make:
-    target: install
-    chdir: '{{ LIBXEXT_BUILD_DIR }}'
-
-- name: Remove libXext build dir
-  file:
-    state: absent
-    path: '{{ LIBXEXT_BUILD_DIR }}'
-
-- name: We need to install dri2proto so we can build our dependencies. First, let's remove dri2proto build dir if it exists
-  file:
-    state: absent
-    path: '{{ DRI2PROTO_BUILD_DIR }}'
-
-- name: Recreate (or create) dri2proto build dir
-  file:
-    state: directory
-    path: '{{ DRI2PROTO_BUILD_DIR }}'
-
-- name:  Download dri2proto tarball
-  unarchive:
-    src: 'https://www.x.org/releases/individual/proto/dri2proto-{{ DRI2PROTO_VERSION }}.tar.gz'
-    dest: '{{ DRI2PROTO_BUILD_DIR }}'
-    remote_src: yes
-    extra_opts: [--strip-components=1]
-
-- name: Configure dri2proto
-  shell: |
-    cd {{ DRI2PROTO_BUILD_DIR }}
-    ./configure
-
-- name: Make dri2proto
-  make:
-    target: all
-    chdir: '{{ DRI2PROTO_BUILD_DIR }}'
-
-- name: Install dri2proto
-  make:
-    target: install
-    chdir: '{{ DRI2PROTO_BUILD_DIR }}'
-
-- name: Remove dri2proto build dir
-  file:
-    state: absent
-    path: '{{ DRI2PROTO_BUILD_DIR }}'
+- name: RHEL 8 --> dnf install libX11, libX11-common, libExt, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
+  dnf:
+    name:
+      - libX11
+      - libX11-common
+      - libExt
+      - libXi
+      - libXmu
+      - libxcb
+      - xorg-x11-proto-devel
+  when: RHEL_VERSION == "8"
 
 - name: Remove VDPAU build folder if it exists
   file:
