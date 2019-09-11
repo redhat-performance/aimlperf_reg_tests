@@ -76,6 +76,42 @@
       - xorg-x11-proto-devel
   when: RHEL_VERSION == "8"
 
+- name: Remove xorg-macros build folder if it exists
+  file:
+    state: absent
+    path: '{{ XORG_MACROS_BUILD_DIR }}'
+
+- name: Recreate (or create) xorg-macros build folder
+  file:
+    state: directory
+    path: '{{ XORG_MACROS_BUILD_DIR }}'
+
+- name: Clone xorg-macros
+  git:
+    repo: https://github.com/freedesktop/xorg-macros.git
+    dest: '{{ XORG_MACROS_BUILD_DIR }}'
+    version: '{{ XORG_MACROS_VERSION }}'
+
+- name: Configure xorg-macros
+  shell: |
+    cd {{ XORG_MACROS_BUILD_DIR }}
+    ./configure
+
+- name: Make xorg-macros
+  make:
+    target: all
+    chdir: '{{ XORG_MACROS_BUILD_DIR }}'
+
+- name: Install xorg-macros
+  make:
+    target: install
+    chdir: '{{ XORG_MACROS_BUILD_DIR }}'
+    
+- name: Remove xorg-macros build folder
+  file:
+    state: absent
+    path: '{{ XORG_MACROS_BUILD_DIR }}'
+
 - name: Remove libpciaccess build folder if it exists
   file:
     state: absent

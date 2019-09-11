@@ -22,3 +22,5 @@ LIBDRM_BUILD_DIR: /tmp/drm
 LIBDRM_VERSION: 'libdrm-2.4.97'
 LIBPCIACCESS_BUILD_DIR: /tmp/libpciaccess
 LIBPCIACCESS_VERSION: 'libpciaccess-0.16'
+XORG_MACROS_BUILD_DIR: /tmp/xorg-macros
+XORG_MACROS_VERSION: 'util-macros-1.19.1'
