@@ -48,10 +48,9 @@
       - ninja
     executable: pip3
 
-- name: RHEL 7 --> yum install libdrm, libX11, libX11-common, libX11-devel, libXext, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
+- name: RHEL 7 --> yum install libX11, libX11-common, libX11-devel, libXext, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
   yum:
     name:
-      - libdrm
       - libX11
       - libX11-common
       - libX11-devel
@@ -62,10 +61,9 @@
       - xorg-x11-proto-devel
   when: RHEL_VERSION == "7"
 
-- name: RHEL 8 --> dnf install libdrm, libX11, libX11-common, libX11-devel, libXext, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
+- name: RHEL 8 --> dnf install libX11, libX11-common, libX11-devel, libXext, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
   dnf:
     name:
-      - libdrm
       - libX11
       - libX11-common
       - libX11-devel
@@ -75,6 +73,35 @@
       - libxcb
       - xorg-x11-proto-devel
   when: RHEL_VERSION == "8"
+
+- name: Remove libdrm build folder if it exists
+  file:
+    state: absent
+    path: '{{ LIBDRM_BUILD_DIR }}'
+
+- name: Recreate (or create) libdrm build folder
+  file:
+    state: directory
+    path: '{{ LIBDRM_BUILD_DIR }}'
+
+- name: Clone libdrm
+  git:
+    repo: https://gitlab.freedesktop.org/mesa/drm.git
+    dest: '{{ LIBDRM_BUILD_DIR }}'
+    version: '{{ LIBDRM_VERSION }}'
+
+- name: Build and install libdrm and related libs
+  shell: |
+    cd {{ LIBDRM_BUILD_DIR }}
+    meson builddir
+    cd builddir
+    ninja
+    ninja install
+    
+- name: Remove libdrm
+  file:
+    state: absent
+    path: '{{ LIBDRM_BUILD_DIR }}'
 
 - name: Remove VDPAU build folder if it exists
   file:
