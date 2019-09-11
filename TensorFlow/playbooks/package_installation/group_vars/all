@@ -20,3 +20,5 @@ VDPAU: '/tmp/vdpau'
 VDPAU_VERSION: '1.3'
 LIBDRM_BUILD_DIR: /tmp/drm
 LIBDRM_VERSION: 'libdrm-2.4.97'
+LIBPCIACCESS_BUILD_DIR: /tmp/libpciaccess
+LIBPCIACCESS_VERSION: 'libpciaccess-0.16'

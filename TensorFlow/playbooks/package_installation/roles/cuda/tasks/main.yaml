@@ -48,10 +48,9 @@
       - ninja
     executable: pip3
 
-- name: RHEL 7 --> yum install libpciaccess, libX11, libX11-common, libX11-devel, libXext, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
+- name: RHEL 7 --> yum install libX11, libX11-common, libX11-devel, libXext, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
   yum:
     name:
-      - libpciaccess
       - libX11
       - libX11-common
       - libX11-devel
@@ -62,10 +61,9 @@
       - xorg-x11-proto-devel
   when: RHEL_VERSION == "7"
 
-- name: RHEL 8 --> dnf install libpciaccess, libX11, libX11-common, libX11-devel, libXext, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
+- name: RHEL 8 --> dnf install libX11, libX11-common, libX11-devel, libXext, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
   dnf:
     name:
-      - libpciaccess
       - libX11
       - libX11-common
       - libX11-devel
@@ -75,6 +73,42 @@
       - libxcb
       - xorg-x11-proto-devel
   when: RHEL_VERSION == "8"
+
+- name: Remove libpciaccess build folder if it exists
+  file:
+    state: absent
+    path: '{{ LIBPCIACCESS_BUILD_DIR }}'
+
+- name: Recreate (or create) libpciaccess build folder
+  file:
+    state: directory
+    path: '{{ LIBPCIACCESS_BUILD_DIR }}'
+
+- name: Clone libpciaccess
+  git:
+    repo: https://gitlab.freedesktop.org/xorg/lib/libpciaccess.git
+    dest: '{{ LIBPCIACCESS_BUILD_DIR }}'
+    version: '{{ LIBPCIACCESS_VERSION }}'
+
+- name: Configure libpciaccess
+  shell: |
+    cd {{ LIBPCIACCESS_BUILD_DIR }}
+    ./configure
+
+- name: Make libpciaccess
+  make:
+    target: all
+    chdir: '{{ LIBPCIACCESS_BUILD_DIR }}'
+
+- name: Install libpciaccess
+  make:
+    target: install
+    chdir: '{{ LIBPCIACCESS_BUILD_DIR }}'
+    
+- name: Remove libpciaccess build folder
+  file:
+    state: absent
+    path: '{{ LIBPCIACCESS_BUILD_DIR }}'
 
 - name: Remove libdrm build folder if it exists
   file:
