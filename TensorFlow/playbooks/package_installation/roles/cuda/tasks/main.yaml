@@ -48,9 +48,10 @@
       - ninja
     executable: pip3
 
-- name: RHEL 7 --> yum install libX11, libX11-common, libX11-devel, libXext, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
+- name: RHEL 7 --> yum install autoconf, libX11, libX11-common, libX11-devel, libXext, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
   yum:
     name:
+      - autoconf
       - libX11
       - libX11-common
       - libX11-devel
@@ -61,9 +62,10 @@
       - xorg-x11-proto-devel
   when: RHEL_VERSION == "7"
 
-- name: RHEL 8 --> dnf install libX11, libX11-common, libX11-devel, libXext, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
+- name: RHEL 8 --> dnf install autoconf, libX11, libX11-common, libX11-devel, libXext, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
   dnf:
     name:
+      - autoconf
       - libX11
       - libX11-common
       - libX11-devel
@@ -93,7 +95,7 @@
 - name: Configure libpciaccess
   shell: |
     cd {{ LIBPCIACCESS_BUILD_DIR }}
-    ./configure
+    sh autogen.sh
 
 - name: Make libpciaccess
   make:
