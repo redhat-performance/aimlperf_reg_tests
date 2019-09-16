@@ -1,5 +1,18 @@
 ---
 
+# Clear yum/dnf cache
+- name: RHEL 7 --> Clear yum cache
+  file:
+    state: absent
+    path: /var/cache/yum
+  when: RHEL_VERSION == '7'
+
+- name: RHEL 8 --> Clear dnf cache
+  file:
+    state: absent
+    path: /var/cache/dnf
+  when: RHEL_VERSION == '8'
+
 # Bazel requires java-devel, so let's install it
 - name: Install Bazel requirements (java-devel) for RHEL 7
   yum:
