@@ -21,12 +21,15 @@ COPY TensorFlow/.s2i_fftw/bin/ /usr/libexec/s2i
 ENV DNF_TIMEOUT=300
 RUN sed -i "/[main]/a timeout=${DNF_TIMEOUT}" /etc/dnf/dnf.conf
 
+# Set top directory
+ENV TOPDIR=/home
+
 # Set playbook paths
-ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
-ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
-ENV FFTW_INSTALLATION=${HOME}/playbooks/FFTW_installation
-ENV TENSORFLOW_INSTALLATION=${HOME}/playbooks/TensorFlow_installation
-ENV TENSORFLOW_BENCHMARKS=${HOME}/playbooks/TensorFlow_benchmarks
+ENV FFTW_PREREQS_PLAYBOOK=${TOPDIR}/fftw_package_installation
+ENV TF_PREREQS_PLAYBOOK=${TOPDIR}/tensorflow_package_installation
+ENV FFTW_INSTALLATION=${TOPDIR}/playbooks/FFTW_installation
+ENV TENSORFLOW_INSTALLATION=${TOPDIR}/playbooks/TensorFlow_installation
+ENV TENSORFLOW_BENCHMARKS=${TOPDIR}/playbooks/TensorFlow_benchmarks
 
 # Create folders for playbooks and folder for playbooks cache
 RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
@@ -34,10 +37,10 @@ RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
     mkdir -p ${FFTW_INSTALLATION} && \
     mkdir -p ${TENSORFLOW_INSTALLATION} && \
     mkdir -p ${TENSORFLOW_BENCHMARKS} && \
-    mkdir -p ${HOME}/.cache
+    mkdir -p ${TOPDIR}/.cache
 
 # Copy playbooks and scripts
-COPY helper_scripts/Ansible/install_ansible_from_source.sh ${HOME}
+COPY helper_scripts/Ansible/install_ansible_from_source.sh ${TOPDIR}
 COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
 COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
 COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
@@ -63,18 +66,19 @@ RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
 # Give user permissions to modify the 'macros' file + other files to run tests
 RUN chmod 777 /usr/libexec/s2i/run && \
     chmod g=u /etc/passwd /etc/group && \
-    mkdir -p ${HOME}/.ansible/tmp && \
-    chmod 777 ${HOME}/.ansible/tmp && \
-    chmod 777 ${HOME}/.ansible && \
-    chmod -R 777 ${HOME}/.cache
+    mkdir -p ${TOPDIR}/.ansible/tmp && \
+    chmod 777 ${TOPDIR}/.ansible/tmp && \
+    chmod 777 ${TOPDIR}/.ansible && \
+    chmod -R 777 ${TOPDIR}/.cache && \
+    chmod 777 ${TOPDIR}
 
 # Set Ansible remote tmp
-RUN echo "remote_tmp = ${HOME}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
-    echo "remote_tmp = ${HOME}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg
+RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
+    echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg
 
 # This default user is created in the openshift/base-centos7 image
 USER 1001
 
-WORKDIR ${HOME}
+WORKDIR ${TOPDIR}
 
 CMD ["/usr/libexec/s2i/usage"]

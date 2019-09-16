@@ -46,6 +46,11 @@ else
     exit 1
 fi
 
+# Check if ${HOME} exists. If it does not, then set it to /home. (Yes, this is a hack... for CUDA images.)
+if [[ ! -d ${HOME} ]]; then
+    HOME=/home
+fi
+
 # Add user to /etc/passwd
 uid=$(id -u)
 gid=$(id -g)
