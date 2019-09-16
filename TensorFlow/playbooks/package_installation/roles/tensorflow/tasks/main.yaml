@@ -14,8 +14,10 @@
 
 - name: RHEL 7 --> Install remaining TensorFlow requirements
   yum: pkg=glibc
+  install_weak_deps: no
   when: RHEL_VERSION == '7'
 
 - name: RHEL 8 --> Install remaining TensorFlow requirements
   dnf: pkg=glibc
+  install_weak_deps: no
   when: RHEL_VERSION == '8'
