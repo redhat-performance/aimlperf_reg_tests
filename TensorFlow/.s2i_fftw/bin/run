@@ -183,7 +183,7 @@ fi
 if [[ ${DEVICE} == "cpu" ]]; then
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}'}"
 else
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cudnn_install_path: '${CUDNN_INSTALL_PATH}'}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}'}"
 fi
 
 # Print out success message
