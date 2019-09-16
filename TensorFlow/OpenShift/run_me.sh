@@ -501,6 +501,7 @@ elif [[ "${NFD}" == "nfd" ]]; then
                        --param=REGISTRY=$OC_REGISTRY \
                        --param=APP_NAME=$APP_NAME \
                        --param=NAMESPACE=$NAMESPACE \
+                       --param=RHEL_VERSION=$RHEL_VERSION \
                        --param=NUM_CPUS=$NUM_DEVICES \
                        --param=N_CPUS=$NUM_DEVICES \
                        --param=MEMORY_SIZE=$MEMORY_SIZE \
@@ -511,6 +512,7 @@ elif [[ "${NFD}" == "nfd" ]]; then
                        --param=REGISTRY=$OC_REGISTRY \
                        --param=APP_NAME=$APP_NAME \
                        --param=NAMESPACE=$NAMESPACE \
+                       --param=RHEL_VERSION=$RHEL_VERSION \
                        --param=NUM_CPUS=$NUM_DEVICES \
                        --param=CC=$GCC
         fi
@@ -523,6 +525,7 @@ elif [[ "${NFD}" == "nfd" ]]; then
                            --param=APP_NAME=$APP_NAME \
                            --param=NAMESPACE=$NAMESPACE \
                            --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                           --param=RHEL_VERSION=$RHEL_VERSION \
                            --param=N_CPUS=$N_CPUS \
                            --param=MEMORY_SIZE=$MEMORY_SIZE \
                            --param=CC=$GCC
@@ -533,6 +536,7 @@ elif [[ "${NFD}" == "nfd" ]]; then
                            --param=APP_NAME=$APP_NAME \
                            --param=NAMESPACE=$NAMESPACE \
                            --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                           --param=RHEL_VERSION=$RHEL_VERSION \
                            --param=N_CPUS=$N_CPUS \
                            --param=MEMORY_SIZE=$MEMORY_SIZE \
                            --param=THREAD_VALUES=$THREAD_VALUES \
@@ -545,6 +549,7 @@ elif [[ "${NFD}" == "nfd" ]]; then
                        --param=APP_NAME=$APP_NAME \
                        --param=NAMESPACE=$NAMESPACE \
                        --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                       --param=RHEL_VERSION=$RHEL_VERSION \
                        --param=NUM_GPUS=$NUM_DEVICES \
                        --param=NCCL_URL=$NCCL_URL \
                        --param=CUDNN_URL=$CUDNN_URL \
@@ -556,6 +561,7 @@ elif [[ "${NFD}" == "nfd" ]]; then
                        --param=APP_NAME=$APP_NAME \
                        --param=NAMESPACE=$NAMESPACE \
                        --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                       --param=RHEL_VERSION=$RHEL_VERSION \
                        --param=NUM_CPUS=$NUM_DEVICES \
                        --param=CC=$GCC
         fi
@@ -566,6 +572,7 @@ else
                --param=REGISTRY=$OC_REGISTRY \
                --param=APP_NAME=$APP_NAME \
                --param=NAMESPACE=$NAMESPACE \
+               --param=RHEL_VERSION=$RHEL_VERSION \
                --param=NUM_CPUS=$NUM_DEVICES \
                --param=CC=$GCC
 fi
