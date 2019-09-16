@@ -17,6 +17,10 @@ LABEL io.openshift.expose-services="8080:http"
 # Copy s2i assemble + run
 COPY TensorFlow/.s2i_fftw/bin/ /usr/libexec/s2i
 
+# Set timeout for dnf (in seconds) to prevent Curl timeout errors w/ dnf
+ENV DNF_TIMEOUT=300
+RUN sed -i "/[main]/a timeout=${DNF_TIMEOUT}" >> /etc/dnf/dnf.conf
+
 # Set playbook paths
 ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
 ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
