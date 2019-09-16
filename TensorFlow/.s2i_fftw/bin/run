@@ -36,25 +36,35 @@ else
 fi
 
 # Check C compiler
+echo "Checking C compiler:"
 if [[ -z ${CC} ]]; then
-    CC="/usr/bin/gcc"
-    echo "Using CC=`which gcc`"
+    CC="`which gcc`"
+    echo "  Using CC=`which gcc`"
 elif [[ -x ${CC} ]]; then
-    echo "Using CC=${CC}"
+    echo "  Using CC=${CC}"
 else
     echo "ERROR. Could not find ${CC}. Did you provide the right C compiler (GCC) path?"
     exit 1
 fi
 
 # Check if ${HOME} exists. If it does not, then set it to /home. (Yes, this is a hack... for CUDA images.)
-if [[ ! -d ${HOME} ]]; then
-    HOME=/home
+echo ""
+echo "Checking home directory:"
+echo "  HOME: ${HOME}"
+echo ""
+if [[ ! -d ${HOME} || ${HOME} == '/' ]]; then
+    TOPDIR=/home
+else
+    TOPDIR=${HOME}
 fi
+echo "Setting top dir based on 'HOME':"
+echo "  TOPDIR: ${TOPDIR}"
+echo ""
 
 # Add user to /etc/passwd
 uid=$(id -u)
 gid=$(id -g)
-echo "${uid}:x:${uid}:${gid}:1001 uid:${HOME}:/bin/sh" >> /etc/passwd
+echo "${uid}:x:${uid}:${gid}:1001 uid:${TOPDIR}:/bin/sh" >> /etc/passwd
 echo "${uid}:x:$(id -G | cut -d' ' -f 2)" >> /etc/group
 
 # Configure git
@@ -64,10 +74,25 @@ git config --global user.email user@openshift-s2i
 ##########################################
 #         BUILD AND INSTALL FFTW         #
 ##########################################
-FFTW_INSTALL_DIR="${HOME}/custom_fftw"
-FFTW_BUILD_DIR="${HOME}/build"
-cd ${HOME}/playbooks/FFTW_installation
+# Set install and build dirs
+FFTW_INSTALL_DIR="${TOPDIR}/custom_fftw"
+FFTW_BUILD_DIR="${TOPDIR}/build"
+
+# Print out info
+echo "FFTW installation params:"
+echo "  Install path: ${FFTW_INSTALL_DIR}"
+echo "  Build path:   ${FFTW_BUILD_DIR}"
+echo "  RHEL version: ${RHEL_VERSION}"
+echo "  CC:           ${CC}"
+echo ""
+
+# Change to appropriate directory
+cd ${TOPDIR}/playbooks/FFTW_installation
+
+# Build and install FFTW
 ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: '${FFTW_INSTALL_DIR}', build_dir: '${FFTW_BUILD_DIR}', rhel_version: '${RHEL_VERSION}', cc: '${CC}'}"
+
+# Print out success message
 echo ""
 echo "<< SUCCESS >> FFTW built and installed!"
 echo ""
@@ -75,11 +100,26 @@ echo ""
 ##########################################
 #       INSTALL NCCL IF USING GPUS       #
 ##########################################
-NCCL_INSTALL_PATH="${HOME}/nccl"
-CUDA_PATH="/usr/local/cuda"
 if [[ ${DEVICE} == "gpu" ]]; then
-    cd ${HOME}/playbooks/nccl_installation
+    # Set NCCL and CUDA paths
+    NCCL_INSTALL_PATH="${TOPDIR}/nccl"
+    CUDA_PATH="/usr/local/cuda"
+
+    # Print out info
+    echo "NCCL installation params:"
+    echo "  Install path:      ${NCCL_INSTALL_PATH}"
+    echo "  CUDA install path: ${CUDA_INSTALL_PATH}"
+    echo "  RHEL version:      ${RHEL_VERSION}"
+    echo "  NCCL installer:    ${NCCL}"
+    echo ""
+
+    # Change to appropriate directory
+    cd ${TOPDIR}/playbooks/nccl_installation
+
+    # Build and install NCCL
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', nccl_install_path: '${NCCL_INSTALL_PATH}', nccl_installer: '${NCCL}', cuda_install_path: '${CUDA_PATH}'}"
+
+    # Print out success message
     echo ""
     echo "<< SUCCESS >> NCCL installed!"
     echo ""
@@ -89,8 +129,20 @@ fi
 #      INSTALL CUDNN IF USING GPUS       #
 ##########################################
 if [[ ${DEVICE} == "gpu" ]]; then
-    cd ${HOME}/playbooks/cudnn_installation
+    # Print out info
+    echo "cuDNN installation params:"
+    echo "  CUDA install path: ${CUDA_INSTALL_PATH}"
+    echo "  RHEL version:      ${RHEL_VERSION}"
+    echo "  cuDNN installer:   ${CUDNN}"
+    echo ""
+
+    # Change to appropriate directory
+    cd ${TOPDIR}/playbooks/cudnn_installation
+
+    # Build and install cuDNN
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', cudnn: '${CUDNN}', cuda_install_path: '${CUDA_PATH}'}"
+
+    # Print out success message
     echo ""
     echo "<< SUCCESS >> cuDNN installed!"
     echo ""
@@ -100,10 +152,10 @@ fi
 #      BUILD AND INSTALL TENSORFLOW      #
 ##########################################
 # Change to the installation
-cd ${HOME}/playbooks/TensorFlow_installation
+cd ${TOPDIR}/playbooks/TensorFlow_installation
 
 # Set TensorFlow install dir
-TENSORFLOW_INSTALL_DIR="${HOME}/tensorflow"
+TENSORFLOW_INSTALL_DIR="${TOPDIR}/tensorflow"
 
 # Get the gcc libs
 # If we're using a custom gcc, then
@@ -133,6 +185,8 @@ if [[ ${DEVICE} == "cpu" ]]; then
 else
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cudnn_install_path: '${CUDNN_INSTALL_PATH}'}"
 fi
+
+# Print out success message
 echo ""
 echo "<< SUCCESS >> TensorFlow + NumPy built and installed!"
 echo ""
@@ -140,7 +194,7 @@ echo ""
 ##########################################
 #        RUN TENSORFLOW BENCHMARKS       #
 ##########################################
-cd ${HOME}/playbooks/TensorFlow_benchmarks
+cd ${TOPDIR}/playbooks/TensorFlow_benchmarks
 if [[ ${DEVICE} == "cpu" ]]; then
     ansible-playbook -i hosts play.yaml --extra-vars="{tf_installation: '${TENSORFLOW_INSTALL_DIR}', num_devices: '${NUM_DEVICES}'}"
 else
@@ -150,4 +204,4 @@ fi
 ##########################################
 # PRINT OUT TENSORFLOW BENCHMARK RESULTS #
 ##########################################
-cat ${HOME}/tensorflow_benchmarks/scripts/tf_cnn_benchmarks/resnet50-${DEVICE}-benchmark.log
+cat ${TOPDIR}/tensorflow_benchmarks/scripts/tf_cnn_benchmarks/resnet50-${DEVICE}-benchmark.log
