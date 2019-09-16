@@ -54,7 +54,8 @@ EXPOSE 8080
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Install Ansible
-RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
+RUN cd ${TOPDIR} && \
+    sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
     rm install_ansible_from_source.sh
 
 # Install FFTW + TensorFlow prerequisites via Ansible
