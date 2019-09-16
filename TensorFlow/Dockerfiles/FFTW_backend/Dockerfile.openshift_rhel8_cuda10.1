@@ -58,7 +58,7 @@ RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8'}" && \
     cd ${TF_PREREQS_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8', use_s2i_ubi: 'yes'}" && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8', use_s2i_ubi: 'yes'}"
 
 # Give user permissions to modify the 'macros' file + other files to run tests
 RUN chmod 777 /usr/libexec/s2i/run && \
