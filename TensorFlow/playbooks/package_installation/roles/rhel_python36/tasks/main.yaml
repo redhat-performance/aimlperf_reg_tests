@@ -4,9 +4,9 @@
 - name: Install Python 3.x on RHEL 7
   yum:
     name: python36
-  when: RHEL_VERSION == '7'
+  when: rhel_ver == '7'
 
 - name: Install Python 3.x on RHEL 8
   dnf:
     name: python3
-  when: RHEL_VERSION == '8'
+  when: rhel_ver == '8'

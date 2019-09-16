@@ -3,8 +3,8 @@
 # Install pip
 - name: Install pip on RHEL 7
   yum: pkg=python36-pip
-  when: RHEL_VERSION == 7
+  when: rhel_ver == 7
 
 - name: Install pip on RHEL 8
   dnf: pkg=python3-pip
-  when: RHEL_VERSION == 8
+  when: rhel_ver == 8

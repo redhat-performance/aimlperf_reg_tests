@@ -39,7 +39,7 @@ ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
 RUN mkdir -p ${TF_PREREQS_PLAYBOOK}
 COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
 RUN cd ${TF_PREREQS_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes'}" && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i_ubi: 'yes'}" && \
     cd .. && \
     rm -rf ${TF_PREREQS_PLAYBOOK}
 

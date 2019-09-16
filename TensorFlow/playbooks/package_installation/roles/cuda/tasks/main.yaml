@@ -5,11 +5,11 @@
 ##################################
 - name: RHEL 7 --> Install lspci
   yum: pkg=pciutils
-  when: RHEL_VERSION == "7"
+  when: rhel_ver == "7"
 
 - name: RHEL 8 --> Install lspci
   dnf: pkg=pciutils
-  when: RHEL_VERSION == "8"
+  when: rhel_ver == "8"
 
 - block:
   - name: 'End play if CUDA network rpm is missing'
@@ -17,7 +17,7 @@
       msg: 'Missing CUDA network rpm. Find your network rpm here: https://developer.nvidia.com/cuda-toolkit-archive'
 
   - meta: end_play
-  when: CUDA_NETWORK_RPM == ""
+  when: cuda_network_rpm == ""
 
 - name: Check for a CUDA-capable GPU
   shell: 'lspci | grep -i nvidia'
@@ -33,7 +33,7 @@
   when: nvidia_lspci_output.stdout == ""
 
 - debug:
-    var: CUDA_NETWORK_RPM
+    var: cuda_network_rpm
 
 ##################################
 #       Install build reqs       #
@@ -60,7 +60,7 @@
       - libXmu
       - libxcb
       - xorg-x11-proto-devel
-  when: RHEL_VERSION == "7"
+  when: rhel_ver == "7"
 
 - name: RHEL 8 --> dnf install autoconf, libX11, libX11-common, libX11-devel, libXext, libXi, libXmu, libxcb, and xorg-x11-proto-devel for building Mesa
   dnf:
@@ -74,7 +74,7 @@
       - libXmu
       - libxcb
       - xorg-x11-proto-devel
-  when: RHEL_VERSION == "8"
+  when: rhel_ver == "8"
 
 - name: Remove xorg-macros build folder if it exists
   file:
@@ -348,8 +348,8 @@
 
 - name: RHEL 7 --> Install CUDA
   yum: pkg=cuda
-  when: RHEL_VERSION == "7"
+  when: rhel_ver == "7"
 
 - name: RHEL 8 --> Install CUDA
   dnf: pkg=cuda
-  when: RHEL_VERSION == "8"
+  when: rhel_ver == "8"

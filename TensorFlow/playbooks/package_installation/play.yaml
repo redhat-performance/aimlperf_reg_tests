@@ -5,12 +5,12 @@
   become: yes
 
   vars:
-    RHEL_VERSION: '{{ rhel_version | default("7") }}'
-    BAZEL_VERSION: '{{ bazel_version | default("0.25.2") }}'
-    USE_S2I: '{{ use_s2i | default("no") }}'
-    USE_GPU: '{{ use_gpu | default("no") }}'
-    CUDA_VERSION: '{{ cuda_version | default("10.1") }}'
-    CUDA_NETWORK_RPM: '{{ cuda_rpm | default("") }}'
+    rhel_ver: '{{ rhel_version | default("7") }}'
+    bazel_ver: '{{ bazel_version | default("0.25.2") }}'
+    s2i_ubi: '{{ use_s2i_ubi | default("no") }}'
+    gpu: '{{ use_gpu | default("no") }}'
+    cuda_ver: '{{ cuda_version | default("10.1") }}'
+    cuda_network_rpm: '{{ cuda_rpm | default("") }}'
 
   roles:
 
@@ -31,11 +31,11 @@
 
     # Build BLAS and LAPACK by hand (since UBI/s2i yum repos do not contain BLAS or LAPACK)
     - role: s2i_blas_lapack
-      when: USE_S2I == 'yes'
+      when: s2i_ubi == 'yes'
 
     # Install CBLAS
     - role: cblas
 
     # Install GPU prerequisites
     - role: cuda
-      when: USE_GPU == 'yes'
+      when: gpu == 'yes'

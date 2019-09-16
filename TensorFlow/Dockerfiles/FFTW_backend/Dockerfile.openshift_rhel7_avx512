@@ -104,7 +104,7 @@ RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
 
 # Install TensorFlow prerequisites via Ansible
 RUN cd ${TF_PREREQS_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i: 'yes'}" && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i_ubi: 'yes'}" && \
     cd .. && \
     rm -rf ${TF_PREREQS_PLAYBOOK}
 

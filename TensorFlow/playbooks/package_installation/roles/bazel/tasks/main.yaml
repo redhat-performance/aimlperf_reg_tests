@@ -5,26 +5,26 @@
   file:
     state: absent
     path: /var/cache/yum
-  when: RHEL_VERSION == '7'
+  when: rhel_ver == '7'
 
 - name: RHEL 8 --> Clear dnf cache
   file:
     state: absent
     path: /var/cache/dnf
-  when: RHEL_VERSION == '8'
+  when: rhel_ver == '8'
 
 # Bazel requires java-devel, so let's install it
 - name: Install Bazel requirements (java-devel) for RHEL 7
   yum:
     name: java-devel
     install_weak_deps: no
-  when: RHEL_VERSION == '7'
+  when: rhel_ver == '7'
 
 - name: Install Bazel requirements (java-devel) for RHEL 8
   dnf:
     name: java-devel
     install_weak_deps: no
-  when: RHEL_VERSION == '8'
+  when: rhel_ver == '8'
 
 # Remove existing Bazel package
 - name: Remove existing Bazel package

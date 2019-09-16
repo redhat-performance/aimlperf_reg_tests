@@ -19,7 +19,7 @@
       - python36-devel
       - subversion
     install_weak_deps: no
-  when: RHEL_VERSION == '7' and USE_S2I == 'no'
+  when: rhel_ver == '7' and s2i_ubi == 'no'
 
 - name: Install yum NumPy requirements for RHEL 7 (for UBI and s2i images only)
   yum:
@@ -35,7 +35,7 @@
       - python36-devel
       - zlib-devel
     install_weak_deps: no
-  when: RHEL_VERSION == '7' and USE_S2I == 'yes'
+  when: rhel_ver == '7' and s2i_ubi == 'yes'
 
 - name: Install NumPy requirements for RHEL 8 (for non-UBI and non-s2i images only)
   dnf:
@@ -55,7 +55,7 @@
       - python36-devel
       - subversion
     install_weak_deps: no
-  when: RHEL_VERSION == '8' and USE_S2I == 'no'
+  when: rhel_ver == '8' and s2i_ubi == 'no'
 
 - name: Install yum NumPy requirements for RHEL 8 (for UBI and s2i images only)
   dnf:
@@ -71,7 +71,7 @@
       - python36-devel
       - zlib-devel
     install_weak_deps: no
-  when: RHEL_VERSION == '8' and USE_S2I == 'yes'
+  when: rhel_ver == '8' and s2i_ubi == 'yes'
 
 # For s2i and ubi7/ubi8 only
 - block:
@@ -256,4 +256,4 @@
       state: absent
       path: '{{ SUBVERSION_BUILD_DIR }}'
 
-  when: USE_S2I == 'yes'
+  when: s2i_ubi == 'yes'
