@@ -59,18 +59,18 @@
 # Get Bazel installer
 - name: Get Bazel installer
   get_url: 
-    url: https://github.com/bazelbuild/bazel/releases/download/{{ BAZEL_VERSION }}/bazel-{{ BAZEL_VERSION }}-installer-linux-x86_64.sh
-    dest: /tmp/bazel-{{ BAZEL_VERSION }}-installer-linux-x86_64.sh
+    url: https://github.com/bazelbuild/bazel/releases/download/{{ bazel_ver }}/bazel-{{ bazel_ver }}-installer-linux-x86_64.sh
+    dest: /tmp/bazel-{{ bazel_ver }}-installer-linux-x86_64.sh
 
 # Install Bazel
 - name: Install Bazel
-  command: sh /tmp/bazel-{{ BAZEL_VERSION }}-installer-linux-x86_64.sh
+  command: sh /tmp/bazel-{{ bazel_ver }}-installer-linux-x86_64.sh
 
 # Cleanup
 - name: Remove Bazel installer
   file:
     state: absent
-    path: /tmp/bazel-{{ BAZEL_VERSION }}-installer-linux-x86_64.sh
+    path: /tmp/bazel-{{ bazel_ver }}-installer-linux-x86_64.sh
 
 # Fix linking
 - name: Create symlink (because Bazel v0.27.1 and later may have bugs)
