@@ -13,11 +13,13 @@
     executable: pip3
 
 - name: RHEL 7 --> Install remaining TensorFlow requirements
-  yum: pkg=glibc
+  yum:
+    name: glibc
     install_weak_deps: no
   when: RHEL_VERSION == '7'
 
 - name: RHEL 8 --> Install remaining TensorFlow requirements
-  dnf: pkg=glibc
+  dnf:
+    name: glibc
     install_weak_deps: no
   when: RHEL_VERSION == '8'
