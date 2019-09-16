@@ -3,10 +3,12 @@
 # Bazel requires java-devel, so let's install it
 - name: Install Bazel requirements (java-devel) for RHEL 7
   yum: pkg=java-devel
+  install_weak_deps: no
   when: RHEL_VERSION == '7'
 
 - name: Install Bazel requirements (java-devel) for RHEL 8
   dnf: pkg=java-devel
+  install_weak_deps: no
   when: RHEL_VERSION == '8'
 
 # Remove existing Bazel package
