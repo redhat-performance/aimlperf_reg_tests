@@ -16,10 +16,12 @@
 # Do yum/dnf clean all
 - name: RHEL 7 --> yum clean all
   shell: yum clean all
+  warn: false
   when: rhel_ver == '7'
 
 - name: RHEL 8 --> dnf clean all
   shell: dnf clean all
+  warn: false
   when: rhel_ver == '8'
 
 # Bazel requires java-devel, so let's install it
