@@ -66,8 +66,7 @@ RUN chmod 777 /usr/libexec/s2i/run && \
     mkdir -p ${HOME}/.ansible/tmp && \
     chmod 777 ${HOME}/.ansible/tmp && \
     chmod 777 ${HOME}/.ansible && \
-    chmod -R 777 ${HOME}/.cache && \
-    chmod 777 ${HOME}
+    chmod -R 777 ${HOME}/.cache
 
 # Set Ansible remote tmp
 RUN echo "remote_tmp = ${HOME}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
