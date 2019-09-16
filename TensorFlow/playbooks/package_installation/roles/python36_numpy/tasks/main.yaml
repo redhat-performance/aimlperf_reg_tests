@@ -67,7 +67,7 @@
       - make
       - python36-devel
       - zlib-devel
-  when: RHEL_VERSION == '8'
+  when: RHEL_VERSION == '8' and USE_S2I == 'yes'
 
 # For s2i and ubi7/ubi8 only
 - block:
