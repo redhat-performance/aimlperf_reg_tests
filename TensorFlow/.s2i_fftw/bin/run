@@ -61,19 +61,24 @@ echo "Setting top dir based on 'HOME':"
 echo "  TOPDIR: ${TOPDIR}"
 echo ""
 
-# Add user to /etc/passwd
+# Add user to /etc/passwd if necessary
+echo "Checking user permissions:"
 uid=$(id -u)
 gid=$(id -g)
 if (( ${uid} == 0 )); then
+    echo "  Switching to default user"
     su default
 else
+    echo "  Adding user ${uid} to /etc/passwd"
     echo "${uid}:x:${uid}:${gid}:1001 uid:${TOPDIR}:/bin/sh" >> /etc/passwd
     echo "${uid}:x:$(id -G | cut -d' ' -f 2)" >> /etc/group
 fi
 
 # Configure git
+echo "Configuring git:"
 git config --global user.name user
 git config --global user.email user@openshift-s2i
+echo "  git configured --> user = 'user', email = 'user@openshift-s2i'"
 
 ##########################################
 #         BUILD AND INSTALL FFTW         #
