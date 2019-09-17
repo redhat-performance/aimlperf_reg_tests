@@ -77,8 +77,8 @@ RUN chmod 777 /usr/libexec/s2i/run && \
 RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
     echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg
 
-# This default user is created in the openshift/base-centos7 image
-USER 1001
+# Set user to 'default'
+USER default
 
 WORKDIR ${TOPDIR}
 
