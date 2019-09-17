@@ -70,6 +70,7 @@ RUN chmod 777 /usr/libexec/s2i/run && \
     mkdir -p /.ansible/tmp && \
     chmod 777 /.ansible/tmp && \
     chmod 777 /.ansible && \
+    mkdir -p /.cache && \
     chmod -R 777 /.cache && \
     chmod 777 ${TOPDIR} && \
     touch //.gitconfig && \
