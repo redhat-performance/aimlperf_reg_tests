@@ -30,6 +30,8 @@ ENV TF_PREREQS_PLAYBOOK=${TOPDIR}/tensorflow_package_installation
 ENV FFTW_INSTALLATION=${TOPDIR}/playbooks/FFTW_installation
 ENV TENSORFLOW_INSTALLATION=${TOPDIR}/playbooks/TensorFlow_installation
 ENV TENSORFLOW_BENCHMARKS=${TOPDIR}/playbooks/TensorFlow_benchmarks
+ENV NCCL_INSTALLATION=${TOPDIR}/playbooks/nccl_installation
+ENV CUDNN_INSTALLATION=${TOPDIR}/playbooks/cudnn_installation
 
 # Create folders for playbooks and folder for playbooks cache
 RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
@@ -37,6 +39,8 @@ RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
     mkdir -p ${FFTW_INSTALLATION} && \
     mkdir -p ${TENSORFLOW_INSTALLATION} && \
     mkdir -p ${TENSORFLOW_BENCHMARKS} && \
+    mkdir -p ${NCCL_INSTALLATION} && \
+    mkdir -p ${CUDNN_INSTALLATION} && \
     mkdir -p ${TOPDIR}/.cache
 
 # Copy playbooks and scripts
@@ -46,6 +50,8 @@ COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
 COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
 COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
 COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
+COPY TensorFlow/playbooks/nccl_installation ${NCCL_INSTALLATION}
+COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
 
 # Put on port 8080
 EXPOSE 8080
