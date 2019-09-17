@@ -67,11 +67,13 @@ RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
 # Give user permissions to modify the 'macros' file + other files to run tests
 RUN chmod 777 /usr/libexec/s2i/run && \
     chmod g=u /etc/passwd /etc/group && \
-    mkdir -p ${TOPDIR}/.ansible/tmp && \
-    chmod 777 ${TOPDIR}/.ansible/tmp && \
-    chmod 777 ${TOPDIR}/.ansible && \
-    chmod -R 777 ${TOPDIR}/.cache && \
-    chmod 777 ${TOPDIR}
+    mkdir -p /.ansible/tmp && \
+    chmod 777 /.ansible/tmp && \
+    chmod 777 /.ansible && \
+    chmod -R 777 /.cache && \
+    chmod 777 ${TOPDIR} && \
+    touch //.gitconfig && \
+    chmod 777 //.gitconfig
 
 # Set Ansible remote tmp
 RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
