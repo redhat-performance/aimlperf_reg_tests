@@ -64,8 +64,12 @@ echo ""
 # Add user to /etc/passwd
 uid=$(id -u)
 gid=$(id -g)
-echo "${uid}:x:${uid}:${gid}:1001 uid:${TOPDIR}:/bin/sh" >> /etc/passwd
-echo "${uid}:x:$(id -G | cut -d' ' -f 2)" >> /etc/group
+if (( ${uid} == 0 )); then
+    su default
+else
+    echo "${uid}:x:${uid}:${gid}:1001 uid:${TOPDIR}:/bin/sh" >> /etc/passwd
+    echo "${uid}:x:$(id -G | cut -d' ' -f 2)" >> /etc/group
+fi
 
 # Configure git
 git config --global user.name user
