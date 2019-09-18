@@ -9,7 +9,7 @@
     rhel_version: '{{ rhel_ver | default("7") }}'
 
     # This is the path to the CUDA installation you want to use
-    cuda_path: '{{ cuda_install_path | default("/usr/local/cuda")'
+    cuda_path: '{{ cuda_install_path | default("/usr/local/cuda") }}'
 
     # This is the URL where Ansible will download cuDNN
     cudnn_url: '{{ cudnn | default("") }}'
