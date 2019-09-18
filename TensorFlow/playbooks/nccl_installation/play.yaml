@@ -17,10 +17,14 @@
     # Set RHEL version
     rhel_version: '{{ rhel_ver | default("7") }}'
 
+    # Check GPU
+    gpu_check: '{{ gpu_check | default("yes") }}'
+
   roles:
 
     # Check for NVIDIA (CUDA-capable) GPU
     - role: check_gpu
+      when: gpu_check == 'yes'
 
     # Install NCCL
     - role: install_nccl

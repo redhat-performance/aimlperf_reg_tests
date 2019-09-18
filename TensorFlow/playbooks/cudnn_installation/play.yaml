@@ -15,10 +15,14 @@
     # This is the URL where Ansible will download cuDNN
     cudnn_url: '{{ cudnn | default("") }}'
 
+    # Check GPU
+    gpu_check: '{{ gpu_check | default("yes") }}'
+
   roles:
 
     # Check for NVIDIA (CUDA-capable) GPU
     - role: check_gpu
+      when: gpu_check == 'yes'
 
     # Install CUDNN
     - role: install_cudnn
