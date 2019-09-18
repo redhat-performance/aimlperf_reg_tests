@@ -70,7 +70,8 @@ RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
     cd ${TF_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8', use_s2i_ubi: 'yes'}"
 
-# Give user permissions to modify the 'macros' file + other files to run tests
+# Create and give user permissions to modify certain directories that are required to run the Ansible
+# playbooks that are being pulled into this Dockerfile. Also allow /usr/local/cuda to be writable
 RUN chmod 777 /usr/libexec/s2i/run && \
     chmod g=u /etc/passwd /etc/group && \
     mkdir -p /.ansible/tmp && \
@@ -80,7 +81,8 @@ RUN chmod 777 /usr/libexec/s2i/run && \
     chmod -R 777 /.cache && \
     chmod 777 ${TOPDIR} && \
     touch //.gitconfig && \
-    chmod 777 //.gitconfig
+    chmod 777 //.gitconfig && \
+    chmod -R 777 /usr/local/cuda
 
 # Set Ansible remote tmp
 RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
