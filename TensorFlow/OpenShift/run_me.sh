@@ -36,8 +36,14 @@ usage() {
     echo "      -m  Memory size to use with CPU Manager"
     echo ""
     echo "  -u  Use GPUs (Requires option -t, -d, -y, and -z to be used!)"
-    echo "      -y  NCCL download URL"
-    echo "      -z  cuDNN download URL"
+    echo "      -y  NCCL download URL or s3 bucket path"
+    echo "      -z  cuDNN download URL or s3 bucket path"
+    echo ""
+    echo "  -o  Use AWS for downloading cuDNN and NCCL. (Currently, either use AWS for downloading both or don't use AWS at all. This is a TODO.)"
+    echo "      -j  AWS access key"
+    echo "      -k  AWS secret access key"
+    echo "      -l  AWS region"
+    echo "      -q  AWS profile name"
     exit
 }
 
@@ -101,6 +107,21 @@ do
           ;;
       s)
           SECRET=${OPTARG}
+          ;;
+      o)
+          USE_AWS="true"
+          ;;
+      j)
+          AWS_ACCESS_KEY=${OPTARG}
+          ;;
+      k)
+          AWS_SECRET_ACCESS_KEY=${OPTARG}
+          ;;
+      l)
+          AWS_REGION=${OPTARG}
+          ;;
+      q)
+          AWS_PROFILE_NAME=${OPTARG}
           ;;
       *)
           usage
@@ -229,23 +250,33 @@ fi
 # Check GPU options
 if [[ ${USE_GPU} == "true" ]]; then
 
-    # Make sure the user passed in a download URL for NCCL. Check it to make sure it's valid by downloading the file.
-    # If the file failed to download, then the script will crash on its own.
+    # Check if using AWS
+    if [[ ! -z ${USE_AWS} ]]; then
+        if [[ -z ${AWS_ACCESS_KEY} ]]; then
+            echo "ERROR. The -o option was passed in to use AWS, but no access key was provided. Please provide an access key with the -j option."
+            exit 1
+        elif [[ -z ${AWS_SECRET_ACCESS_KEY} ]]; then
+            echo "ERROR. The -o option was passed in to use AWS and an AWS access key was provided, but no secret access key was provided. Please provide a secret access key with the -k option."
+            exit 1
+        elif [[ -z ${AWS_REGION} ]]; then
+            echo "ERROR. The -o option was passed in to use AWS and both the AWS access and secret access keys were provided, but a region was not provided. Please provide a region using the -l option."
+            exit 1
+        elif [[ -z ${AWS_PROFILE_NAME} ]]; then
+            echo "ERROR. The -o option was passed in to use AWS and all required arguments were provided except for the AWS profile name. Please provide a profile name with the -q option."
+            exit 1
+        fi
+    fi
+
+    # Make sure the user passed in a download URL or s3 bucket folder for NCCL
     if [[ -z ${NCCL_URL} ]]; then
-        echo "ERROR. NCCL download URL is missing. Please provide an NCCL URL with the -y option."
+        echo "ERROR. NCCL download URL or s3 bucket folder name is missing. Please provide an NCCL URL or s3 bucket with the -y option."
         exit 1
-    else
-        curl -o nccl_test ${NCCL_URL}
-        rm -rf nccl_test
     fi
 
     # Do the same with cuDNN
     if [[ -z ${CUDNN_URL} ]]; then
-        echo "ERROR. cuDNN download URL is missing. Please provide a cuDNN URL with the -z option."
+        echo "ERROR. cuDNN download URL or s3 bucket folder name is missing. Please provide a cuDNN URL or s3 bucket with the -z option."
         exit 1
-    else
-        curl -o cudnn_test ${CUDNN_URL}
-        rm -rf cudnn_test
     fi
 fi
 
@@ -543,17 +574,35 @@ elif [[ "${NFD}" == "nfd" ]]; then
                            --param=CC=$GCC
             fi
         elif [[ ${USE_GPU} == "true" ]]; then
-            oc new-app --template="${build_job_name}" \
-                       --param=IMAGESTREAM_NAME=$IS_NAME \
-                       --param=REGISTRY=$OC_REGISTRY \
-                       --param=APP_NAME=$APP_NAME \
-                       --param=NAMESPACE=$NAMESPACE \
-                       --param=INSTANCE_TYPE=$INSTANCE_TYPE \
-                       --param=RHEL_VERSION=$RHEL_VERSION \
-                       --param=NUM_GPUS=$NUM_DEVICES \
-                       --param=NCCL_URL=$NCCL_URL \
-                       --param=CUDNN_URL=$CUDNN_URL \
-                       --param=CC=$GCC
+            if [[ ${USE_AWS} == "true" ]]; then
+                oc new-app --template="${build_job_name}" \
+                           --param=IMAGESTREAM_NAME=$IS_NAME \
+                           --param=REGISTRY=$OC_REGISTRY \
+                           --param=APP_NAME=$APP_NAME \
+                           --param=NAMESPACE=$NAMESPACE \
+                           --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                           --param=RHEL_VERSION=$RHEL_VERSION \
+                           --param=NUM_GPUS=$NUM_DEVICES \
+                           --param=NCCL_URL=$NCCL_URL \
+                           --param=CUDNN_URL=$CUDNN_URL \
+                           --param=CC=$GCC \
+                           --param=AWS_ACCESS_KEY=$AWS_ACCESS_KEY \
+                           --param=AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+                           --param=AWS_REGION=$AWS_REGION \
+                           --param=AWS_PROFILE=$AWS_PROFILE_NAME
+            else
+                oc new-app --template="${build_job_name}" \
+                           --param=IMAGESTREAM_NAME=$IS_NAME \
+                           --param=REGISTRY=$OC_REGISTRY \
+                           --param=APP_NAME=$APP_NAME \
+                           --param=NAMESPACE=$NAMESPACE \
+                           --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                           --param=RHEL_VERSION=$RHEL_VERSION \
+                           --param=NUM_GPUS=$NUM_DEVICES \
+                           --param=NCCL_URL=$NCCL_URL \
+                           --param=CUDNN_URL=$CUDNN_URL \
+                           --param=CC=$GCC
+            fi
         else
             oc new-app --template="${build_job_name}" \
                        --param=IMAGESTREAM_NAME=$IS_NAME \

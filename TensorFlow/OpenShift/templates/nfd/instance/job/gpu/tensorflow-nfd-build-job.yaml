@@ -23,7 +23,7 @@ objects:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
-          args: ["${RHEL_VERSION}", "gpu", "${NUM_GPUS}", "${CC}", "${NCCL_URL}", "${CUDNN_URL}"]
+          args: ["${RHEL_VERSION}", "gpu", "${NUM_GPUS}", "${CC}", "${WHICH_SOURCE}", "${NCCL_URL}", "${CUDNN_URL}", "${AWS_PROFILE}", "${AWS_REGION}", "${AWS_ACCESS_KEY}", "${AWS_SECRET_ACCESS_KEY}"]
         restartPolicy: "Never"
         affinity:
           nodeAffinity:
@@ -61,18 +61,22 @@ parameters:
 - description: "RHEL version to use"
   name: "RHEL_VERSION"
   from: '[0-9]{1}'
-  value: "7"
+  value: "8"
   required: true
 - description: "Number of GPUs to use (must be an integer)"
   name: "NUM_GPUS"
   from: '[0-9]{5}'
   value: ""
   required: false
-- description: "URL to download NCCL from"
+- description: "Which source? s3 bucket or url"
+  name: "WHICH_SOURCE"
+  value: "url"
+  required: true
+- description: "URL or s3 bucket to download NCCL from"
   name: "NCCL_URL"
   required: false
   value: ""
-- description: "URL to download cuDNN from"
+- description: "URL or s3 bucket to download cuDNN from"
   name: "CUDNN_URL"
   required: false
   value: ""
@@ -80,3 +84,15 @@ parameters:
   name: "CC"
   value: "/usr/bin/gcc"
   required: true
+- description: "AWS profile name"
+  name: "AWS_PROFILE"
+  required: false
+- description: "AWS access key"
+  name: "AWS_ACCESS_KEY"
+  required: false
+- description: "AWS secret access key"
+  name: "AWS_SECRET_ACCESS_KEY"
+  required: false
+- description: "AWS region"
+  name: "AWS_REGION"
+  required: false

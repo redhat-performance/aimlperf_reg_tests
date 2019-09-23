@@ -12,11 +12,20 @@ NUM_DEVICES=$3
 # C compiler? e.g., '/usr/bin/gcc'
 CC=$4
 
-# URL to NCCL download (make sure to sign up for NVIDIA account)
-NCCL=$5
+# Use s3 bucket or URL? Set this variable to 's3' for s3 bucket or 'url' for URL
+WHICH_SOURCE=$5
 
-# URL to cuDNN download (make sure to sign up for NVIDIA account)
-CUDNN=$6
+# NCCL download. Either an s3 path or a URL
+NCCL=$6
+
+# cuDNN download. Either an s3 path or a URL
+CUDNN=$7
+
+# AWS credentials info
+AWS_PROFILE=$8
+AWS_REGION=$9
+AWS_ACCESS_KEY=$10
+AWS_SECRET_ACCESS_KEY=$11
 
 # Check device input
 if [[ ${DEVICE} != "cpu" ]] && [[ ${DEVICE} != "gpu" ]]; then
@@ -44,6 +53,17 @@ elif [[ -x ${CC} ]]; then
     echo "  Using CC=${CC}"
 else
     echo "ERROR. Could not find ${CC}. Did you provide the right C compiler (GCC) path?"
+    exit 1
+fi
+
+# Check which source
+echo "Checking which source for NCCL and cuDNN:"
+if [[ ${WHICH_SOURCE} == "url" ]] or [[ ${WHICH_SOURCE} == "URL" ]]; then
+    echo "  Using URL"
+elif [[ ${WHICH_SOURCE} == "s3" ]] or [[ ${WHICH_SOURCE} == "S3" ]]; then
+    echo "  Using AWS s3"
+else
+    echo "ERROR. Unrecognized source '${WHICH_SOURCE}'. Please choose from one of the following: {url, s3}"
     exit 1
 fi
 
@@ -84,6 +104,90 @@ echo "  git configured --> user = 'user', email = 'user@openshift-s2i'"
 echo ""
 
 ##########################################
+#       INSTALL NCCL IF USING GPUS       #
+##########################################
+if [[ ${DEVICE} == "gpu" ]]; then
+    # Set NCCL and CUDA paths
+    NCCL_INSTALL_PATH="${TOPDIR}/nccl"
+    CUDA_INSTALL_PATH="/usr/local/cuda"
+
+    # Print out info
+    if [[ ${WHICH_SOURCE} == "url" ]] or [[ ${WHICH_SOURCE} == "URL" ]]; then
+        echo "NCCL installation params:"
+        echo "  Install path:      ${NCCL_INSTALL_PATH}"
+        echo "  CUDA install path: ${CUDA_INSTALL_PATH}"
+        echo "  RHEL version:      ${RHEL_VERSION}"
+        echo "  NCCL installer:    ${NCCL}"
+        echo ""
+    else
+        echo "NCCL installation params:"
+        echo "  Install path:          ${NCCL_INSTALL_PATH}"
+        echo "  CUDA install path:     ${CUDA_INSTALL_PATH}"
+        echo "  RHEL version:          ${RHEL_VERSION}"
+        echo "  NCCL s3 bucket:        ${NCCL}"
+        echo "  AWS access key:        [private]"
+        echo "  AWS secret access key: [private]"
+        echo "  AWS region:            ${AWS_REGION}"
+        echo "  AWS profile:           ${AWS_PROFILE}"
+        echo ""
+    fi
+
+    # Change to appropriate directory
+    cd ${TOPDIR}/playbooks/nccl_installation
+
+    # Build and install NCCL
+    if [[ ${WHICH_SOURCE} == "url" ]] or [[ ${WHICH_SOURCE} == "URL" ]]; then
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', nccl_install_path: '${NCCL_INSTALL_PATH}', nccl_installer: '${NCCL}', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
+    else
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', nccl_install_path: '${NCCL_INSTALL_PATH}', bucket: '${NCCL}', aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
+    fi
+
+    # Print out success message
+    echo ""
+    echo "<< SUCCESS >> NCCL installed!"
+    echo ""
+fi
+
+##########################################
+#      INSTALL CUDNN IF USING GPUS       #
+##########################################
+if [[ ${DEVICE} == "gpu" ]]; then
+    # Print out info
+    if [[ ${WHICH_SOURCE} == "url" ]] or [[ ${WHICH_SOURCE} == "URL" ]]; then
+        echo "cuDNN installation params:"
+        echo "  CUDA install path: ${CUDA_INSTALL_PATH}"
+        echo "  RHEL version:      ${RHEL_VERSION}"
+        echo "  cuDNN installer:   ${CUDNN}"
+        echo ""
+    else
+        echo "cuDNN installation params:"
+        echo "  CUDA install path:     ${CUDA_INSTALL_PATH}"
+        echo "  RHEL version:          ${RHEL_VERSION}"
+        echo "  cuDNN s3 bucket:       ${CUDNN}"
+        echo "  AWS access key:        [private]"
+        echo "  AWS secret access key: [private]"
+        echo "  AWS region:            ${AWS_REGION}"
+        echo "  AWS profile:           ${AWS_PROFILE}"
+        echo ""
+    fi
+
+    # Change to appropriate directory
+    cd ${TOPDIR}/playbooks/cudnn_installation
+
+    # Build and install cuDNN
+    if [[ ${WHICH_SOURCE} == "url" ]] or [[ ${WHICH_SOURCE} == "URL" ]]; then
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', cudnn: '${CUDNN}', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
+    else
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', bucket: '${CUDNN}', aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
+    fi
+
+    # Print out success message
+    echo ""
+    echo "<< SUCCESS >> cuDNN installed!"
+    echo ""
+fi
+
+##########################################
 #         BUILD AND INSTALL FFTW         #
 ##########################################
 # Set install and build dirs
@@ -108,57 +212,6 @@ ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: '${FFTW_INSTALL_
 echo ""
 echo "<< SUCCESS >> FFTW built and installed!"
 echo ""
-
-##########################################
-#       INSTALL NCCL IF USING GPUS       #
-##########################################
-if [[ ${DEVICE} == "gpu" ]]; then
-    # Set NCCL and CUDA paths
-    NCCL_INSTALL_PATH="${TOPDIR}/nccl"
-    CUDA_INSTALL_PATH="/usr/local/cuda"
-
-    # Print out info
-    echo "NCCL installation params:"
-    echo "  Install path:      ${NCCL_INSTALL_PATH}"
-    echo "  CUDA install path: ${CUDA_INSTALL_PATH}"
-    echo "  RHEL version:      ${RHEL_VERSION}"
-    echo "  NCCL installer:    ${NCCL}"
-    echo ""
-
-    # Change to appropriate directory
-    cd ${TOPDIR}/playbooks/nccl_installation
-
-    # Build and install NCCL
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', nccl_install_path: '${NCCL_INSTALL_PATH}', nccl_installer: '${NCCL}', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
-
-    # Print out success message
-    echo ""
-    echo "<< SUCCESS >> NCCL installed!"
-    echo ""
-fi
-
-##########################################
-#      INSTALL CUDNN IF USING GPUS       #
-##########################################
-if [[ ${DEVICE} == "gpu" ]]; then
-    # Print out info
-    echo "cuDNN installation params:"
-    echo "  CUDA install path: ${CUDA_INSTALL_PATH}"
-    echo "  RHEL version:      ${RHEL_VERSION}"
-    echo "  cuDNN installer:   ${CUDNN}"
-    echo ""
-
-    # Change to appropriate directory
-    cd ${TOPDIR}/playbooks/cudnn_installation
-
-    # Build and install cuDNN
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', cudnn: '${CUDNN}', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
-
-    # Print out success message
-    echo ""
-    echo "<< SUCCESS >> cuDNN installed!"
-    echo ""
-fi
 
 ##########################################
 #      BUILD AND INSTALL TENSORFLOW      #

@@ -1,0 +1,64 @@
+---
+
+- name: Delete NCCL tmp dir (if it exists)
+  file:
+    state: absent
+    path: '{{ nccl_download_dir }}'
+
+- name: Create NCCL tmp dir
+  file:
+    state: directory
+    path: '{{ nccl_download_dir }}'
+
+- name: Configure AWS CLI for {{ s3_profile }}
+  shell: |
+    aws configure set aws_access_key_id '{{ s3_access_key }}' --profile '{{ s3_profile }}'
+    aws configure set aws_secret_access_key '{{ s3_secret_access_key }}' --profile '{{ s3_profile }}'
+    aws configure set region '{{ s3_region }}' --profile '{{ s3_profile }}'
+
+- name: Download S3 bucket NCCL tarball
+  shell: aws s3 cp '{{ s3_bucket }}' '{{ nccl_download_dir }}'
+
+- name: Get tarball name
+  shell: ls -p '{{ nccl_download_dir }}'
+  register: ls_nccl_download_dir_output
+
+- debug:
+    msg: 'Found {{ ls_nccl_download_dir_output.stdout }}'
+
+- name: Untar the NCCL tarball
+  shell: |
+    cd '{{ nccl_download_dir }}'
+    tar xvf '{{ ls_nccl_download_dir_output.stdout }}' --strip-components 1
+
+- name: Remove the tarball itself, but keep the folder
+  shell: |
+    cd '{{ nccl_download_dir }}'
+    rm -f '{{ ls_nccl_download_dir_output.stdout }}'
+
+- debug:
+    var: nccl_agnostic_install_path
+
+- name: Remove {{ nccl_agnostic_install_path }} if it exists
+  file:
+    state: absent
+    path: '{{ nccl_agnostic_install_path }}'
+
+- name: Create {{ nccl_agnostic_install_path }}
+  file:
+    state: directory
+    path: '{{ nccl_agnostic_install_path }}'
+
+- name: Move /tmp/nccl contents to {{ nccl_agnostic_install_path }}
+  command: mv '{{ nccl_download_dir }}/*' '{{ nccl_agnostic_install_path }}'
+
+- name: Delete NCCL download dir because we don't need it anymore
+  file:
+    state: absent
+    path: '{{ nccl_download_dir }}'
+
+- name: Optional --> delete aws '{{ aws_profile }}' credentials.
+  replace:
+    path: ~/.aws/credentials
+    regexp: '\[{{ aws_profile }}\]\naws_access_key={{ aws_access_key }}\naws_secret_access_key={{ aws_secret_access_key}}'
+  when: delete_aws_credentials == 'yes'

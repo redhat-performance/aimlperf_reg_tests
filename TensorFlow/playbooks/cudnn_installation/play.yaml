@@ -17,11 +17,27 @@
     # Check GPU
     gpu_check: '{{ gpu_check | default("yes") }}'
 
+    # Use s3 bucket to download NCCL? If no, NCCL will be installed via URL.
+    use_s3: '{{ use_aws | default("no") }}'
+    
+    # AWS s3 params. All are REQUIRED when using s3.
+    s3_access_key: '{{ aws_access_key | default("null") }}'
+    s3_secret_access_key: '{{ aws_secret_access_key | default("null") }}'
+    s3_region: '{{ aws_region | default ("us-east-1") }}'
+    s3_profile: '{{ aws_profile | default("null") }}'
+    s3_bucket: '{{ bucket | default("null") }}'
+    delete_aws_credentials: '{{ delete_aws_credentials_after_installation | default("no") }}'
+
   roles:
 
     # Check for NVIDIA (CUDA-capable) GPU
     - role: check_gpu
       when: gpu_check == 'yes'
 
-    # Install CUDNN
-    - role: install_cudnn
+    # Install cuDNN from URL
+    - role: install_cudnn_from_url
+      when: use_s3 == 'no'
+
+    # Install cuDNN from s3 bucket
+    - role: install_cudnn_from_s3
+      when: use_s3 == 'yes'

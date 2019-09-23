@@ -203,3 +203,9 @@ or
 ```
 $ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -t <instance_type> -p -d <num_cpus> -m <nG> [optional args]
 ```
+
+## Using the GPU
+
+To use the GPU, pass in the `-u` option to let the script know that you're planning to use the GPU. Then provide either a URL or s3 bucket path for NCCL with the `-y` option, and provide either a URL or s3 bucket path for cuDNN with the `-z` option. Note that, due to limitations of my playbooks, NCCL and cuDNN must both be hosted in an s3 bucket in order for s3 buckets to be used.
+
+If you are going to use s3 buckets, additional information is required. You will need to pass in the `-o` option to provide: (1.) AWS access key, (2.) AWS secret access key, (3.) AWS region, and (4.) AWS profile. (See `run_me.sh -h` for more info on the AWS arguments that are required to be passed in.)
