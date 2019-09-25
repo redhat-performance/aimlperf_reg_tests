@@ -17,9 +17,7 @@
     aws configure set region '{{ s3_region }}' --profile '{{ s3_profile }}'
 
 - name: Download S3 bucket NCCL tarball
-  shell: aws s3 cp '{{ s3_bucket }}' '{{ nccl_download_dir }}'
-  environment:
-    AWS_DEFAULT_PROFILE: '{{ s3_profile }}'
+  shell: "AWS_DEFAULT_PROFILE={{ s3_profile }} aws s3 cp {{ s3_bucket }} {{ nccl_download_dir }}"
 
 - name: Get tarball name
   shell: ls -p '{{ nccl_download_dir }}'
