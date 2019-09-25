@@ -41,6 +41,8 @@
 # Download the tarball from the s3 bucket
 - name: Download s3 bucket cuDNN tarball
   shell: aws s3 cp '{{ s3_bucket }}' '{{ cudnn_download_dir }}'
+  environment:
+    AWS_DEFAULT_PROFILE: '{{ s3_profile }}'
 
 # Find the tarball name
 - name: Get tarball name
