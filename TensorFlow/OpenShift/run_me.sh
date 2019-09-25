@@ -589,7 +589,8 @@ elif [[ "${NFD}" == "nfd" ]]; then
                            --param=AWS_ACCESS_KEY=$AWS_ACCESS_KEY \
                            --param=AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
                            --param=AWS_REGION=$AWS_REGION \
-                           --param=AWS_PROFILE=$AWS_PROFILE_NAME
+                           --param=AWS_PROFILE=$AWS_PROFILE_NAME \
+                           --param=WHICH_SOURCE="s3"
             else
                 oc new-app --template="${build_job_name}" \
                            --param=IMAGESTREAM_NAME=$IS_NAME \
