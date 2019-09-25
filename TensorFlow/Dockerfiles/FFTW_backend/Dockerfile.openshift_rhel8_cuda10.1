@@ -64,11 +64,12 @@ RUN cd ${TOPDIR} && \
     sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
     rm install_ansible_from_source.sh
 
-# Install FFTW + TensorFlow prerequisites via Ansible
+# Install FFTW + TensorFlow prerequisites via Ansible and pip3
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8'}" && \
     cd ${TF_PREREQS_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8', use_s2i_ubi: 'yes'}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8', use_s2i_ubi: 'yes'}" && \
+    pip3 install awscli
 
 # Create and give user permissions to modify certain directories that are required to run the Ansible
 # playbooks that are being pulled into this Dockerfile. Also allow /usr/local/cuda to be writable
