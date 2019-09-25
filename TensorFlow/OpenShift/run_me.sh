@@ -50,7 +50,7 @@ usage() {
 # Set default GPU usage
 USE_GPU="false"
 
-options=":h:v:b:t:nr:s:i:a:x:d:pm:l:ug:y:z:c:"
+options=":h:v:b:t:nr:s:i:a:x:d:pm:l:ug:y:z:c:oj:k:l:q:"
 while getopts "$options" x
 do
     case "$x" in
