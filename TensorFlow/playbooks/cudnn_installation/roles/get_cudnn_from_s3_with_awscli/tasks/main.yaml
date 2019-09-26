@@ -1,42 +1,12 @@
 ---
 
-# First step is to check if CUDA is installed... because there's no sense in installing
-# cuDNN if there is no CUDA!
-- name: Check if CUDA is installed
-  shell: 'ls {{ cuda_path }}'
-  register: ls_cuda_path_output
-  ignore_errors: yes
-
-- block:
-  - name: 'End play if user does not have CUDA installed'
-    debug:
-      msg: 'No CUDA installation found under {{ cuda_path }}'
-
-  - meta: end_play
-  when: ls_cuda_path_output.stdout == ""
-
-# If the play did not end, then CUDA was found. Let the user know this.
-- debug:
-    msg: 'CUDA installation found. Using {{ cuda_path }}'
-
-# Prep for downloading cuDNN by removing the download folder if it exists
-- name: Remove downloaded cuDNN folder if it exists
-  file:
-    state: absent
-    path: '{{ cudnn_download_dir }}'
-
-# Now create folder
-- name: Recreate (or create) cuDNN download folder
-  file:
-    state: directory
-    path: '{{ cudnn_download_dir }}'
-
 # Configure AWS so the s3 bucket file can be downloaded
 - name: Configure AWS CLI for {{ s3_profile }}
   shell: |
     aws configure set aws_access_key_id '{{ s3_access_key }}' --profile '{{ s3_profile }}'
     aws configure set aws_secret_access_key '{{ s3_secret_access_key }}' --profile '{{ s3_profile }}'
     aws configure set region '{{ s3_region }}' --profile '{{ s3_profile }}'
+  when: s3_add_credentials == 'yes'
 
 # Download the tarball from the s3 bucket
 - name: Download s3 bucket cuDNN tarball
@@ -62,21 +32,6 @@
   shell: |
     cd '{{ cudnn_download_dir }}'
     rm -f '{{ ls_cudnn_download_dir_output.stdout }}'
-
-# Next step is to move all the files from cuDNN to their appropriate paths under
-# the {{ cuda_path }} folder
-- name: Move cudnn.h to {{ cuda_path }}/include
-  command: mv '{{ cudnn_download_dir }}/include/cudnn.h' '{{ cuda_path }}/include/cudnn.h'
-
-- name: Move cuDNN libs to {{ cuda_path }}/lib64
-  shell: mv '{{ cudnn_download_dir }}/lib64/*' '{{ cuda_path }}/lib64/'
-
-# Finally, do some clean up: Remove the temporary download dir because we don't need
-# it anymore
-- name: Cleanup --> Remove temp dir {{ cudnn_download_dir }}
-  file:
-    state: absent
-    path: '{{ cudnn_download_dir }}'
 
 # Optionally, remove the AWS credentials that we added
 - name: Optional --> delete aws '{{ aws_profile }}' credentials.

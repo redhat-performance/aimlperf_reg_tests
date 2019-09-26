@@ -1,0 +1,8 @@
+---
+# Download cuDNN from the given URL
+- name: Download cuDNN
+  unarchive:
+    src: '{{ cudnn_url }}'
+    remote_src: yes
+    dest: '{{ cudnn_download_dir }}'
+  extra_opts: [--strip-components=1]

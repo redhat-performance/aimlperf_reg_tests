@@ -178,7 +178,7 @@ if [[ ${DEVICE} == "gpu" ]]; then
     if [[ ${WHICH_SOURCE} == "url" ]] || [[ ${WHICH_SOURCE} == "URL" ]]; then
         ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', cudnn: '${CUDNN}', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
     else
-        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_aws: 'yes', bucket: '${CUDNN}', aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_awscli: 'yes', bucket: '${CUDNN}', aws_profile: '${AWS_PROFILE}', add_aws_credentials: 'yes', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
     fi
 
     # Print out success message
