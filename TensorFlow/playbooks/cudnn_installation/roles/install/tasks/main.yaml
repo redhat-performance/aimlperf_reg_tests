@@ -6,7 +6,7 @@
     name: get_cudnn_from_s3_with_awscli
   when: use_awscli == 'yes'
 
-- incude_role:
+- include_role:
     name: get_cudnn_from_url
   when: use_awscli == 'no'
 
