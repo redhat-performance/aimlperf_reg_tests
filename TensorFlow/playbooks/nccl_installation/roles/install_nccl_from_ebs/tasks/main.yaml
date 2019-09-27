@@ -1,0 +1,32 @@
+---
+
+- name: Delete NCCL tmp dir (if it exists)
+  file:
+    state: absent
+    path: '{{ nccl_download_dir }}'
+
+- name: Create NCCL tmp dir
+  file:
+    state: directory
+    path: '{{ nccl_download_dir }}'
+
+- debug:
+    var: nccl_agnostic_install_path
+
+- name: Remove {{ nccl_agnostic_install_path }} if it exists
+  file:
+    state: absent
+    path: '{{ nccl_agnostic_install_path }}'
+
+- name: Create {{ nccl_agnostic_install_path }}
+  file:
+    state: directory
+    path: '{{ nccl_agnostic_install_path }}'
+
+- name: Move /tmp/nccl contents to {{ nccl_agnostic_install_path }}
+  command: mv '{{ nccl_download_dir }}/*' '{{ nccl_agnostic_install_path }}'
+
+- name: Delete NCCL download dir because we don't need it anymore
+  file:
+    state: absent
+    path: '{{ nccl_download_dir }}'

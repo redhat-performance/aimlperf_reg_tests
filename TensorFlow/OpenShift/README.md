@@ -4,7 +4,7 @@
 
 This folder contains files used for launching the [official TensorFlow High-Performance CNN benchmarks](https://github.com/tensorflow/benchmarks/tree/master/scripts/tf_cnn_benchmarks) as an app in OpenShift on AWS. If you wish to build and run TensorFlow on RHEL 8, follow the instructions in the next section carefully. They are required. Otherwise, for RHEL 7 builds, you can skip to the **Basics** section.
 
-## Using redhat.io Images (REQUIRED FOR RHEL 8 BUILDS)
+## Using redhat.io Images (REQUIRED FOR NON-CUDA RHEL 8 BUILDS)
 
 For RHEL 8, you will need to use one of the images located in the container catalog, under the name registry.redhat.io.
 
@@ -12,7 +12,7 @@ To use images from the redhat.io image registry, you will need to do the followi
 
   1. Download your secret. The "secret" should be named something along the lines of "<your-username>-secret.yaml" and save it to `../../secrets`.
   2. Submit your secret to the cluster
-  3. Create a template with `setup/rhel8_s2i_image_buildconfig.yaml` to add the image to the repository
+  3. Create a template with `setup/images/rhel8_s2i_image_buildconfig.yaml` to add the image to the repository
   4. Import the image
 
 For more information on (1.) and how to acquire a secret, visit [The Container Catalog](https://access.redhat.com/containers/). The YAML file should look something like this:
@@ -32,8 +32,43 @@ but `1234567` will be a very specific 7-digit ID number, `USERNAME` is your regi
 You should save this file as `../../secrets/redhat_io_registry.yaml`. Now run:
 
 ```
-$ sh setup/add_registry_secret.sh
+$ sh setup/images/add_registry_secret.sh
 ```
+
+## Preparing for CUDA Builds (REQUIRED FOR CUDA BUILDS!!)
+
+To prepare for CUDA builds, you will first need to create an EBS volume, like so:
+
+```
+$ cd setup/volumes
+$ sh create_ebs_volume.sh -n <volume_name> -t <volume_type> -s <volume_size> -z <aws_availability_zone>
+```
+
+Once you've created your volume, create a dummy pod that will be used for storing data in the EBS storage via a PV (Persistent Volume):
+
+```
+$ #cd setup/volumes
+$ sh create_temp_pod.sh <volume_id>
+```
+
+This will create a temporary pod named `tmp-nvidia-pod`, which you can access by executing:
+
+```
+$ oc exec -it tmp-nvidia-pod -- /bin/bash
+```
+
+The EBS volume will be mounted under `/tmp/nvidia_ebs`. From there, you can download your two (required) NVIDIA packages: (1.) NCCL, and (2.) cuDNN.
+
+If you have an s3 bucket where the packages are stored, then install `awscli` via `pip` or `pip3`, configure it to provide your credentials, and download. Otherwise, download from wherever you have your tarballs hosted.
+
+Once you're done, type `exit` to exit the pod. Because you won't be needing it anymore, you can delete it via:
+
+```
+$ oc delete pod/tmp-nvidia-pod
+```
+
+Now you're all set! The EBS volume should have your cuDNN and NCCL tar files!
+
 
 ## Basics
 

@@ -20,8 +20,17 @@
     # Check GPU
     gpu_check: '{{ gpu_check | default("yes") }}'
 
-    # Use s3 bucket to download NCCL? If no, NCCL will be installed via URL.
+    # Use EBS volume to get cuDNN?
+    use_ebs: '{{ use_ebs_volume | default("yes") }}'
+
+    # Use URL to get cuDNN?
+    use_http: '{{ use_url | default("yes") }}'
+
+    # Use s3 bucket to download cuDNN?
     use_s3_awscli: '{{ use_awscli | default("no") }}'
+
+    # EBS *REQUIRED* volume params
+    cudnn_folder : '{{ cudnn_folder_name | default("cuda") }}'
 
     # AWS s3 *REQUIRED* params
     s3_profile: '{{ aws_profile | default("null") }}'

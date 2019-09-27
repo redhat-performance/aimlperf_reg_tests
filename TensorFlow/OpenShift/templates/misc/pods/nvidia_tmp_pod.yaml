@@ -1,0 +1,38 @@
+# Setup template
+apiVersion: "v1"
+kind: "Template"
+metadata:
+  annotations:
+    description: "Template to make a temporary pod for loading data into an EBS"
+    tags: "nvidia-ebs-pod"
+  name: "nvidia-ebs-pod"
+objects:
+
+# The pod itself
+- apiVersion: "v1"
+  kind: "Pod"
+  metadata:
+    name: "tmp-nvidia-pod"
+    labels:
+      name: "tmp-nvidia-pod"
+  spec:
+    containers:
+      - name: "nvidia-tmp"
+        image: "nvidia/cuda:${IMAGE_TAG}"
+        imagePullPolicy: "Always"
+        restartPolicy: "Never"
+        volumeMounts:
+          - mountPath: "/tmp/nvidia_ebs"
+            name: "nvidia-packages-pv"
+        command: ["/bin/bash", "-ce", "tail -f /dev/null"]
+    volumes:
+      - name: "nvidia-packages-pv"
+        persistentVolumeClaim:
+          claimName: "nvidia-packages-pvc"
+
+# Users are required to provide a tag from here: https://hub.docker.com/r/nvidia/cuda/
+parameters:
+- description: "CUDA image tag"
+  name: "IMAGE_TAG"
+  required: true
+  value: "10.1-base-ubi8"

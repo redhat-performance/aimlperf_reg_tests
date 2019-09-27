@@ -20,7 +20,13 @@
     # Check GPU
     gpu_check: '{{ gpu_check | default("yes") }}'
 
-    # Use s3 bucket to download NCCL? If no, NCCL will be installed via URL.
+    # Use EBS to get NCCL?
+    use_ebs: '{{ use_ebs | default("yes") }}'
+
+    # Use URL to download NCCL?
+    use_http: '{{ use_url | default("no") }}'
+
+    # Use s3 bucket to download NCCL?
     use_s3: '{{ use_aws | default("no") }}'
     
     # AWS s3 params. All are REQUIRED when using s3.
@@ -39,8 +45,12 @@
 
     # Install NCCL from URL
     - role: install_nccl_from_url
-      when: use_s3 == 'no'
+      when: use_s3 == 'no' and use_http = 'yes' and use_ebs == 'no'
 
     # Install NCCL from s3 bucket
     - role: install_nccl_from_s3
-      when: use_s3 == 'yes'
+      when: use_s3 == 'yes' and use_http == 'no' and use_ebs == 'no'
+
+    # Install NCCL from EBS
+    - role: install_nccl_from_ebs
+      when: use_s3 == 'no' and use_http == 'no' and use_ebs == 'yes'

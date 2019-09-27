@@ -1,0 +1,5 @@
+---
+
+# Move cuDNN from ebs to '{{ cudnn_download_dir }}'
+- name: Move specified cuDNN from EBS to {{ cudnn_download_dir }}.
+  shell: 'mv {{ cudnn_ebs_dir }}/{{ cudnn_folder }} {{ cudnn_download_dir }}'

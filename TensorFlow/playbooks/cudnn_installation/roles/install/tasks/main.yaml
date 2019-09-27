@@ -1,14 +1,20 @@
 ---
 
 # If we're going to use the AWS cli tool, then execute the 'get_cudnn_from_s3_with_awscli'
-# role; otherwise, execute 'get_cudnn_from_url'
+# role. If we're going to get cuDNN from a URL, then execute 'get_cudnn_from_url'. Finally,
+# if we're going to get cuDNN from an EBS (Elastic Block Storage), then run the 
+# 'get_cudnn_from_ebs' role.
 - include_role:
     name: get_cudnn_from_s3_with_awscli
-  when: use_awscli == 'yes'
+  when: use_awscli == 'yes' and use_http == 'no' and use_ebs == 'no'
 
 - include_role:
     name: get_cudnn_from_url
-  when: use_awscli == 'no'
+  when: use_awscli == 'no' and use_http == 'yes' and use_ebs == 'no'
+
+- include_role:
+    name: get_cudnn_from_ebs
+  when: use_awscli == 'no' and use_http == 'no' and use_ebs == 'yes'
 
 # Next step is to move all the files from cuDNN to their appropriate paths under the
 # {{ cuda_path }} folder

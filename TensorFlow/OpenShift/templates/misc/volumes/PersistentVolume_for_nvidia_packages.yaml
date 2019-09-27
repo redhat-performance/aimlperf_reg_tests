@@ -1,0 +1,15 @@
+apiVersion: "v1"
+kind: "PersistentVolume"
+metadata:
+  name: "nvidia-packages-pv"
+  labels:
+    type: "amazonEBS"
+spec:
+  capacity:
+    storage: "1Gi"
+  accessModes:
+    - "ReadWriteMany"
+  awsElasticBlockStore:
+    volumeID: "[REPLACE ME]"
+    fsType: "xfs"
+  storageClassName: "gp2"

@@ -34,3 +34,13 @@ These files are the same as `standard/tensorflow-buildconfig_rhel7.yaml` and `st
 #### tensorflow-nfd-build-job.yaml
 
 This file is the same as `standard/tensorflow-build-job.yaml`, except with the added `nodeSelectorTerms` feature, much like `nfd/tensorflow-nfd-buildconfig_rhel7.yaml` and `nfd/tensorflow-nfd-buildconfig_rhel8.yaml`. Similar to above, this file exists for each AVX instruction set, including "No AVX."
+
+### "Misc" Folder Files
+
+#### "Volumes"
+
+This folder contains necessary files for creating a PV and PVC for use with an EBS.
+
+#### "Pods"
+
+This folder contains a pod YAML file for creating a dummy pod to populate an EBS.
