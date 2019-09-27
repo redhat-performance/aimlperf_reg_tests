@@ -62,6 +62,8 @@ if [[ ${WHICH_SOURCE} == "url" ]] || [[ ${WHICH_SOURCE} == "URL" ]]; then
     echo "  Using URL"
 elif [[ ${WHICH_SOURCE} == "s3" ]] || [[ ${WHICH_SOURCE} == "S3" ]]; then
     echo "  Using AWS s3"
+elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]]; then
+    echo "  Using EBS"
 else
     echo "ERROR. Unrecognized source '${WHICH_SOURCE}'. Please choose from one of the following: {url, s3}"
     exit 1

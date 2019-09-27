@@ -44,13 +44,15 @@ usage() {
     echo "      -k  AWS secret access key"
     echo "      -l  AWS region"
     echo "      -q  AWS profile name"
+    echo ""
+    echo "  -f  Use EBS for getting NCCL and cuDNN"
     exit
 }
 
 # Set default GPU usage
 USE_GPU="false"
 
-options=":h:v:b:t:nr:s:i:a:x:d:pm:l:ug:y:z:c:oj:k:l:q:"
+options=":h:v:b:t:nr:s:i:a:x:d:pm:l:ug:y:z:c:oj:k:l:q:f:"
 while getopts "$options" x
 do
     case "$x" in
@@ -122,6 +124,9 @@ do
           ;;
       q)
           AWS_PROFILE_NAME=${OPTARG}
+          ;;
+      f)
+          USE_EBS="true"
           ;;
       *)
           usage
@@ -265,6 +270,12 @@ if [[ ${USE_GPU} == "true" ]]; then
             echo "ERROR. The -o option was passed in to use AWS and all required arguments were provided except for the AWS profile name. Please provide a profile name with the -q option."
             exit 1
         fi
+    fi
+
+    # Make sure that the user didn't pass in more than one NCCL/cuDNN acquire method
+    if [[ ! -z ${USE_AWS} ]] && [[ ! -z ${USE_EBS} ]]; then
+        echo "ERROR. Cannot use AWS and EBS at the same time. Please choose one or the other."
+        exit 1
     fi
 
     # Make sure the user passed in a download URL or s3 bucket folder for NCCL
@@ -591,6 +602,17 @@ elif [[ "${NFD}" == "nfd" ]]; then
                            --param=AWS_REGION=$AWS_REGION \
                            --param=AWS_PROFILE=$AWS_PROFILE_NAME \
                            --param=WHICH_SOURCE="s3"
+            elif [[ ! -z ${USE_EBS} ]]; then
+                oc new-app --template="${build_job_name}" \
+                           --param=IMAGESTREAM_NAME=$IS_NAME \
+                           --param=REGISTRY=$OC_REGISTRY \
+                           --param=APP_NAME=$APP_NAME \
+                           --param=NAMESPACE=$NAMESPACE \
+                           --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                           --param=RHEL_VERSION=$RHEL_VERSION \
+                           --param=NUM_GPUS=$NUM_DEVICES \
+                           --param=CC=$GCC \
+                           --param=WHICH_SOURCE="ebs"
             else
                 oc new-app --template="${build_job_name}" \
                            --param=IMAGESTREAM_NAME=$IS_NAME \
