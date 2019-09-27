@@ -1,2 +1,2 @@
 ---
-nccl_download_dir: '/tmp/nccl'
+ebs_dir: '/tmp/nvidia_ebs'
