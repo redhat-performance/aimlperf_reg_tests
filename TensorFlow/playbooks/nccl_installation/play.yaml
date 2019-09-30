@@ -45,7 +45,7 @@
 
     # Install NCCL from URL
     - role: install_nccl_from_url
-      when: use_s3 == 'no' and use_http = 'yes' and use_ebs == 'no'
+      when: use_s3 == 'no' and use_http == 'yes' and use_ebs == 'no'
 
     # Install NCCL from s3 bucket
     - role: install_nccl_from_s3
