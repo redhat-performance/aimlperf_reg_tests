@@ -52,7 +52,7 @@ usage() {
 # Set default GPU usage
 USE_GPU="false"
 
-options=":h:v:b:t:nr:s:i:a:x:d:pm:l:ug:y:z:c:oj:k:l:q:f:"
+options=":h:v:b:t:nr:s:i:a:x:d:pm:l:ug:y:z:c:oj:k:l:q:f"
 while getopts "$options" x
 do
     case "$x" in
@@ -492,6 +492,7 @@ build_succeeded_status=""
 build_completed_status=""
 build_failed_status=""
 build_stopped_status=""
+build_pending_status=""
 echo "Checking build status... (This may take up to 15 minutes or more depending on the size and type of instance you're using.)"
 echo ""
 echo "<< WARNING >> Do NOT exit out of this script while it is running. It will stop when it completes."
@@ -507,6 +508,11 @@ while [[ -z $build_succeeded_status ]] && [[ -z $build_failed_status ]] && [[ -z
         echo "[${min_count}:${sec_count}] Build is still running"
     fi
 
+    # Let user know if build is pending
+    if [[ ! -z $build_pending_status ]]; then
+        echo "<< WARNING >> Build is stuck in pending state."
+    fi
+
     # Get status of the build
     oc status > statuses.txt 
     oc_build_status=$(grep -i -A 1 "  -> istag/${IS_NAME}:latest" statuses.txt)
@@ -514,6 +520,7 @@ while [[ -z $build_succeeded_status ]] && [[ -z $build_failed_status ]] && [[ -z
     build_completed_status=$(echo $oc_build_status | grep build | grep completed)
     build_failed_status=$(echo $oc_build_status | grep build | grep failed)
     build_stopped_status=$(echo $oc_build_status | grep build | grep stopped)
+    build_pending_status=$(echo $oc_build_status | grep build | grep pending)
 
     # Update second count
     sec_count=$((sec_count+10))
