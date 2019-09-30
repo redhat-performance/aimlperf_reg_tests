@@ -4,7 +4,7 @@
 # User (optionally) passes in the path to the registry secret; default is '../../secrets/redhat_io_secret.yaml
 REGISTRY_SECRET_FILE=$1
 if [[ -z ${REGISTRY_SECRET_FILE} ]]; then
-    REGISTRY_SECRET_FILE="../../../secrets/redhat_io_registry.yaml"
+    REGISTRY_SECRET_FILE="../../../../secrets/redhat_io_registry.yaml"
 fi
 
 # Now, add the secret
