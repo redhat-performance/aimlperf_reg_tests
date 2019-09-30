@@ -9,6 +9,9 @@ NVIDIA_PV_YAML="../../templates/misc/volumes/PersistentVolume_for_nvidia_package
 NVIDIA_EBS_YAMLS_FOLDER="../../templates/misc/volumes"
 NVIDIA_DUMMY_POD_YAML_FOLDER="../../templates/misc/pods"
 
+# Print out warning
+echo "<< WARNING >> If the deletion of the PV and/or PVC hangs, exit out of this script and call the 'force_pv_and_pvc_deletion.sh' script before running this script again."
+
 # Delete existing PV and PVC
 oc delete -f ${NVIDIA_EBS_YAMLS_FOLDER}
 oc delete -f ${NVIDIA_DUMMY_POD_YAML_FOLDER}
