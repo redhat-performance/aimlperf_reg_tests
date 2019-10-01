@@ -10,5 +10,5 @@
     state: directory
     path: '{{ nccl_agnostic_install_path }}'
 
-- name: Move {{ ebs_dir }}/nccl contents to {{ nccl_agnostic_install_path }}
-  command: mv '{{ ebs_dir }}/nccl/*' '{{ nccl_agnostic_install_path }}'
+- name: Copy {{ ebs_dir }}/nccl contents to {{ nccl_agnostic_install_path }}
+  shell: cp '{{ ebs_dir }}/nccl/*' '{{ nccl_agnostic_install_path }}'
