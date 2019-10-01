@@ -2,11 +2,56 @@
 
 This folder contains three playbooks for building, installing, and running TensorFlow:
 
-  1. `package_installation`
-  2. `TensorFlow_installation`
-  3. `TensorFlow_benchmarks`
+  1. `cuda_optional_installation`
+  2. `cudnn_installation`
+  3. `nccl_installation`
+  4. `package_installation`
+  5. `TensorFlow_installation`
+  6. `TensorFlow_benchmarks`
 
-The first playbook installs the required packages for building TensorFlow. It requires super user. The second playbook installs TensorFlow itself, but it does not use super user. Instead, it installs the package locally to `${HOME}/.local/lib/python3.6/site-packages`. And finally, the last playbook downloads the benchmarks and runs them.
+The first playbook installs CUDA devel packages for building TensorFlow on the GPU. It requires super user. The second playbook installs cuDNN to /usr/local/cuda (or wherever you've installed CUDA to). The third playbook installs NCCL. The fourth package installs the necessary requirements for building TensorFlow (e.g., required packages, etc.). The fifth package installs TensorFlow itself, but it does not use super user. Instead, it installs the package locally to `${HOME}/.local/lib/python3.6/site-packages`. And finally, the last playbook downloads the benchmarks and runs them.
+
+## CUDA Optional Installation
+
+If you're using CUDA to build TensorFlow on the GPU, make sure you have `/etc/yum.repos.d/cuda.repo` installed. If not, you can find it on NVIDIA's site.
+
+To install the CUDA devel packages,
+
+```
+$ cd cuda_optional_installation
+$ export RHEL_VERSION=#whatever RHEL version you're using
+$ ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}'}"
+```
+
+The installation will fail if `/etc/yum.repos.d/cuda.repo` does not exist or if you do not have a CUDA capable GPU.o
+
+## cuDNN Installation
+
+To install cuDNN, 
+
+```
+$ cd cudnn_installation
+$ ansible-playbook -i hosts play.yaml --extra-vars="{ ... }"
+```
+
+You can install cuDNN in the following ways:
+
+  1. From an AWS s3 bucket
+  2. From an AWS EBS device
+  3. From a URL
+
+Set the extra vars based on what you see in `play.yaml`.
+
+## NCCL Installation
+
+To install NCCL,
+
+```
+$ cd nccl_installation
+$ ansible-playbook -i hosts play.yaml --extra-vars="{ ... }"
+```
+
+Set the extra vars based on what you see in `play.yaml`.
 
 ## Package Installation
 

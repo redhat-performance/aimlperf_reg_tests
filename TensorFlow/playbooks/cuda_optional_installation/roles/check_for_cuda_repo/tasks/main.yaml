@@ -1,0 +1,21 @@
+---
+
+#####################################################################
+# This role checks for an existing CUDA repo. If the CUDA repo does #
+# not exist, then this play will fail.                              #
+#####################################################################
+
+- name: Search for /etc/yum.repos.d/cuda.repo
+  stat: path=/etc/yum.repos.d/cuda.repo
+  register: stat_cuda_repo
+
+- block:
+  - name: End play if user does not have cuda.repo
+    debug:
+      msg: 'Could not find /etc/yum.repos.d/cuda.repo'
+
+  - meta: end_play
+  when: stat_cuda_repo.stat.exists == False
+
+- debug:
+    msg: '/etc/yum.repos.d/cuda.repo found. Proceeding to next step.'

@@ -1,0 +1,19 @@
+---
+
+# Install packages on RHEL 7
+- name: Install RHEL 7 optional CUDA packages
+  yum:
+    name:
+      - cuda-core-{{ cuda_version }}
+      - cuda-cudart-dev-{{ cuda_version }}
+      - cuda-misc-headers-{{ cuda_version }}
+  when: rhel_version == '7'
+
+# Install packages on RHEL 8
+- name: Install RHEL 8 optional CUDA packages
+  dnf:
+    name:
+      - cuda-core-{{ cuda_version }}
+      - cuda-cudart-dev-{{ cuda_version }}
+      - cuda-misc-headers-{{ cuda_version }}
+    when: rhel_version == '8'
