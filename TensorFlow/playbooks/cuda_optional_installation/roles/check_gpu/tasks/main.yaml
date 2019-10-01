@@ -2,11 +2,11 @@
 
 - name: RHEL 7 --> Install lspci
   yum: pkg=pciutils
-  when: rhel_version == 7
+  when: rhel_version == '7'
 
 - name: RHEL 8 --> Install lspci
   dnf: pkg=pciutils
-  when: rhel_version == 8
+  when: rhel_version == '8'
 
 - name: Check for a CUDA-capable GPU
   shell: 'lspci | grep -i nvidia'
