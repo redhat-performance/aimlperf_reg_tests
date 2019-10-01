@@ -501,16 +501,35 @@ min_count=0
 sec_count=0
 while [[ -z $build_succeeded_status ]] && [[ -z $build_failed_status ]] && [[ -z $build_stopped_status ]] && [[ -z $build_completed_status ]]; do
 
-    # Update clock counter
-    if (( sec_count == 0 )); then
-        echo "[${min_count}:00] Build is still running"
-    else
-        echo "[${min_count}:${sec_count}] Build is still running"
-    fi
+    # Update clock counter by first letting the user know the build is pending
+    if (( sec_count == 0 )) && (( min_count == 0 )); then
+        echo "[INFO - 0:00] Build is pending"
 
-    # Let user know if build is pending
-    if [[ ! -z $build_pending_status ]]; then
-        echo "<< WARNING >> Build is stuck in pending state."
+    # If the build is still pending, then let the user know
+    elif [[ ! -z ${build_pending_status} ]]; then
+        if (( sec_count == 0 )); then
+            echo "[INFO - ${min_count}:00] Build is still pending"
+        else
+            echo "[INFO - ${min_count}:${sec_count}] Build is still pending"
+        fi
+
+    # If the build is running, then let the user know
+    else
+        if (( sec_count == 0 )); then
+            if [[ ! -z ${build_started} ]] && [[ ! -z ${first_msg} ]]; then
+                echo "[INFO - ${min_count}:00] Build is still running"
+            else
+                first_msg="true"
+                echo "[INFO - ${min_count}:00] Build has started"
+            fi
+        else
+            if [[ ! -z ${build_started} ]] && [[ ! -z ${first_msg} ]]; then
+                echo "[INFO - ${min_count}:${sec_count}] Build is still running"
+            else
+                first_msg="true"
+                echo "[INFO - ${min_count}:${sec_count}] Build has started"
+            fi
+        fi
     fi
 
     # Get status of the build
@@ -521,6 +540,11 @@ while [[ -z $build_succeeded_status ]] && [[ -z $build_failed_status ]] && [[ -z
     build_failed_status=$(echo $oc_build_status | grep build | grep failed)
     build_stopped_status=$(echo $oc_build_status | grep build | grep stopped)
     build_pending_status=$(echo $oc_build_status | grep build | grep pending)
+
+    # Figure out when build is finally running
+    if [[ -z ${build_pending_status} ]] && [[ -z ${build_started} ]]; then
+        build_started="true"
+    fi
 
     # Update second count
     sec_count=$((sec_count+10))
@@ -539,9 +563,17 @@ while [[ -z $build_succeeded_status ]] && [[ -z $build_failed_status ]] && [[ -z
 done
 
 if [[ ! -z $build_failed_status ]]; then
-    echo "Image build FAILED, so build job will not run."
+    if (( sec_count == 0 )); then
+        echo "[FATAL - ${min_count}:00 ] Image build FAILED, so build job will not run."
+    else
+        echo "[FATAL - ${min_count}:${sec_count} ] Image build FAILED, so build job will not run."
+    fi
 elif [[ ! -z $build_stopped_status ]]; then
-    echo "Image build STOPPED, so build job will not run."
+    if (( sec_count == 0 )); then
+        echo "[FATAL - ${min_count}:00 ] Image build STOPPED, so build job will not run."
+    else
+        echo "[FATAL - ${min_count}:${sec_count} ] Image build STOPPED, so build job will not run."
+    fi
 elif [[ "${NFD}" == "nfd" ]]; then
     if [[ ! -z "${AVX}" ]]; then
         if [[ ! -z "${CPU_MANAGER}" ]]; then
