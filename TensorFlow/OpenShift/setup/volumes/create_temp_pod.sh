@@ -31,9 +31,10 @@ echo "<< INFO >> Checking status of PV..."
 pv_capacity_check=""
 pv_access_mode_check=""
 pv_bound_check=""
+pv_available_check=""
 min_count=0
 sec_count=0
-while [[ -z $pv_capacity_check ]] || [[ -z $pv_access_mode_check ]] || [[ -z $pv_bound_check ]]; do
+while [[ -z $pv_capacity_check ]] || [[ -z $pv_access_mode_check ]] || [[ -z $pv_available_check ]]; do
 
     # Update clock counter
     if (( sec_count == 0 )); then
@@ -47,6 +48,13 @@ while [[ -z $pv_capacity_check ]] || [[ -z $pv_access_mode_check ]] || [[ -z $pv
     pv_capacity_check=$(echo $oc_get_pv | grep 50Gi)
     pv_access_mode_check=$(echo $oc_get_pv | grep RWX)
     pv_bound_check=$(echo $oc_get_pv | grep Bound)
+    pv_available_check=$(echo $oc_get_pv | grep Available)
+
+    # If the bound check is true, then we have a problem
+    if [[ ! -z $pv_bound_check ]]; then
+        echo "[${min_count}:00] ERROR. PV is already bound. PVC initialization will hang while PV is bound. Exiting script."
+        exit
+    fi
 
     # Update second count
     sec_count=$((sec_count+10))
@@ -61,7 +69,7 @@ while [[ -z $pv_capacity_check ]] || [[ -z $pv_access_mode_check ]] || [[ -z $pv
     sleep 10
 
 done 
-echo "[${min_count}:${sec_count}] PV finished initializing."
+echo "[${min_count}:${sec_count}] pv/nvidia-packages-pv finished initializing."
 echo ""
 
 # Create PVC
@@ -71,10 +79,10 @@ oc create -f ${NVIDIA_PVC_YAML}
 echo "<< INFO >> Now checking status of PVC..."
 pvc_capacity_check=""
 pvc_access_mode_check=""
-pvc_ready_check=""
+pvc_bound_check=""
 min_count=0
 sec_count=0
-while [[ -z $pvc_capacity_check ]] || [[ -z $pvc_access_mode_check ]] || [[ -z $pvc_ready_check ]]; do
+while [[ -z $pvc_capacity_check ]] || [[ -z $pvc_access_mode_check ]] || [[ -z $pvc_bound_check ]]; do
 
     # Update clock counter
     if (( sec_count == 0 )); then
@@ -87,7 +95,7 @@ while [[ -z $pvc_capacity_check ]] || [[ -z $pvc_access_mode_check ]] || [[ -z $
     oc_get_pvc=$(oc get pvc/nvidia-packages-pvc)
     pvc_capacity_check=$(echo $oc_get_pvc | grep 50Gi)
     pvc_access_mode_check=$(echo $oc_get_pvc | grep RWX)
-    pvc_ready_check=$(echo $oc_get_pvc | grep Ready)
+    pvc_bound_check=$(echo $oc_get_pvc | grep Bound)
 
     # Update second count
     sec_count=$((sec_count+10))
@@ -102,7 +110,7 @@ while [[ -z $pvc_capacity_check ]] || [[ -z $pvc_access_mode_check ]] || [[ -z $
     sleep 10
 
 done 
-echo "[${min_count}:${sec_count}] PVC finished initializing."
+echo "[${min_count}:${sec_count}] PVC finished initializing. PVC is bound to pvc/nvidia-packages-pvc."
 
 
 # Create pod
