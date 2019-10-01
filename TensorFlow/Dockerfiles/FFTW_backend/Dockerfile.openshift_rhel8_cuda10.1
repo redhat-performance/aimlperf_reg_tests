@@ -32,6 +32,7 @@ ENV TENSORFLOW_INSTALLATION=${TOPDIR}/playbooks/TensorFlow_installation
 ENV TENSORFLOW_BENCHMARKS=${TOPDIR}/playbooks/TensorFlow_benchmarks
 ENV NCCL_INSTALLATION=${TOPDIR}/playbooks/nccl_installation
 ENV CUDNN_INSTALLATION=${TOPDIR}/playbooks/cudnn_installation
+ENV CUDA_OPTIONAL_INSTALLATION=${TOPDIR}/playbooks/cuda_optional_installation
 
 # Create folders for playbooks and folder for playbooks cache
 RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
@@ -41,6 +42,7 @@ RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
     mkdir -p ${TENSORFLOW_BENCHMARKS} && \
     mkdir -p ${NCCL_INSTALLATION} && \
     mkdir -p ${CUDNN_INSTALLATION} && \
+    mkdir -p ${CUDA_OPTIONAL_INSTALLATION} && \
     mkdir -p ${TOPDIR}/.cache
 
 # Copy playbooks and scripts
@@ -52,6 +54,7 @@ COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
 COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
 COPY TensorFlow/playbooks/nccl_installation ${NCCL_INSTALLATION}
 COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
+COPY TensorFlow/playbooks/cuda_optional_installation ${CUDA_OPTIONAL_INSTALLATION}
 
 # Put on port 8080
 EXPOSE 8080
@@ -69,6 +72,8 @@ RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8'}" && \
     cd ${TF_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8', use_s2i_ubi: 'yes'}" && \
+    cd ${CUDA_OPTIONAL_INSTALLATION} && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8'}" && \
     pip3 install awscli
 
 # Create and give user permissions to modify certain directories that are required to run the Ansible
