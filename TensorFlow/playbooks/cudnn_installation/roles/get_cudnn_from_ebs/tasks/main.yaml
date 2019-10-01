@@ -2,4 +2,4 @@
 
 # Move cuDNN from ebs to '{{ cudnn_download_dir }}'
 - name: Copy cuDNN from EBS to {{ cudnn_download_dir }}.
-  shell: 'cp {{ cudnn_ebs_dir }}/{{ cudnn_folder }}/* {{ cudnn_download_dir }}'
+  shell: 'cp -R {{ cudnn_ebs_dir }}/{{ cudnn_folder }}/* {{ cudnn_download_dir }}'
