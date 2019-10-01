@@ -24,6 +24,13 @@ objects:
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
           args: ["${RHEL_VERSION}", "gpu", "${NUM_GPUS}", "${CC}", "${WHICH_SOURCE}", "${NCCL_URL}", "${CUDNN_URL}", "${AWS_PROFILE}", "${AWS_REGION}", "${AWS_ACCESS_KEY}", "${AWS_SECRET_ACCESS_KEY}"]
+          volumeMounts:
+            - mountPath: "/tmp/nvidia_ebs"
+              name: "nvidia-packages-pv"
+        volumes:
+        - name: "nvidia-packages-pv"
+          persistentVolumeClaim:
+            claimName: "nvidia-packages-pvc"
         restartPolicy: "Never"
         affinity:
           nodeAffinity:
