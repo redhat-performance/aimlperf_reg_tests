@@ -232,7 +232,7 @@ if [[ ! -z ${INSTANCE_TYPE} ]]; then
 
         # Check if the GPU count the user entered is less than or equal to the number of GPUs found
         if (( NUM_DEVICES > num_gpus )); then
-            echo "ERROR. The number of devices passed in exceeds the number of available devices. You entered $NUM_DEVICES, but the max number of devices for this instance type is $num_cpus."
+            echo "ERROR. The number of devices passed in exceeds the number of available devices. You entered $NUM_DEVICES, but the max number of devices for this instance type is $num_gpus."
             exit 1
         fi
     fi
