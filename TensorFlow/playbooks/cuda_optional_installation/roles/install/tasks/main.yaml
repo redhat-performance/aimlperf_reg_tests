@@ -16,4 +16,4 @@
       - cuda-core-{{ cuda_version }}
       - cuda-cudart-dev-{{ cuda_version }}
       - cuda-misc-headers-{{ cuda_version }}
-    when: rhel_version == '8'
+  when: rhel_version == '8'
