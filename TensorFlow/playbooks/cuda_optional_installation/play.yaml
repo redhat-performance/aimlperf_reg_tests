@@ -12,6 +12,9 @@
     # Add variable to define whether to use RHEL 7 or 8
     rhel_version: '{{ rhel_ver | default("8") }}'
 
+    # Add variable to define which CUDA version is being used
+    cuda_version: '{{ cuda_ver | default("10-1")'
+
   ################################################################################################
   #        The following roles will be executed and will call other roles in the process         #
   ################################################################################################
