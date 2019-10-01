@@ -11,4 +11,4 @@
     path: '{{ nccl_agnostic_install_path }}'
 
 - name: Copy {{ ebs_dir }}/nccl contents to {{ nccl_agnostic_install_path }}
-  shell: cp '{{ ebs_dir }}/nccl/*' '{{ nccl_agnostic_install_path }}'
+  shell: 'cp -R {{ ebs_dir }}/nccl/* {{ nccl_agnostic_install_path }}'
