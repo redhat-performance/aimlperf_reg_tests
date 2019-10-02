@@ -91,6 +91,8 @@ RUN chmod 777 /usr/libexec/s2i/run && \
     chmod 777 //.gitconfig && \
     chmod -R 777 /usr/local/cuda && \
     mkdir /.aws && \
+    mkdir -p /home/.cache/bazel && \
+    chmod -R 777 /home/.cache/bazel && \
     chmod -R 777 /.aws
 
 # Set Ansible remote tmp
