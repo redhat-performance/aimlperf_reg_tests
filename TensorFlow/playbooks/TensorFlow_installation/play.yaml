@@ -10,7 +10,7 @@
     RHEL_VERSION: '{{ rhel_version | default("7") }}'
 
     # Version of TensorFlow to use
-    TENSORFLOW_VERSION: '{{ tf_version | default("1.14.0") }}'
+    TENSORFLOW_VERSION: '{{ tf_version | default("2.0.0") }}'
 
     # Where to install TensorFlow to
     TENSORFLOW_INSTALL_DIR: '{{ tf_install_dir | default("/home/tensorflow") }}'
