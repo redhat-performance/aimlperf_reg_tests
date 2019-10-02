@@ -6,7 +6,7 @@
 
   vars:
     rhel_ver: '{{ rhel_version | default("7") }}'
-    bazel_ver: '{{ bazel_version | default("0.29.1") }}'
+    bazel_ver: '{{ bazel_version | default("0.26.1") }}'
     s2i_ubi: '{{ use_s2i_ubi | default("no") }}'
     gpu: '{{ use_gpu | default("no") }}'
     cuda_ver: '{{ cuda_version | default("10.1") }}'
