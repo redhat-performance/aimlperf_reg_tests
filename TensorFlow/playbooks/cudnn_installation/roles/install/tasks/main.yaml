@@ -19,10 +19,10 @@
 # Next step is to move all the files from cuDNN to their appropriate paths under the
 # {{ cuda_path }} folder
 - name: Copy cudnn.h to {{ cuda_path }}/include
-  shell: cp '{{ cudnn_download_dir }}/include/cudnn.h' '{{ cuda_path }}/include/cudnn.h'
+  shell: 'cp {{ cudnn_download_dir }}/include/cudnn.h {{ cuda_path }}/include/cudnn.h'
 
 - name: Copy cuDNN libs to {{ cuda_path }}/lib64
-  shell: cp '{{ cudnn_download_dir }}/lib64/*' '{{ cuda_path }}/lib64/'
+  shell: 'cp {{ cudnn_download_dir }}/lib64/* {{ cuda_path }}/lib64/'
 
 # Finally, do some clean up: Remove the temporary download dir because we don't need
 # it anymore
