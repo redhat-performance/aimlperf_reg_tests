@@ -18,8 +18,8 @@ LABEL io.openshift.expose-services="8080:http"
 COPY TensorFlow/.s2i_fftw/bin/ /usr/libexec/s2i
 
 # Set playbook paths
-ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
-ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
+ENV FFTW_PREREQS_PLAYBOOK=${HOME}/playbooks/fftw_package_installation
+ENV TF_PREREQS_PLAYBOOK=${HOME}/playbooks/tensorflow_package_installation
 ENV FFTW_INSTALLATION=${HOME}/playbooks/FFTW_installation
 ENV TENSORFLOW_INSTALLATION=${HOME}/playbooks/TensorFlow_installation
 ENV TENSORFLOW_BENCHMARKS=${HOME}/playbooks/TensorFlow_benchmarks

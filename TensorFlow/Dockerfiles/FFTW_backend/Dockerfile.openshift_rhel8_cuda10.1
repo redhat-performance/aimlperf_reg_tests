@@ -25,8 +25,8 @@ RUN sed -i "/[main]/a timeout=${DNF_TIMEOUT}" /etc/dnf/dnf.conf
 ENV TOPDIR=/home
 
 # Set playbook paths
-ENV FFTW_PREREQS_PLAYBOOK=${TOPDIR}/fftw_package_installation
-ENV TF_PREREQS_PLAYBOOK=${TOPDIR}/tensorflow_package_installation
+ENV FFTW_PREREQS_PLAYBOOK=${TOPDIR}/playbooks/fftw_package_installation
+ENV TF_PREREQS_PLAYBOOK=${TOPDIR}/playbooks/tensorflow_package_installation
 ENV FFTW_INSTALLATION=${TOPDIR}/playbooks/FFTW_installation
 ENV TENSORFLOW_INSTALLATION=${TOPDIR}/playbooks/TensorFlow_installation
 ENV TENSORFLOW_BENCHMARKS=${TOPDIR}/playbooks/TensorFlow_benchmarks
