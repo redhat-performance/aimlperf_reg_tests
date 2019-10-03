@@ -95,6 +95,9 @@ RUN chmod 777 /usr/libexec/s2i/run && \
     chmod -R 777 /home/.cache/bazel && \
     chmod -R 777 /.aws
 
+# Set up symbolic linking for Python so that TensorFlow build doesn't fail when s2i script is called
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
 # Set Ansible remote tmp
 RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
     echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg
