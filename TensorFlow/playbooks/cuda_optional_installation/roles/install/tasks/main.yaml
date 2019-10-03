@@ -7,6 +7,8 @@
       - cuda-core-{{ cuda_version }}
       - cuda-cudart-dev-{{ cuda_version }}
       - cuda-cupti-{{ cuda_version }}
+      - cuda-curand-{{ cuda_version }}
+      - cuda-curand-dev-{{ cuda_version }}
       - cuda-cusolver-{{ cuda_version }}
       - cuda-cusolver-dev-{{ cuda_version }}
       - cuda-misc-headers-{{ cuda_version }}
@@ -20,6 +22,8 @@
       - cuda-core-{{ cuda_version }}
       - cuda-cudart-dev-{{ cuda_version }}
       - cuda-cupti-{{ cuda_version }}
+      - cuda-curand-{{ cuda_version }}
+      - cuda-curand-dev-{{ cuda_version }}
       - cuda-cusolver-{{ cuda_version }}
       - cuda-cusolver-dev-{{ cuda_version }}
       - cuda-misc-headers-{{ cuda_version }}
