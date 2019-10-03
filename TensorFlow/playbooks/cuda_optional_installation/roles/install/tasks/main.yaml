@@ -6,6 +6,8 @@
     name:
       - cuda-core-{{ cuda_version }}
       - cuda-cudart-dev-{{ cuda_version }}
+      - cuda-cufft-{{ cuda_version }}
+      - cuda-cufft-dev-{{ cuda_version }}
       - cuda-cupti-{{ cuda_version }}
       - cuda-curand-{{ cuda_version }}
       - cuda-curand-dev-{{ cuda_version }}
@@ -21,6 +23,8 @@
     name:
       - cuda-core-{{ cuda_version }}
       - cuda-cudart-dev-{{ cuda_version }}
+      - cuda-cufft-{{ cuda_version }}
+      - cuda-cufft-dev-{{ cuda_version }}
       - cuda-cupti-{{ cuda_version }}
       - cuda-curand-{{ cuda_version }}
       - cuda-curand-dev-{{ cuda_version }}
