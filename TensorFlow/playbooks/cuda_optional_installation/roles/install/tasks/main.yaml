@@ -8,6 +8,7 @@
       - cuda-cudart-dev-{{ cuda_version }}
       - cuda-cupti-{{ cuda_version }}
       - cuda-misc-headers-{{ cuda_version }}
+      - libcublas-devel
   when: rhel_version == '7'
 
 # Install packages on RHEL 8
@@ -18,4 +19,5 @@
       - cuda-cudart-dev-{{ cuda_version }}
       - cuda-cupti-{{ cuda_version }}
       - cuda-misc-headers-{{ cuda_version }}
+      - libcublas-devel
   when: rhel_version == '8'
