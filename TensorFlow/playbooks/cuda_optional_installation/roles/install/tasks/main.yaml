@@ -7,6 +7,8 @@
       - cuda-core-{{ cuda_version }}
       - cuda-cudart-dev-{{ cuda_version }}
       - cuda-cupti-{{ cuda_version }}
+      - cuda-cusolver-{{ cuda_version }}
+      - cuda-cusolver-dev-{{ cuda_version }}
       - cuda-misc-headers-{{ cuda_version }}
       - libcublas-devel
   when: rhel_version == '7'
@@ -18,6 +20,8 @@
       - cuda-core-{{ cuda_version }}
       - cuda-cudart-dev-{{ cuda_version }}
       - cuda-cupti-{{ cuda_version }}
+      - cuda-cusolver-{{ cuda_version }}
+      - cuda-cusolver-dev-{{ cuda_version }}
       - cuda-misc-headers-{{ cuda_version }}
       - libcublas-devel
   when: rhel_version == '8'
