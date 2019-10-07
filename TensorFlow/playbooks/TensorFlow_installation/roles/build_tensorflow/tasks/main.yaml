@@ -214,7 +214,7 @@
 - name: Build TensorFlow for the GPU
   shell: |
     cd {{ TENSORFLOW_BUILD_DIR }}
-    bazel build --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }}--config=cuda -k //tensorflow/tools/pip_package:build_pip_package
+    bazel build --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=cuda -k //tensorflow/tools/pip_package:build_pip_package
   when: USE_CPU == 'no' and USE_GPU == 'yes'
   environment:
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
