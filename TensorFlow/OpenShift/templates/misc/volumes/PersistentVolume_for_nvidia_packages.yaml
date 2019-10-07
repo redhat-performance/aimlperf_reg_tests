@@ -6,7 +6,7 @@ metadata:
     type: "amazonEBS"
 spec:
   capacity:
-    storage: "1Gi"
+    storage: "50Gi"
   accessModes:
     - "ReadWriteMany"
   awsElasticBlockStore:
