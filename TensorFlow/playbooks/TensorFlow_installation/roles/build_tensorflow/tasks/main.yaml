@@ -218,6 +218,7 @@
   when: USE_CPU == 'no' and USE_GPU == 'yes'
   environment:
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
+    TMP: '/tmp'
   register: tensorflow_gpu_build_log
 
 - local_action: template src=tensorflow_gpu_build_log.j2 dest={{ TENSORFLOW_BUILD_DIR }}/build.log
