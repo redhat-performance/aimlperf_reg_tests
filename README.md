@@ -22,11 +22,25 @@ To run the OpenBLAS or FFTW regression tests in containers, use the provided Doc
 
 To run the regression tests on OpenShift in AWS, view the **OpenBLAS/OpenShift** folder (for OpenBLAS),  **FFTW/OpenShift** (for FFTW), or **TensorFlow/OpenShift** (for TensorFlow). Everything is automated, and there is even a script under **helper\_scripts/OpenShift** for creating a new node (MachineSet) in OpenShift in the event you want a specific instance type (e.g., m4.4xlarge, c5.large, etc.).
 
-To use/enable GPUs, use the script `helper_scripts/OpenShift/gpu_setup.sh`. Simply run:
+To use/enable NFD (Node Feature Discovery), use the script `helper_scripts/OpenShift/nfd_setup.sh`:
+
+```
+$ cd helper_scripts/OpenShift
+$ sh nfd_setup.sh
+```
+
+To use/enable GPUs, use the script `helper_scripts/OpenShift/gpu_setup.sh`. Make sure you run the `nfd_setup.sh` script as well. For GPU setup,
 
 ```
 $ cd helper_scripts/OpenShift
 $ sh gpu_setup.sh
+```
+
+To use/enable CPU manager on a specific node for managing CPU resources, use the script `helper_scripts/OpenShift/enable_cpumanager.sh`. To see how it's used,
+
+```
+$ cd helper_scripts/OpenShift
+$ sh enable_cpumanager.sh -h
 ```
 
 ## Miscellaneous Files
