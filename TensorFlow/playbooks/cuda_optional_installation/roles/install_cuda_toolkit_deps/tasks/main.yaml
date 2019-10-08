@@ -27,7 +27,7 @@
     - '{{ libXmu_build_dir }}'
     - '{{ libX11_build_dir }}'
     - '{{ libXi_build_dir }}'
-    - '{{ libXrandnr_build_dir }}'
+    - '{{ libXrandr_build_dir }}'
     - '{{ freeglut_build_dir }}'
     - '{{ mesa_build_dir }}'
     - '{{ xkbcommon_build_dir }}'
