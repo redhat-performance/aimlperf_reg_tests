@@ -22,7 +22,7 @@
 - name: Remove existing build dirs for libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
   file:
     state: absent
-    path: {{ item }}
+    path: '{{ item }}'
   with_items: 
     - {{ libXmu_build_dir }}
     - {{ libX11_build_dir }}
@@ -36,7 +36,7 @@
 - name: Create build dirs for libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
   file:
     state: directory
-    path: {{ item }}
+    path: '{{ item }}'
   with_items: 
     - {{ libXmu_build_dir }}
     - {{ libX11_build_dir }}
