@@ -51,36 +51,42 @@
   unarchive:
     src: 'https://www.x.org/releases/individual/lib/libXmu-{{ libXmu_version }}.tar.gz'
     dest: '{{ libXmu_build_dir }}'
+    remote_src: yes
 
 # Get libX11
 - name: Get libX11 from X.org
   unarchive:
     src: 'https://www.x.org/releases/individual/lib/libX11-{{ libX11_version }}.tar.gz'
     dest: '{{ libX11_build_dir }}'
+    remote_src: yes
 
 # Get libXi
 - name: Get libXi from X.org
   unarchive:
     src: 'https://www.x.org/releases/individual/lib/libXi-{{ libXi_version }}.tar.gz'
     dest: '{{ libXi_build_dir }}'
+    remote_src: yes
 
 # Get libXrandr
 - name: Get libXrandr from X.org
   unarchive:
     src: 'https://www.x.org/releases/individual/lib/libXrandr-{{ libXrandr_version }}.tar.gz'
     dest: '{{ libXrandr_build_dir }}'
+    remote_src: yes
 
 # Get freeglut
 - name: Get freeglut from Source Forge
   unarchive:
     src: 'https://sourceforge.net/code-snapshots/svn/f/fr/freeglut/code/freeglut-code-r1859-trunk-freeglut-freeglut.zip'
     dest: '{{ freeglut_build_dir }}'
+    remote_src: yes
 
 # Get mesa
 - name: Get mesa from freedesktop.org
   unarchive:
     src: 'https://mesa.freedesktop.org/archive/mesa-{{ mesa_version }}.tar.xz'
     dest: '{{ mesa_build_dir }}'
+    remote_src: yes
 
 # Get xkbcommon
 - name: Get xkbcommon from git
