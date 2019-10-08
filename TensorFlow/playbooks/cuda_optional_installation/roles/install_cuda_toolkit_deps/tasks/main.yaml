@@ -84,7 +84,6 @@
     src: 'https://www-us.apache.org/dist/xmlgraphics/fop/binaries/fop-{{ fop_version }}-bin.zip'
     dest: '{{ fop_download_dir }}'
     remote_src: yes
-    extra_opts: [--strip-components=1]
 
 # Get xorg-macros
 - name: Get xorg-macros from freedesktop.org
