@@ -37,3 +37,19 @@
       - cuda-misc-headers-{{ cuda_version }}
       - libcublas-devel
   when: rhel_version == '8'
+
+# If we want to install cuda-toolkit, we need to install its dependencies first
+- include_role:
+    name: install_cuda_toolkit_deps
+  when: install_cuda_toolkit == 'yes'
+
+# Now install cuda toolkit
+- name: Install CUDA toolkit on RHEL 7
+  yum:
+    name: cuda-toolkit-{{ cuda_version }}
+  when: rhel_version == '7' and install_cuda_toolkit == 'yes'
+
+- name: Install CUDA toolkit on RHEL 8
+  dnf:
+    name: cuda-toolkit-{{ cuda_version }}
+  when: rhel_version == '8' and install_cuda_toolkit == 'yes'

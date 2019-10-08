@@ -1,0 +1,4 @@
+---
+dependencies:
+  - role: check_gpu
+  - role: check_for_cuda_repo

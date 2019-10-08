@@ -1,0 +1,24 @@
+---
+
+libXmu_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libXmu"
+libXmu_version: "1.1.0"
+
+libX11_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libX11"
+libX11_version: "1.6.8"
+
+libXi_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libXi"
+libXi_version: "1.7.10"
+
+libXrandr_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libXrandr"
+libXrandr_version: "1.5.2"
+
+freeglut_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/freeglut"
+
+mesa_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/mesa"
+mesa_version: "19.2.0"
+
+wayland_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/wayland"
+wayland_version: "1.17.0"
+
+xkbcommon_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libxkbcommon"
+xkbcommon_version: "xkbcommon-0.8.4"
