@@ -96,7 +96,6 @@
     src: 'https://sourceforge.net/code-snapshots/svn/f/fr/freeglut/code/freeglut-code-r1859-trunk-freeglut-freeglut.zip'
     dest: '{{ freeglut_build_dir }}'
     remote_src: yes
-    extra_opts: [--strip-components=1]
 
 # Get mesa
 - name: Get mesa from freedesktop.org
