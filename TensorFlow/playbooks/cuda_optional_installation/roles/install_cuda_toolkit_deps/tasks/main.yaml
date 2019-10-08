@@ -18,24 +18,38 @@
     executable: pip3
     name: ninja
 
-# Install XZ on RHEL 7 (for unarchiving mesa)
-- name: Install XZ on RHEL 7
+# Install XZ on RHEL 7 (for unarchiving mesa) and autoconf
+- name: Install XZ, autoconf, java on RHEL 7
   yum:
-    name: xz
+    name:
+      - autoconf
+      - java-1.8.0-openjdk
+      - java-1.8.0-openjdk-devel
+      - xz
   when: rhel_version == '7'
 
-# Install XZ on RHEL 8 (for unarchiving mesa)
-- name: Install XZ on RHEL 8
+# Install XZ on RHEL 8 (for unarchiving mesa) and autoconf
+- name: Install XZ, autoconf, java on RHEL 8
   dnf:
-    name: xz
+    name:
+      - autoconf
+      - java-1.8.0-openjdk
+      - java-1.8.0-openjdk-devel
+      - xz
   when: rhel_version == '8'
 
 # Remove existing build dirs
-- name: Remove existing build dirs for libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+- name: Remove existing build dirs for fop, xorg-macros, xmlto, libXext, xextproto, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
   file:
     state: absent
     path: '{{ item }}'
   with_items: 
+    - '{{ fop_download_dir }}'
+    - '{{ xorg_macros_build_dir }}'
+    - '{{ xmlto_build_dir }}'
+    - '{{ libXext_build_dir }}'
+    - '{{ xextproto_build_dir }}'
+    - '{{ libXt_build_dir }}'
     - '{{ libXmu_build_dir }}'
     - '{{ libX11_build_dir }}'
     - '{{ libXi_build_dir }}'
@@ -45,11 +59,17 @@
     - '{{ xkbcommon_build_dir }}'
 
 # Create build directory for each lib
-- name: Create build dirs for libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+- name: Create build dirs for fop, xorg-macros, xmlto, libXext, xextproto, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
   file:
     state: directory
     path: '{{ item }}'
   with_items: 
+    - '{{ fop_download_dir }}'
+    - '{{ xorg_macros_build_dir }}'
+    - '{{ xmlto_build_dir }}'
+    - '{{ libXext_build_dir }}'
+    - '{{ xextproto_build_dir }}'
+    - '{{ libXt_build_dir }}'
     - '{{ libXmu_build_dir }}'
     - '{{ libX11_build_dir }}'
     - '{{ libXi_build_dir }}'
@@ -57,6 +77,51 @@
     - '{{ freeglut_build_dir }}'
     - '{{ mesa_build_dir }}'
     - '{{ xkbcommon_build_dir }}'
+
+# Get fop
+- name: Get fop binary from Apache
+  unarchive:
+    src: 'https://www-us.apache.org/dist/xmlgraphics/fop/binaries/fop-{{ fop_version }}-bin.zip'
+    dest: '{{ fop_download_dir }}'
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+# Get xorg-macros
+- name: Get xorg-macros from freedesktop.org
+  git:
+    repo: https://github.com/freedesktop/xorg-macros.git
+    version: '{{ xorg_macros_version }}'
+    dest: '{{ xorg_macros_build_dir }}'
+
+# Get xmlto
+- name: Get xmlto from pagure.io
+  git:
+    repo: https://pagure.io/xmlto.git
+    dest: '{{ xmlto_build_dir }}'
+
+# Get libXext
+- name: Get libXext from X.org
+  unarchive:
+    src: 'https://www.x.org/releases/individual/lib/libXext-{{ libXext_version }}.tar.gz'
+    dest: '{{ libXext_build_dir }}'
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+# Get xextproto
+- name: Get xextproto from X.org
+  unarchive:
+    src: "https://www.x.org/releases/individual/proto/xextproto-{{ xextproto_version }}.tar.gz"
+    dest: '{{ xextproto_build_dir }}'
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+# Get libXt
+- name: Get libXt from X.org
+  unarchive:
+    src: 'https://www.x.org/releases/individual/lib/libXt-{{ libXt_version }}.tar.gz'
+    dest: '{{ libXt_build_dir }}'
+    remote_src: yes
+    extra_opts: [--strip-components=1]
 
 # Get libXmu
 - name: Get libXmu from X.org
@@ -112,6 +177,148 @@
     version: '{{ xkbcommon_version }}'
     dest: '{{ xkbcommon_build_dir }}'
 
+# Install fop by moving the binary to /usr/bin so it can be called later
+- name: Move fop binary to /usr/bin
+  shell: |
+    cd '{{ fop_download_dir }}/fop'
+    mv fop /usr/bin
+
+# Set execute permissions for fop
+- name: Changing permissions for fop so it can be executed
+  file: dest=/usr/bin/fop mode=a+x
+
+# Move fop.jar to the 'ext' folder
+- name: Move fop.jar to JRE's lib/ext folder
+  shell: |
+    cd '{{ fop_download_dir }}/fop/build'
+    cp fop.jar /usr/lib/jvm/jre/lib/ext
+
+# Move remaining .jar files to the 'ext' folder
+- name: Move remaining .jar file sto JRE's lib/ext folder
+  shell: |
+    cd '{{ fop_download_dir }}/fop'
+    cp lib/*.jar /usr/lib/jvm/jre/lib/ext
+
+# Generate 'configure' file for xmlto
+- name: Generate configure file for xmlto
+  shell: |
+    cd '{{ xmlto_build_dir }}'
+    autoconf
+
+# Configure xmlto
+- name: Configure xmlto
+  shell: |
+    cd '{{ xmlto_build_dir }}'
+    ./configure
+
+# Build xmlto
+- name: Make xmlto
+  make:
+    chdir: '{{ xmlto_build_dir }}'
+    target: all
+
+# Install xmlto
+- name: Install xmlto
+  make:
+    chdir: '{{ xmlto_build_dir }}'
+    target: install
+
+# Generate 'configure' file for xorg-macros
+- name: Generate configure file for xorg-macros
+  shell: |
+    cd '{{ xorg_macros_build_dir }}'
+    autoconf
+
+# Configure xorg-macros
+- name: Configure xorg-macros
+  shell: |
+    cd '{{ xorg_macros_build_dir }}'
+    ./configure
+
+# Build xorg-macros
+- name: Make xorg-macros
+  make:
+    chdir: '{{ xorg_macros_build_dir }}'
+    target: all
+
+# Install xorg-macros
+- name: Install xorg-macros
+  make:
+    chdir: '{{ xorg_macros_build_dir }}'
+    target: install
+
+# Configure libX11
+- name: Configure libX11
+  shell: |
+    cd '{{ libX11_build_dir }}'
+    ./configure
+
+# Build libX11
+- name: Make libX11
+  make:
+    chdir: '{{ libX11_build_dir }}'
+    target: all
+
+# Install libX11
+- name: Install libX11
+  make:
+    chdir: '{{ libX11_build_dir }}'
+    target: install
+
+# Configure libXext
+- name: Configure libXext
+  shell: |
+    cd '{{ libXext_build_dir }}'
+    ./configure
+
+# Build libXext
+- name: Make libXext
+  make:
+    chdir: '{{ libXext_build_dir }}'
+    target: all
+
+# Install libXext
+- name: Install libXext
+  make:
+    chdir: '{{ libXext_build_dir }}'
+    target: install
+
+# Configure xextproto
+- name: Configure xextproto
+  shell: |
+    cd '{{ xextproto_build_dir }}'
+    ./configure
+
+# Build xextproto
+- name: Make xextproto
+  make:
+    chdir: '{{ xextproto_build_dir }}'
+    target: all
+
+# Install xextproto
+- name: Install xextproto
+  make:
+    chdir: '{{ xextproto_build_dir }}'
+    target: install
+
+# Configure libXt
+- name: Configure libXt
+  shell: |
+    cd '{{ libXt_build_dir }}'
+    ./configure
+
+# Build libXt
+- name: Make libXt
+  make:
+    chdir: '{{ libXt_build_dir }}'
+    target: all
+
+# Install libXt
+- name: Install libXt
+  make:
+    chdir: '{{ libXt_build_dir }}'
+    target: install
+
 # Configure libXmu
 - name: Configure libXmu
   shell: |
@@ -166,24 +373,6 @@
     chdir: '{{ libXrandr_build_dir }}'
     target: install
 
-# Configure libX11
-- name: Configure libX11
-  shell: |
-    cd '{{ libX11_build_dir }}'
-    ./configure
-
-# Build libX11
-- name: Make libX11
-  make:
-    chdir: '{{ libX11_build_dir }}'
-    target: all
-
-# Install libX11
-- name: Install libX11
-  make:
-    chdir: '{{ libX11_build_dir }}'
-    target: install
-
 # Prepare to build mesa
 - name: Create build sub folder for mesa
   file:
@@ -221,3 +410,23 @@
   make:
     chdir: '{{ freeglut_build_dir }}'
     target: install
+
+# Remove all build dirs
+- name: Remove all build dirs for fop, xorg-macros, xmlto, libXext, xextproto, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+  file:
+    state: absent
+    path: '{{ item }}'
+  with_items: 
+    - '{{ fop_download_dir }}'
+    - '{{ xorg_macros_build_dir }}'
+    - '{{ xmlto_build_dir }}'
+    - '{{ libXext_build_dir }}'
+    - '{{ xextproto_build_dir }}'
+    - '{{ libXt_build_dir }}'
+    - '{{ libXmu_build_dir }}'
+    - '{{ libX11_build_dir }}'
+    - '{{ libXi_build_dir }}'
+    - '{{ libXrandr_build_dir }}'
+    - '{{ freeglut_build_dir }}'
+    - '{{ mesa_build_dir }}'
+    - '{{ xkbcommon_build_dir }}'
