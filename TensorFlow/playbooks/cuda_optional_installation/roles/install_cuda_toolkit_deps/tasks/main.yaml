@@ -172,12 +172,12 @@
 - name: Create build sub folder for mesa
   file:
     state: directory
-    path: {{ mesa_build_dir }}/build
+    path: '{{ mesa_build_dir }}/build'
 
 # Use meson+ninja to build and install mesa
 - name: Use meson to build mesa and ninja to install it
   shell: |
-    cd {{ mesa_build_dir }}/build
+    cd '{{ mesa_build_dir }}/build'
     meson ..
     ninja install
 
