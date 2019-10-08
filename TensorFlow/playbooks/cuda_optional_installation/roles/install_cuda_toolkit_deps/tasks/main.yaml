@@ -18,6 +18,18 @@
     executable: pip3
     name: ninja
 
+# Install XZ on RHEL 7 (for unarchiving mesa)
+- name: Install XZ on RHEL 7
+  yum:
+    name: xz
+  when: rhel_version == '7'
+
+# Install XZ on RHEL 8 (for unarchiving mesa)
+- name: Install XZ on RHEL 8
+  dnf:
+    name: xz
+  when: rhel_version == '8'
+
 # Remove existing build dirs
 - name: Remove existing build dirs for libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
   file:
