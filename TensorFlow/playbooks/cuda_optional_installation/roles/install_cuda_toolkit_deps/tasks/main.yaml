@@ -179,7 +179,7 @@
 # Install fop by moving the binary to /usr/bin so it can be called later
 - name: Move fop binary to /usr/bin
   shell: |
-    cd '{{ fop_download_dir }}/fop'
+    cd '{{ fop_download_dir }}'
     mv fop /usr/bin
 
 # Set execute permissions for fop
