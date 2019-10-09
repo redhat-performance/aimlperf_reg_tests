@@ -213,7 +213,7 @@
 - name: Generate configure file for xmlto
   shell: |
     cd '{{ xmlto_build_dir }}'
-    autoconf
+    autoreconf
 
 # Configure xmlto
 - name: Configure xmlto
@@ -237,7 +237,7 @@
 - name: Generate configure file for xorg-macros
   shell: |
     cd '{{ xorg_macros_build_dir }}'
-    autoconf
+    autoreconf
 
 # Configure xorg-macros
 - name: Configure xorg-macros
