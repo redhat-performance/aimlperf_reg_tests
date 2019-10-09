@@ -3,6 +3,9 @@
 fop_download_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/fop"
 fop_version: "2.3"
 
+flex_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/flex"
+flex_version: "v2.6.4"
+
 xorg_macros_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/xorg-macros"
 xorg_macros_version: "util-macros-1.19.1"
 

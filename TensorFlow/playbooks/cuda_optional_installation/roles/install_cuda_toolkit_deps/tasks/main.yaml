@@ -47,12 +47,13 @@
   when: rhel_version == '8'
 
 # Remove existing build dirs
-- name: Remove existing build dirs for fop, xorg-macros, xmlto, libXext, xextproto, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+- name: Remove existing build dirs for fop, flex, xorg-macros, xmlto, libXext, xextproto, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
   file:
     state: absent
     path: '{{ item }}'
   with_items: 
     - '{{ fop_download_dir }}'
+    - '{{ flex_build_dir }}'
     - '{{ xorg_macros_build_dir }}'
     - '{{ xmlto_build_dir }}'
     - '{{ libXext_build_dir }}'
@@ -67,12 +68,13 @@
     - '{{ xkbcommon_build_dir }}'
 
 # Create build directory for each lib
-- name: Create build dirs for fop, xorg-macros, xmlto, libXext, xextproto, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+- name: Create build dirs for fop, flex, xorg-macros, xmlto, libXext, xextproto, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
   file:
     state: directory
     path: '{{ item }}'
   with_items: 
     - '{{ fop_download_dir }}'
+    - '{{ flex_build_dir }}'
     - '{{ xorg_macros_build_dir }}'
     - '{{ xmlto_build_dir }}'
     - '{{ libXext_build_dir }}'
@@ -184,6 +186,13 @@
     version: '{{ xkbcommon_version }}'
     dest: '{{ xkbcommon_build_dir }}'
 
+# Get flex
+- name: Get flex from git
+  git:
+    repo: https://github.com/westes/flex
+    version: '{{ flex_version }}'
+    dest: '{{ flex_build_dir }}'
+
 # Install fop by moving the binary to /usr/bin so it can be called later
 - name: Move fop binary to /usr/bin
   shell: |
@@ -211,11 +220,35 @@
   command: mv '{{ item.path }}' /usr/lib/jvm/jre/lib/ext
   with_items: '{{ fop_jar_files.files }}'
 
+# Generate 'configure' file for flex
+- name: Generate configure file for flex
+  shell: |
+    cd '{{ flex_build_dir }}'
+    autoreconf -i
+
+# Configure flex
+- name: Configure flex
+  shell: |
+    cd '{{ flex_build_dir }}'
+    ./configure
+
+# Build flex
+- name: Make flex
+  make:
+    chdir: '{{ flex_build_dir }}'
+    target: all
+
+# Install flex
+- name: Install flex
+  make:
+    chdir: '{{ flex_build_dir }}'
+    target: install
+
 # Generate 'configure' file for xmlto
 - name: Generate configure file for xmlto
   shell: |
     cd '{{ xmlto_build_dir }}'
-    autoreconf
+    autoreconf -i
 
 # Configure xmlto
 - name: Configure xmlto
@@ -239,7 +272,7 @@
 - name: Generate configure file for xorg-macros
   shell: |
     cd '{{ xorg_macros_build_dir }}'
-    autoreconf
+    autoreconf -i
 
 # Configure xorg-macros
 - name: Configure xorg-macros
@@ -424,12 +457,13 @@
     target: install
 
 # Remove all build dirs
-- name: Remove all build dirs for fop, xorg-macros, xmlto, libXext, xextproto, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+- name: Remove all build dirs for fop, flex, xorg-macros, xmlto, libXext, xextproto, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
   file:
     state: absent
     path: '{{ item }}'
   with_items: 
     - '{{ fop_download_dir }}'
+    - '{{ flex_build_dir }}'
     - '{{ xorg_macros_build_dir }}'
     - '{{ xmlto_build_dir }}'
     - '{{ libXext_build_dir }}'
