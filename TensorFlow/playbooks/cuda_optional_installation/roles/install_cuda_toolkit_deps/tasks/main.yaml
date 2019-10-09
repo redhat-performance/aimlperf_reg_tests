@@ -187,11 +187,12 @@
     dest: '{{ xkbcommon_build_dir }}'
 
 # Get flex
-- name: Get flex from git
-  git:
-    repo: https://github.com/westes/flex
-    version: '{{ flex_version }}'
+- name: Get flex from git. (NOTE: The repo itself is not cloned because the tar file contains pregenerated files necessary for building flex.)
+  unarchive:
+    src: 'https://github.com/westes/flex/releases/download/v{{ flex_version }}/flex-{{ flex_version }}.tar.gz'
     dest: '{{ flex_build_dir }}'
+    remote_src: yes
+    extra_opts: [--strip-components=1]
 
 # Install fop by moving the binary to /usr/bin so it can be called later
 - name: Move fop binary to /usr/bin
@@ -226,11 +227,19 @@
     cd '{{ flex_build_dir }}'
     autoreconf -i
 
+# Patch flex
+- name: Patch flex so that reallocarray can be found
+  lineinfile:
+    path: '{{ flex_build_dir }}/src/flexdef.h'
+    line: '#include <malloc.h>'
+    create: yes
+    insertafter: '#include <math.h>'
+
 # Configure flex
-- name: Configure flex
+- name: Configure flex. Set HELP2MAN equal to a dummy value to skip the help2man part of the build process.
   shell: |
     cd '{{ flex_build_dir }}'
-    ./configure
+    HELP2MAN=/tools/bin/true ./configure
 
 # Build flex
 - name: Make flex
