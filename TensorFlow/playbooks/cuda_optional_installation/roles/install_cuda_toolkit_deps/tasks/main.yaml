@@ -155,11 +155,11 @@
     extra_opts: [--strip-components=1]
 
 # Get freeglut
-- name: Get freeglut from Source Forge
+- name: Get freeglut from git
   unarchive:
-    src: 'https://sourceforge.net/code-snapshots/svn/f/fr/freeglut/code/freeglut-code-r1859-trunk-freeglut-freeglut.zip'
+    src: https://github.com/dcnieho/FreeGLUT.git
     dest: '{{ freeglut_build_dir }}'
-    remote_src: yes
+    version: '{{ freeglut_version }}'
 
 # Get mesa
 - name: Get mesa from freedesktop.org
@@ -395,7 +395,7 @@
 # Create freeglut Makefile
 - name: Create freeglut Makefile using CMake
   shell: |
-    cd '{{ freeglut_build_dir }}'
+    cd '{{ freeglut_build_dir }}/freeglut/freeglut'
     cmake . -DFREEGLUT_BUILD_DEMOS=OFF -DFREEGLUT_WAYLAND=OFF -DFREEGLUT_BUILD_SHARED_LIBS=ON -DFREEGLUT_BUILD_STATIC_LIBS=ON
 
 # Build freeglut

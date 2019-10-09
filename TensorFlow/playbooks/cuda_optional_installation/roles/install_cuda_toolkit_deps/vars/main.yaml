@@ -29,7 +29,8 @@ libXi_version: "1.7.10"
 libXrandr_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libXrandr"
 libXrandr_version: "1.5.2"
 
-freeglut_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/freeglut"
+freeglut_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/FreeGLUT"
+freeglut_version: "FG_3_2_1"
 
 mesa_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/mesa"
 mesa_version: "19.2.0"
