@@ -156,8 +156,8 @@
 
 # Get freeglut
 - name: Get freeglut from git
-  unarchive:
-    src: https://github.com/dcnieho/FreeGLUT.git
+  git:
+    repo: https://github.com/dcnieho/FreeGLUT.git
     dest: '{{ freeglut_build_dir }}'
     version: '{{ freeglut_version }}'
 
