@@ -278,14 +278,14 @@ if [[ ${USE_GPU} == "true" ]]; then
         exit 1
     fi
 
-    # Make sure the user passed in a download URL or s3 bucket folder for NCCL
-    if [[ -z ${NCCL_URL} ]]; then
+    # Make sure the user passed in a download URL or s3 bucket folder for NCCL if not using EBS
+    if [[ -z ${NCCL_URL} ]] && [[ -z ${USE_EBS} ]]; then
         echo "ERROR. NCCL download URL or s3 bucket folder name is missing. Please provide an NCCL URL or s3 bucket with the -y option."
         exit 1
     fi
 
-    # Do the same with cuDNN
-    if [[ -z ${CUDNN_URL} ]]; then
+    # Do the same with cuDNN if not using EBS
+    if [[ -z ${CUDNN_URL} ]] && [[ -z ${USE_EBS} ]]; then
         echo "ERROR. cuDNN download URL or s3 bucket folder name is missing. Please provide a cuDNN URL or s3 bucket with the -z option."
         exit 1
     fi
