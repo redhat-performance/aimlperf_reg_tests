@@ -191,10 +191,17 @@
   shell: |
     cp '{{ fop_download_dir }}/fop-{{ fop_version }}/fop/build/fop.jar' '/usr/lib/jvm/jre/lib/ext'
 
+# Get all the .jar files under {{ fop_download_dir }}/fop-{{ fop_version }}/fop/lib
+- name: Get all the .jar files under {{ fop_download_dir }}/fop-{{ fop_version }}/fop/lib
+  find:
+    paths: ['{{ fop_download_dir }}/fop-{{ fop_version }}/fop/lib', '{{ fop_download_dir }}/fop-{{ fop_version }}/fop/lib/build']
+    patterns: '*.jar'
+  register: fop_jar_files
+
 # Move remaining .jar files to the 'ext' folder
 - name: Move remaining .jar file sto JRE's lib/ext folder
-  shell: |
-    'cp {{ fop_download_dir }}/fop-{{ fop_version }}/fop/lib/*.jar /usr/lib/jvm/jre/lib/ext'
+  command: mv '{{ item.path }}' /usr/lib/jvm/jre/lib/ext
+  with_items: '{{ fop_jar_files.files }}'
 
 # Generate 'configure' file for xmlto
 - name: Generate configure file for xmlto
