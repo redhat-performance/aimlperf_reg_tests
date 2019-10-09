@@ -19,7 +19,7 @@
     name: ninja
 
 # Install XZ on RHEL 7 (for unarchiving mesa) and autoconf
-- name: Install XZ, autoconf, automake, gettext, java, libtool on RHEL 7
+- name: Install XZ, autoconf, automake, gettext, java, libtool, unzip on RHEL 7
   yum:
     name:
       - autoconf
@@ -28,11 +28,12 @@
       - java-1.8.0-openjdk
       - java-1.8.0-openjdk-devel
       - libtool
+      - unzip
       - xz
   when: rhel_version == '7'
 
 # Install XZ on RHEL 8 (for unarchiving mesa) and autoconf
-- name: Install XZ, autoconf, automake, gettext, java, libtool on RHEL 8
+- name: Install XZ, autoconf, automake, gettext, java, libtool, unzip on RHEL 8
   dnf:
     name:
       - autoconf
@@ -41,6 +42,7 @@
       - java-1.8.0-openjdk
       - java-1.8.0-openjdk-devel
       - libtool
+      - unzip
       - xz
   when: rhel_version == '8'
 
