@@ -6,6 +6,9 @@
   # Do not edit these vars. Use --extra-vars in the command line to use a custom input value
   vars:
 
+    # Which RHEL version?
+    rhel_version: '{{ rhel_ver | default("7") }}'
+
     # Points to where bison will be built
     bison_build_path: '{{ build_path | default("/home/build/bison") }}'
 
@@ -27,9 +30,8 @@
 
   tasks:
 
-    # First, install required packages for building gcc. (Note that all gcc packages require an
-    # existing installation of gcc in order to be built.)
-    - name: Install required yum packages for building gcc
+    # First, install required packages for building bison.
+    - name: Install required yum packages for building bison
       yum:
         name:
           - bzip2
@@ -39,6 +41,20 @@
           - make
           - wget
         state: present
+      when: rhel_version == '7'
+
+    - name: Install required dnf packages for building bison
+      dnf:
+        name:
+          - bzip2
+          - diffutils
+          - gcc
+          - gcc-c++
+          - m4
+          - make
+          - wget
+        state: present
+      when: rhel_version == '8'
 
     # Next, delete existing custom bison build dir so that we can rebuild it
     - name: Delete existing custom bison-{{ bison_version }} build folder
