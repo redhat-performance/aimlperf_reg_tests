@@ -189,14 +189,12 @@
 # Move fop.jar to the 'ext' folder
 - name: Move fop.jar to JRE's lib/ext folder
   shell: |
-    cd '{{ fop_download_dir }}/fop-{{ fop_version }}/fop/build'
-    cp fop.jar /usr/lib/jvm/jre/lib/ext
+    cp '{{ fop_download_dir }}/fop-{{ fop_version }}/fop/build/fop.jar' '/usr/lib/jvm/jre/lib/ext'
 
 # Move remaining .jar files to the 'ext' folder
 - name: Move remaining .jar file sto JRE's lib/ext folder
   shell: |
-    cd '{{ fop_download_dir }}/fop-{{ fop_version }}/fop'
-    cp 'lib/*.jar' '/usr/lib/jvm/jre/lib/ext'
+    cp '{{ fop_download_dir }}/fop-{{ fop_version }}/fop/lib/*.jar' '/usr/lib/jvm/jre/lib/ext'
 
 # Generate 'configure' file for xmlto
 - name: Generate configure file for xmlto
