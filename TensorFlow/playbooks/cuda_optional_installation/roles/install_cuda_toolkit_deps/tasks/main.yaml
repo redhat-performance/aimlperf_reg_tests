@@ -67,7 +67,7 @@
   when: rhel_version == '8'
 
 # Remove existing build dirs
-- name: Remove existing build dirs for fop, gettext, pixman, libpciaccess, drm, xtrans, flex, xorg-macros, xmlto, libXext, xextproto, libXfixes, xdamage, libxshmfence, libXxf86vm, mcpp, lmdb, libICE, libSM, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+- name: Remove existing build dirs for fop, gettext, pixman, libpciaccess, drm, xtrans, flex, xorg-macros, xmlto, libXext, xextproto, libXfixes, xdamage, libxshmfence, libXxf86vm, libICE, libSM, libXt, libXmu, libXi, libX11, libXrandr, libXrender, freeglut, mesa, xkbcommon, glu
   file:
     state: absent
     path: '{{ item }}'
@@ -86,8 +86,6 @@
     - '{{ libXfixes_build_dir }}'
     - '{{ xdamage_build_dir }}'
     - '{{ libxshmfence_build_dir }}'
-    - '{{ mcpp_build_dir }}'
-    - '{{ lmdb_build_dir }}'
     - '{{ ice_build_dir }}'
     - '{{ sm_build_dir }}'
     - '{{ libXxf86vm_build_dir }}'
@@ -95,13 +93,15 @@
     - '{{ libXmu_build_dir }}'
     - '{{ libX11_build_dir }}'
     - '{{ libXi_build_dir }}'
+    - '{{ libXrender_build_dir }}'
     - '{{ libXrandr_build_dir }}'
     - '{{ freeglut_build_dir }}'
     - '{{ mesa_build_dir }}'
     - '{{ xkbcommon_build_dir }}'
+    - '{{ glu_build_dir }}'
 
 # Create build directory for each lib
-- name: Create build dirs for fop, gettext, pixman, libpciaccess, drm, xtrans, flex, xorg-macros, xmlto, libXext, xextproto, libXfixes, xdamage, libxshmfence, libXxf86vm, mcpp, lmdb, libICE, libSM, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+- name: Create build dirs for fop, gettext, pixman, libpciaccess, drm, xtrans, flex, xorg-macros, xmlto, libXext, xextproto, libXfixes, xdamage, libxshmfence, libXxf86vm, libICE, libSM, libXt, libXmu, libXi, libX11, libXrandr, libXrender, freeglut, mesa, xkbcommon, glu
   file:
     state: directory
     path: '{{ item }}'
@@ -121,18 +121,18 @@
     - '{{ xdamage_build_dir }}'
     - '{{ libxshmfence_build_dir }}'
     - '{{ libXxf86vm_build_dir }}'
-    - '{{ mcpp_build_dir }}'
-    - '{{ lmdb_build_dir }}'
     - '{{ ice_build_dir }}'
     - '{{ sm_build_dir }}'
     - '{{ libXt_build_dir }}'
     - '{{ libXmu_build_dir }}'
     - '{{ libX11_build_dir }}'
     - '{{ libXi_build_dir }}'
+    - '{{ libXrender_build_dir }}'
     - '{{ libXrandr_build_dir }}'
     - '{{ freeglut_build_dir }}'
     - '{{ mesa_build_dir }}'
     - '{{ xkbcommon_build_dir }}'
+    - '{{ glu_build_dir }}'
 
 # Get fop
 - name: Get fop binary from Apache
@@ -264,6 +264,14 @@
     remote_src: yes
     extra_opts: [--strip-components=1]
 
+# Get libXrender
+- name: Get libXrender from X.org
+  unarchive:
+    src: 'https://www.x.org/releases/individual/lib/libXrender-{{ libXrender_version }}.tar.gz'
+    dest: '{{ libXrender_build_dir }}'
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
 # Get libXrandr
 - name: Get libXrandr from X.org
   unarchive:
@@ -303,19 +311,12 @@
     remote_src: yes
     extra_opts: [--strip-components=1]
 
-# Get mcpp
-- name: Get mcpp from git
+# Get glu
+- name: Get glu from freedesktop.org
   git:
-    repo: https://github.com/zeroc-ice/mcpp.git
-    dest: '{{ mcpp_build_dir }}'
-    version: '{{ mcpp_version }}'
-
-# Get LMDB
-- name: Get LMDB
-  git:
-    repo: https://github.com/LMDB/lmdb.git
-    dest: '{{ lmdb_build_dir }}'
-    version: '{{ lmdb_version }}'
+    repo: https://gitlab.freedesktop.org/mesa/glu.git
+    version: '{{ glu_version }}'
+    dest: '{{ glu_build_dir }}'
 
 # Get xkbcommon
 - name: Get xkbcommon from git
@@ -811,6 +812,26 @@
     chdir: '{{ libXi_build_dir }}'
     target: install
 
+# Configure libXrender
+- name: Configure libXrender
+  shell: |
+    cd '{{ libXrender_build_dir }}'
+    ./configure
+  environment:
+    PKG_CONFIG_PATH: '{{ pkg_config_path }}'
+
+# Build libXrender
+- name: Make libXrender
+  make:
+    chdir: '{{ libXrender_build_dir }}'
+    target: all
+
+# Install libXrender
+- name: Install libXrender
+  make:
+    chdir: '{{ libXrender_build_dir }}'
+    target: install
+
 # Configure libXrandr
 - name: Configure libXrandr
   shell: |
@@ -831,17 +852,47 @@
     chdir: '{{ libXrandr_build_dir }}'
     target: install
 
+# Create build dir for xkbcommon
+- name: Create build directory for xkbcommon
+  file:
+    state: directory
+    path: '{{ xkbcommon_build_dir }}/build'
+
 # Configure, build, and install libxkbcommon
 - name: Configure, build, and install xkbcommon
   shell: |
-    cd '{{ xkbcommon_build_dir }}'
-    meson setup build
+    cd '{{ xkbcommon_build_dir }}/build'
+    meson -Denable-wayland=false -Denable-docs=false ..
     ninja -C build
+
+# Generate 'configure' file for glu
+- name: Generate 'configure' file for glu
+  shell: |
+    cd '{{ glu_build_dir }}'
+    autoreconf -i
+
+# Configure glu
+- name: Configure glu
+  shell: |
+    cd '{{ glu_build_dir }}'
+    ./configure
+
+# Build glu
+- name: Make glu
+  make:
+    chdir: '{{ glu_build_dir }}'
+    target: all
+
+# Install glu
+- name: Install glu
+  make:
+    chdir: '{{ glu_build_dir }}'
+    target: install
 
 # Create freeglut Makefile
 - name: Create freeglut Makefile using CMake
   shell: |
-    cd '{{ freeglut_build_dir }}/freeglut/freeglut'
+    cd '{{ freeglut_build_dir }}'
     cmake . -DFREEGLUT_BUILD_DEMOS=OFF -DFREEGLUT_WAYLAND=OFF -DFREEGLUT_BUILD_SHARED_LIBS=ON -DFREEGLUT_BUILD_STATIC_LIBS=ON
 
 # Build freeglut
@@ -857,7 +908,7 @@
     target: install
 
 # Remove all build dirs
-- name: Remove existing build dirs for fop, gettext, pixman, libpciaccess, drm, xtrans, flex, xorg-macros, xmlto, libXext, xextproto, libXfixes, xdamage, libxshmfence, libXxf86vm, libICE, libSM, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+- name: Remove build dirs for fop, gettext, pixman, libpciaccess, drm, xtrans, flex, xorg-macros, xmlto, libXext, xextproto, libXfixes, xdamage, libxshmfence, libXxf86vm, libICE, libSM, libXt, libXmu, libXi, libX11, libXrandr, libXrender, freeglut, mesa, xkbcommon, glu
   file:
     state: absent
     path: '{{ item }}'
@@ -883,7 +934,11 @@
     - '{{ libXmu_build_dir }}'
     - '{{ libX11_build_dir }}'
     - '{{ libXi_build_dir }}'
+    - '{{ libXrender_build_dir }}'
     - '{{ libXrandr_build_dir }}'
     - '{{ freeglut_build_dir }}'
     - '{{ mesa_build_dir }}'
     - '{{ xkbcommon_build_dir }}'
+    - '{{ glu_build_dir }}'
+
+- name:

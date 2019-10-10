@@ -65,6 +65,9 @@ libX11_version: "1.6.8"
 libXi_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libXi"
 libXi_version: "1.7.10"
 
+libXrender_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libXrender"
+libXrender_version: "0.9.10"
+
 libXrandr_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libXrandr"
 libXrandr_version: "1.5.2"
 
@@ -76,5 +79,8 @@ mesa_version: "19.2.0"
 
 xkbcommon_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libxkbcommon"
 xkbcommon_version: "xkbcommon-0.8.4"
+
+glu_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/glu"
+glu_version: "glu-9.0.1"
 
 pkg_config_path: '/usr/local/share/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig'
