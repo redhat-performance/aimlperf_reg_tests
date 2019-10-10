@@ -19,12 +19,11 @@
     name: ninja
 
 # Install XZ on RHEL 7 (for unarchiving mesa) and autoconf
-- name: Install XZ, autoconf, automake, gettext, java, libtool, unzip on RHEL 7
+- name: Install XZ, autoconf, automake, java, libtool, unzip on RHEL 7
   yum:
     name:
       - autoconf
       - automake
-      - gettext
       - java-1.8.0-openjdk
       - java-1.8.0-openjdk-devel
       - libtool
@@ -33,12 +32,11 @@
   when: rhel_version == '7'
 
 # Install XZ on RHEL 8 (for unarchiving mesa) and autoconf
-- name: Install XZ, autoconf, automake, gettext, java, libtool, unzip on RHEL 8
+- name: Install XZ, autoconf, automake, java, libtool, unzip on RHEL 8
   dnf:
     name:
       - autoconf
       - automake
-      - gettext
       - java-1.8.0-openjdk
       - java-1.8.0-openjdk-devel
       - libtool
@@ -47,12 +45,13 @@
   when: rhel_version == '8'
 
 # Remove existing build dirs
-- name: Remove existing build dirs for fop, flex, xorg-macros, xmlto, libXext, xextproto, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+- name: Remove existing build dirs for fop, gettext, flex, xorg-macros, xmlto, libXext, xextproto, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
   file:
     state: absent
     path: '{{ item }}'
   with_items: 
     - '{{ fop_download_dir }}'
+    - '{{ gettext_build_dir }}'
     - '{{ flex_build_dir }}'
     - '{{ xorg_macros_build_dir }}'
     - '{{ xmlto_build_dir }}'
@@ -68,12 +67,13 @@
     - '{{ xkbcommon_build_dir }}'
 
 # Create build directory for each lib
-- name: Create build dirs for fop, flex, xorg-macros, xmlto, libXext, xextproto, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+- name: Create build dirs for fop, flex, gettext, xorg-macros, xmlto, libXext, xextproto, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
   file:
     state: directory
     path: '{{ item }}'
   with_items: 
     - '{{ fop_download_dir }}'
+    - '{{ gettext_build_dir }}'
     - '{{ flex_build_dir }}'
     - '{{ xorg_macros_build_dir }}'
     - '{{ xmlto_build_dir }}'
@@ -94,6 +94,14 @@
     src: 'https://www-us.apache.org/dist/xmlgraphics/fop/binaries/fop-{{ fop_version }}-bin.zip'
     dest: '{{ fop_download_dir }}'
     remote_src: yes
+
+# Get gettext
+- name: Get gettext from gnu.org
+  unarchive:
+    src: 'https://ftp.gnu.org/gnu/gettext/gettext-{{ gettext_version }}.tar.gz'
+    dest: '{{ gettext_build_dir }}'
+    remote_src: yes
+    extra_opts: [--strip-components=1]
 
 # Get xorg-macros
 - name: Get xorg-macros from freedesktop.org
@@ -220,6 +228,24 @@
 - name: Move remaining .jar file sto JRE's lib/ext folder
   command: mv '{{ item.path }}' /usr/lib/jvm/jre/lib/ext
   with_items: '{{ fop_jar_files.files }}'
+
+# Configure gettext
+- name: Configure gettext
+  shell: |
+    cd '{{ gettext_build_dir }}'
+    ./configure
+
+# Build gettext
+- name: Make gettext
+  make:
+    chdir: '{{ gettext_build_dir }}'
+    target: all
+
+# Install gettext
+- name: Install gettext
+  make:
+    chdir: '{{ gettext_build_dir }}'
+    target: install
 
 # Generate 'configure' file for flex
 - name: Generate configure file for flex
