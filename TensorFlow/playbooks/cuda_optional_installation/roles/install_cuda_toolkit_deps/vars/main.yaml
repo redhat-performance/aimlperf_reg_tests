@@ -41,14 +41,14 @@ xdamage_version: "1.1.5"
 libxshmfence_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libxshmfence"
 libxshmfence_version: "1.3"
 
-mcpp_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/mcpp"
-mcpp_version: "v2.7.2.14"
+ice_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libICE"
+ice_version: "1.0.10"
 
-lmdb_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/lmdb"
-lmdb_version: "LMDB_0.9.24"
+sm_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libSM"
+sm_version: "1.2.3"
 
-ice_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/ice"
-ice_version: "v3.7.2"
+sm_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libSM"
+sm_version: ""
 
 libXxf86vm_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libXxf86vm"
 libXxf86vm_version: "1.1.4"

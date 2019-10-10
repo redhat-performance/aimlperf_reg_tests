@@ -67,7 +67,7 @@
   when: rhel_version == '8'
 
 # Remove existing build dirs
-- name: Remove existing build dirs for fop, gettext, pixman, libpciaccess, drm, xtrans, flex, xorg-macros, xmlto, libXext, xextproto, libXfixes, xdamage, libxshmfence, libXxf86vm, mcpp, lmdb, ice, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+- name: Remove existing build dirs for fop, gettext, pixman, libpciaccess, drm, xtrans, flex, xorg-macros, xmlto, libXext, xextproto, libXfixes, xdamage, libxshmfence, libXxf86vm, mcpp, lmdb, libICE, libSM, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
   file:
     state: absent
     path: '{{ item }}'
@@ -89,6 +89,7 @@
     - '{{ mcpp_build_dir }}'
     - '{{ lmdb_build_dir }}'
     - '{{ ice_build_dir }}'
+    - '{{ sm_build_dir }}'
     - '{{ libXxf86vm_build_dir }}'
     - '{{ libXt_build_dir }}'
     - '{{ libXmu_build_dir }}'
@@ -100,7 +101,7 @@
     - '{{ xkbcommon_build_dir }}'
 
 # Create build directory for each lib
-- name: Create build dirs for fop, gettext, pixman, libpciaccess, drm, xtrans, flex, xorg-macros, xmlto, libXext, xextproto, libXfixes, xdamage, libxshmfence, libXxf86vm, mcpp, lmdb, ice, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+- name: Create build dirs for fop, gettext, pixman, libpciaccess, drm, xtrans, flex, xorg-macros, xmlto, libXext, xextproto, libXfixes, xdamage, libxshmfence, libXxf86vm, mcpp, lmdb, libICE, libSM, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
   file:
     state: directory
     path: '{{ item }}'
@@ -123,6 +124,7 @@
     - '{{ mcpp_build_dir }}'
     - '{{ lmdb_build_dir }}'
     - '{{ ice_build_dir }}'
+    - '{{ sm_build_dir }}'
     - '{{ libXt_build_dir }}'
     - '{{ libXmu_build_dir }}'
     - '{{ libX11_build_dir }}'
@@ -270,6 +272,22 @@
     remote_src: yes
     extra_opts: [--strip-components=1]
 
+# Get libICE
+- name: Get libICE from X.org
+  unarchive:
+    src: 'https://www.x.org/releases/individual/lib/libICE-{{ ice_version }}.tar.gz'
+    dest: '{{ ice_build_dir }}'
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+# Get libSM
+- name: Get libSM from X.org
+  unarchive:
+    src: 'https://www.x.org/releases/individual/lib/libSM-{{ sm_version }}.tar.gz'
+    dest: '{{ sm_build_dir }}'
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
 # Get freeglut
 - name: Get freeglut from git
   git:
@@ -298,13 +316,6 @@
     repo: https://github.com/LMDB/lmdb.git
     dest: '{{ lmdb_build_dir }}'
     version: '{{ lmdb_version }}'
-
-# Get ice
-- name: Get ice from git
-  git:
-    repo: https://github.com/zeroc-ice/ice.git 
-    dest: '{{ ice_build_dir }}'
-    version: '{{ ice_version }}'
 
 # Get xkbcommon
 - name: Get xkbcommon from git
@@ -700,47 +711,44 @@
     ninja install
   when: gpu_device != 'nvidia'
 
-# Build mcpp
-- name: Make mcpp
+# Configure libICE
+- name: Configure libICE
+  shell: |
+    cd '{{ ice_build_dir }}'
+    ./configure
+  environment:
+    PKG_CONFIG_PATH: '{{ pkg_config_path }}'
+
+# Make libICE
+- name: Make libICE
   make:
-    chdir: '{{ mcpp_build_dir }}'
+    chdir: '{{ ice_build_dir }}'
     target: all
 
-# Install mcpp
-- name: Install mcpp
+# Install libICE
+- name: Install libICE
   make:
-    chdir: '{{ mcpp_build_dir }}'
-    target: install
+    chdir: '{{ ice_build_dir }}'
+    target install
 
-# Create symbolic link for libmcpp
-- name: Create symbolic link for libmcpp.so since there is no such 'libmcpp.so' file
-  file:
-    state: link
-    src: '/usr/lib64/libmcpp.so.0'
-    dest: '/usr/lib64/libmcpp.so'
+# Configure libSM
+- name: Configure libSM
+  shell: |
+    cd '{{ sm_build_dir }}'
+    ./configure
+  environment:
+    PKG_CONFIG_PATH: '{{ pkg_config_path }}'
 
-# Build LMDB
-- name: Make lmdb
+# Make libSM
+- name: Make libSM
   make:
-    chdir: '{{ lmdb_build_dir }}/libraries/liblmdb'
+    chdir: '{{ sm_build_dir }}'
     target: all
 
-# Install LMDB
-- name: Install lmdb
+# Install libSM
+- name: Install libSM
   make:
-    chdir: '{{ lmdb_build_dir }}/libraries/liblmdb'
-    target: install
-
-# Make ice cpp
-- name: Make ice cpp
-  make:
-    chdir: '{{ ice_build_dir }}/cpp'
-    target: all
-
-# Install ice cpp
-- name: Install ice cpp
-  make:
-    chdir: '{{ ice_build_dir }}/cpp'
+    chdir: '{{ sm_build_dir }}'
     target install
 
 # Configure libXt
@@ -748,6 +756,8 @@
   shell: |
     cd '{{ libXt_build_dir }}'
     ./configure
+  environment:
+    PKG_CONFIG_PATH: '{{ pkg_config_path }}'
 
 # Build libXt
 - name: Make libXt
@@ -766,6 +776,8 @@
   shell: |
     cd '{{ libXmu_build_dir }}'
     ./configure
+  environment:
+    PKG_CONFIG_PATH: '{{ pkg_config_path }}'
 
 # Build libXmu
 - name: Make libXmu
@@ -784,6 +796,8 @@
   shell: |
     cd '{{ libXi_build_dir }}'
     ./configure
+  environment:
+    PKG_CONFIG_PATH: '{{ pkg_config_path }}'
 
 # Build libXi
 - name: Make libXi
@@ -802,6 +816,8 @@
   shell: |
     cd '{{ libXrandr_build_dir }}'
     ./configure
+  environment:
+    PKG_CONFIG_PATH: '{{ pkg_config_path }}'
 
 # Build libXrandr
 - name: Make libXrandr
@@ -841,7 +857,7 @@
     target: install
 
 # Remove all build dirs
-- name: Remove existing build dirs for fop, gettext, pixman, libpciaccess, drm, xtrans, flex, xorg-macros, xmlto, libXext, xextproto, libXfixes, xdamage, libxshmfence, libXxf86vm, mcpp, lmdb, ice, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
+- name: Remove existing build dirs for fop, gettext, pixman, libpciaccess, drm, xtrans, flex, xorg-macros, xmlto, libXext, xextproto, libXfixes, xdamage, libxshmfence, libXxf86vm, libICE, libSM, libXt, libXmu, libXi, libX11, libXrandr, freeglut, mesa, xkbcommon
   file:
     state: absent
     path: '{{ item }}'
@@ -860,9 +876,8 @@
     - '{{ libXfixes_build_dir }}'
     - '{{ xdamage_build_dir }}'
     - '{{ libxshmfence_build_dir }}'
-    - '{{ mcpp_build_dir }}'
-    - '{{ lmdb_build_dir }}'
     - '{{ ice_build_dir }}'
+    - '{{ sm_build_dir }}'
     - '{{ libXxf86vm_build_dir }}'
     - '{{ libXt_build_dir }}'
     - '{{ libXmu_build_dir }}'
