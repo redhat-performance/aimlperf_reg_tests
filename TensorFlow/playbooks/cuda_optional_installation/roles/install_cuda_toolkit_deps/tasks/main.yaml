@@ -19,7 +19,7 @@
     name: ninja
 
 # Install XZ on RHEL 7 (for unarchiving mesa) and autoconf
-- name: Install XZ, autoconf, automake, java, libtool, unzip on RHEL 7
+- name: Install autoconf, automake, java, libtool, libxslt, libxslt-devel, unzip, xz on RHEL 7
   yum:
     name:
       - autoconf
@@ -27,12 +27,14 @@
       - java-1.8.0-openjdk
       - java-1.8.0-openjdk-devel
       - libtool
+      - libxslt
+      - libxslt-devel
       - unzip
       - xz
   when: rhel_version == '7'
 
 # Install XZ on RHEL 8 (for unarchiving mesa) and autoconf
-- name: Install XZ, autoconf, automake, java, libtool, unzip on RHEL 8
+- name: Install autoconf, automake, java, libtool, libxslt, libxslt-devel, unzip, xz on RHEL 8
   dnf:
     name:
       - autoconf
@@ -40,6 +42,8 @@
       - java-1.8.0-openjdk
       - java-1.8.0-openjdk-devel
       - libtool
+      - libxslt
+      - libxslt-devel
       - unzip
       - xz
   when: rhel_version == '8'
@@ -285,11 +289,25 @@
     cd '{{ xmlto_build_dir }}'
     autoreconf -i
 
+# Patch xmlto's xmlto.in
+- name: Patch {{ xmlto_build_dir }}/xmlto.in so that the network validation does not fail
+  lineinfile:
+    path: '{{ xmlto_build_dir }}/xmlto.in'
+    regexp: '.*XSLTOPTS --nonet'
+    line: '#XSLTOPTS="$XSLTOPTS --nonet'
+
 # Configure xmlto
 - name: Configure xmlto
   shell: |
     cd '{{ xmlto_build_dir }}'
     ./configure
+
+# Patch xmlto's Makefile.in
+- name: Patch {{ xmlto_build_dir }}/Makefile.in so that the manpage generation doesn't fail
+  lineinfile:
+    path: '{{ xmlto_build_dir }}/Makefile.in'
+    regexp: '^GEN_MANPAGE = FORMAT_DIR.*'
+    line: 'GEN_MANPAGE = FORMAT_DIR=$(top_srcdir)/format $(BASH) ./xmlto -o $(@D) --skip-validation man $<'
 
 # Build xmlto
 - name: Make xmlto
