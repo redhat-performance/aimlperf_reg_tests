@@ -6,6 +6,18 @@ fop_version: "2.3"
 gettext_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/gettext"
 gettext_version: "0.20"
 
+pixman_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/pixman"
+pixman_version: "pixman-0.38.4"
+
+libpciaccess_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libpciaccess"
+libpciaccess_version: "0.16"
+
+xtrans_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/xtrans"
+xtrans_version: "1.4.0"
+
+drm_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/drm"
+drm_version: "libdrm-2.4.99"
+
 flex_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/flex"
 flex_version: "2.6.4"
 
@@ -19,6 +31,27 @@ libXext_version: "1.3.4"
 
 xextproto_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/xextproto"
 xextproto_version: "7.3.0"
+
+libXfixes_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libXfixes"
+libXfixes_version: "5.0.3"
+
+xdamage_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libxdamage"
+xdamage_version: "1.1.5"
+
+libxshmfence_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libxshmfence"
+libxshmfence_version: "1.3"
+
+mcpp_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/mcpp"
+mcpp_version: "v2.7.2.14"
+
+lmdb_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/lmdb"
+lmdb_version: "LMDB_0.9.24"
+
+ice_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/ice"
+ice_version: "v3.7.2"
+
+libXxf86vm_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libXxf86vm"
+libXxf86vm_version: "1.1.4"
 
 libXt_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libXt"
 libXt_version: "1.2.0"
@@ -41,8 +74,7 @@ freeglut_version: "FG_3_2_1"
 mesa_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/mesa"
 mesa_version: "19.2.0"
 
-wayland_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/wayland"
-wayland_version: "1.17.0"
-
 xkbcommon_build_dir: "{{ lookup('env', 'HOME') }}/build/cuda_toolkit_deps/libxkbcommon"
 xkbcommon_version: "xkbcommon-0.8.4"
+
+pkg_config_path: '/usr/local/share/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig'
