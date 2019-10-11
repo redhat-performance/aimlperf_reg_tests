@@ -15,8 +15,8 @@
     # Add variable to define which CUDA version is being used
     cuda_version: '{{ cuda_ver | default("10-1") }}'
 
-    # Install cuda toolkit?
-    install_cuda_toolkit: '{{ install_toolkit | default("yes") }}'
+    # Install cuda toolkit? Default is now 'no.'
+    install_cuda_toolkit: '{{ install_toolkit | default("no") }}'
 
     # Use which type of GPU?
     gpu_device: '{{ device_vendor | default("nvidia") }}'
