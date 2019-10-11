@@ -940,5 +940,3 @@
     - '{{ mesa_build_dir }}'
     - '{{ xkbcommon_build_dir }}'
     - '{{ glu_build_dir }}'
-
-- name:
