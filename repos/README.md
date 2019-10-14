@@ -9,7 +9,7 @@ Format:
 ```
 [rhel7-Latest]
 name=RHEL7-Latest
-baseurl=<path/to/rhel7-latest/tree>
+baseurl=</url/path/to/rhel7-latest/tree>
 enabled=1
 gpgcheck=0
 ```
@@ -19,7 +19,7 @@ gpgcheck=0
 ```
 [rhel8-Latest]
 name=RHEL8-Latest
-baseurl=<path/to/rhel8-latest/tree>
+baseurl=</url/path/to/rhel8-latest/tree>
 enabled=1
 gpgcheck=0
 ```
@@ -27,10 +27,20 @@ gpgcheck=0
 3. `rhel8-Appstream-Latest.repo`
 
 ```
-[rhel8-additional-latest-nightly-appstream]
-name=rhel8-additional-latest-nightly-appstream
-baseurl=<path/to/rhel8-appstream/nightly/tree>
-baseurl=<path/to/rhel8-latest/tree>
+[rhel8-Appstream-Latest]
+name=RHEL8-Appstream-Latest
+baseurl=</url/path/to/rhel8-appstream/tree>
+baseurl=</url/path/to/rhel8-latest/tree>
 enabled=1
 gpgcheck=0
+```
+
+4. `cuda.repo`
+```
+[cuda]
+name=cuda
+baseurl=</url/path/to/nvidia/repo>
+enabled=1
+gpgcheck=1
+gpgkey=</url/path/to/gpg/key>
 ```

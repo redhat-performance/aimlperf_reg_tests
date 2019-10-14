@@ -37,6 +37,8 @@ $ sh setup/images/add_registry_secret.sh
 
 ## Preparing for CUDA Builds (REQUIRED FOR CUDA BUILDS!!)
 
+### Setting up an EBS Volume
+
 To prepare for CUDA builds, you will first need to create an EBS volume, like so:
 
 ```
@@ -69,30 +71,55 @@ $ oc delete pod/tmp-nvidia-pod
 
 Now you're all set! The EBS volume should have your cuDNN and NCCL tar files!
 
+### Building Your Custom CUDA "Base" Image
+
+#### Warning About Using ubi8 and Related Images
+
+The RHEL 8 "ubi8" image has a limited set of packages that can be installed through its included repos. Even NVIDIA's `nvidia/cuda:<tag>` images reference ubi8, so the same issue lies there. Thus, in order to obtain the packages that *cannot* be installed through those repos, you will need to create your own image using one of the custom provided Dockerfiles in `../Dockerfiles/custom` and supply your own `.repo` files to point to RHEL 8 repositories.
+
+#### Instructions
+
+To build a custom CUDA image from one of the Dockerfiles provided in `../Dockerfiles/custom`, follow the instructions in the `README.md` file under the `setup` folder in this directory. The image **must** be generated on your own machine because the Dockerfile pulls in the `../../repos/cuda.repo` and `../../repos/rhel8-Latest.repo` files for injecting yum/dnf repos into the image. (For images which attempt to download and install `cuda-toolkit`, you'll also need to create `../../repos/rhel8-Appstream-Latest.repo`.) I designed the Dockerfile this way because the `.repo` files legally cannot be uploaded to the internet without specific permissions. Thus, it is the assumption that you yourself have permissions to supply your own `.repo` files.
 
 ## Basics
 
-To run, first make sure you've set up an OpenShift AWS instance and exposed your image registry (Docker, CRI-O, etc.). The instance can be either a CPU or GPU type. Once your OpenShift AWS is ready, run:
+To run, first make sure you've set up an OpenShift AWS instance and exposed your image registry (Docker, CRI-O, etc.). The instance can be either a CPU or GPU type. Once your OpenShift AWS is ready, you may build the ImageStream object:
 
 ```
-$ sh run_me.sh -v <rhel_version> -v <blas_backend_to_use> -d <num_devices_to_use>
+$ sh build_imagestream.sh -v <rhel_version> -b <blas_backend_to_use> [optional args]
 ```
 
 e.g.,
 
 ```
-$ sh run_me.sh -v 7 -b fftw -d 24
+$ sh build_imagestream.sh -v 7 -b fftw
 ```
 
 or 
 
 ```
-$ sh run_me.sh -v 8 -b fftw -d 24
+$ sh build_imagestream.sh -v 8 -b fftw
 ```
 
-The above command will load the templates from the `templates` folder into a random AWS instance, create a build image special for the TensorFlow benchmarks, then run the benchmarks on the number of CPUs specified by `-d`.
+For additional help, run:
 
-Note that the default C compiler that will be used to build FFTW, NumPy, and TensorFlow is set to `/usr/bin/gcc`. If you're building a RHEL 7 image (i.e., not RHEL 8) and wish to use a *different* `gcc` installation such that you can build with AVX512\* instructions, use the `-c` option to pass in its path. (Note: this is not the gcc on your machine, but rather, the gcc that is in your s2i image.)
+```
+$ sh build_imagestream.sh -h
+```
+
+The above command will load the templates from the `templates` folder into a random AWS instance, then create a build image special for the TensorFlow benchmarks.
+
+Once the image has been built, you may run the build job, which uses the ImageStream you just built to launch the benchmark app, which builds TensorFlow and its dependencies, then runs the benchmarks:
+
+```
+$ sh build_job.sh -v <rhel_version> -b <blas_backend_to_use> -i <imagestream_name> [optional args]
+```
+
+For additional help,
+
+```
+$ sh build_job.sh -h
+```
 
 ## How it Works
 
