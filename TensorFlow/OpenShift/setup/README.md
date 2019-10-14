@@ -21,10 +21,15 @@ Run `add_registry_secret.sh` to add your redhat.io registry secret to OpenShift.
 To create a custom CUDA image defined by one of the Dockerfiles in the `TensorFlow/Dockerfiles/custom` folder, you will need to have added your registry.redhat.io secret to Podman/Docker and do the following:
 
 1a. Create `.repo` files in the `../../../repos` folder for `cuda.repo` and `rhel8-Latest.repo`
+
 1b. Additionally, create a `.repo` file in the `../../../repos` folder for `rhel8-Appstream-Latest.repo` if using a Dockerfile which installs CUDA toolkit
+
 2. Expose the OpenShift image registry
+
 3. Log into the OpenShift `podman`/`docker` registry
+
 4. Use the `podman` or `docker` CLI to build the custom image, making sure to tag the image with the OpenShift image registry route
+
 5. Push the image to the OpenShift registry
 
 The image must be built on your own machine, and the next subsections describe the above steps in greater detail.
