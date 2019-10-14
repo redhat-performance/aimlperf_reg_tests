@@ -38,7 +38,7 @@ The image must be built on your own machine, and the next subsections describe t
 
 Follow the directions described in `../../../repos/README.md` for creating the necessary `.repo` files.
 
-### 2. Exposing the OpenShift Image Registry
+#### 2. Exposing the OpenShift Image Registry
 
 In OpenShift 4.1 (OCP 4.1):
 
