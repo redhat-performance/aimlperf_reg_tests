@@ -32,6 +32,8 @@ To create a custom CUDA image defined by one of the Dockerfiles in the `TensorFl
 
 5. Push the image to the OpenShift registry
 
+6. Setup registry secret so that the custom image can be pulled into an OpenShift build
+
 The image must be built on your own machine, and the next subsections describe the above steps in greater detail.
 
 #### 1. Create .repo Files for CUDA and RHEL 8
@@ -83,6 +85,17 @@ NAME          IMAGE REPOSITORY                                                  
 cuda_rhel8    default-route-openshift-image-registry.<cluster_url>/openshift-image-registry/cuda_rhel8    latest   8 minutes ago
 ```
 
+#### 6. Set up Registry Secret
+
+Set up the registry secret using the same value of `${TOKEN}` as defined in step 3.
+
+```
+$ oc secrets new-dockercfg openshft-image-registry-pull-secret \
+                           --docker-server=image-registry.openshift-image-registry.svc:5000 \
+                           --docker-username=default \
+                           --docker-password=${TOKEN} \
+                           --docker-email=null
+```
 
 ## Volumes
 
