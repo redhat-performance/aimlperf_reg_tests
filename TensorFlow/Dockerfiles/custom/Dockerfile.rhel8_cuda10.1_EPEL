@@ -46,4 +46,4 @@ RUN dnf clean all && \
     rm -rf /var/cache/dnf/*
 
 # Disable CUDA repo (for now). User can re-enable it later if desired.
-RUN dnf config-manager --set-disabled rhel8-Latest.repo
+RUN dnf config-manager --disablerepo cuda
