@@ -56,6 +56,7 @@ To build the image after you've logged into the registry:
 
 ```
 $ cd ../../../
+$ HOST=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')
 $ podman build -f TensorFlow/Dockerfiles/custom/Dockerfile.rhel8_cuda10.1 . --tag ${HOST}/openshift-image-registry/cuda_rhel8
 ```
 
@@ -74,7 +75,6 @@ $ oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":
 
 ```
 $ oc project openshift-image-registry
-$ HOST=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')
 $ TOKEN=$(oc serviceaccounts get-token 'builder')
 $ podman login -u default -p ${TOKEN} --tls-verify=false ${HOST}
 ```
