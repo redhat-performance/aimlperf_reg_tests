@@ -102,10 +102,6 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
     echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg
 
-# Add 'default' user
-RUN groupadd -r default && \
-    useradd --no-log-init -u 1001 -d ${TOPDIR} -g default default
-
 # Set user to 'default'
 USER default
 
