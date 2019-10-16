@@ -47,7 +47,7 @@ Follow the directions described in `../../../repos/README.md` for creating the n
 Enter your registry.redhat.io credentials using:
 
 ```
-podman login -u <your-username> -p <-your-token> registry.redhat.io
+# podman login -u <your-username> -p <-your-token> registry.redhat.io
 ```
 
 #### 3. Use the Podman or Docker CLI to Build the Custom Image
@@ -57,7 +57,7 @@ To build the image after you've logged into the registry:
 ```
 $ cd ../../../
 $ HOST=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')
-$ podman build -f TensorFlow/Dockerfiles/custom/Dockerfile.rhel8_cuda10.1 . --tag ${HOST}/openshift-image-registry/cuda_rhel8
+# podman build -f TensorFlow/Dockerfiles/custom/Dockerfile.rhel8_cuda10.1 . --tag ${HOST}/openshift-image-registry/cuda_rhel8
 ```
 
 #### 4. Exposing the OpenShift Image Registry
@@ -76,7 +76,7 @@ $ oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":
 ```
 $ oc project openshift-image-registry
 $ TOKEN=$(oc serviceaccounts get-token 'builder')
-$ podman login -u default -p ${TOKEN} --tls-verify=false ${HOST}
+# podman login -u default -p ${TOKEN} --tls-verify=false ${HOST}
 ```
 
 Simply replace `podman` with `docker` if you're going to use Docker.
@@ -86,7 +86,7 @@ Simply replace `podman` with `docker` if you're going to use Docker.
 Note: this step may take a while...
 
 ```
-$ podman push ${HOST}/openshift-image-registry/cuda_rhel8 --tls-verify=false
+# podman push ${HOST}/openshift-image-registry/cuda_rhel8 --tls-verify=false
 ```
 
 To confirm the push was successful, you should run `oc get is` and see an output such as:
