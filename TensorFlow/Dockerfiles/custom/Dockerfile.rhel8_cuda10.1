@@ -41,3 +41,7 @@ RUN dnf clean all && \
                    cuda-misc-headers-${CUDA_PACKAGE_VERSION} \
                    libcublas-devel && \
     rm -rf /var/cache/dnf/*
+
+# Disable CUDA and RHEL 8 repos (for now). User can re-enable them later if desired.
+RUN dnf config-manager --set-disabled rhel8-Latest.repo && \
+    dnf config-manager --set-disabled cuda.repo
