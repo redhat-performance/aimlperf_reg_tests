@@ -24,15 +24,17 @@ To create a custom CUDA image defined by one of the Dockerfiles in the `TensorFl
 
 1b. Additionally, create a `.repo` file in the `../../../repos` folder for `rhel8-Appstream-Latest.repo` if using a Dockerfile which installs CUDA toolkit
 
-2. Expose the OpenShift image registry
+2. Log into the redhat.io registry using your credentials. See https://access.redhat.com/RegistryAuthentication for more info.
 
-3. Log into the OpenShift `podman`/`docker` registry
+3. Use the `podman` or `docker` CLI to build the custom image, making sure to tag the image with the OpenShift image registry route
 
-4. Use the `podman` or `docker` CLI to build the custom image, making sure to tag the image with the OpenShift image registry route
+4. Expose the OpenShift image registry
 
-5. Push the image to the OpenShift registry
+5. Log into the OpenShift `podman`/`docker` registry
 
-6. Setup registry secret so that the custom image can be pulled into an OpenShift build
+6. Push the image to the OpenShift registry
+
+7. Setup registry secret so that the custom image can be pulled into an OpenShift build
 
 The image must be built on your own machine, and the next subsections describe the above steps in greater detail.
 
@@ -40,7 +42,24 @@ The image must be built on your own machine, and the next subsections describe t
 
 Follow the directions described in `../../../repos/README.md` for creating the necessary `.repo` files.
 
-#### 2. Exposing the OpenShift Image Registry
+#### 2. Log into the redhat.io Registry
+
+Enter your registry.redhat.io credentials using:
+
+```
+podman login -u <your-username> -p <-your-token> registry.redhat.io
+```
+
+#### 3. Use the Podman or Docker CLI to Build the Custom Image
+
+To build the image after you've logged into the registry:
+
+```
+$ cd ../../../
+$ podman build -f TensorFlow/Dockerfiles/custom/Dockerfile.rhel8_cuda10.1 . --tag ${HOST}/openshift-image-registry/cuda_rhel8
+```
+
+#### 4. Exposing the OpenShift Image Registry
 
 In OpenShift 4.1 (OCP 4.1):
 
@@ -51,7 +70,7 @@ $ oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":
 
 (Source: https://docs.openshift.com/container-platform/4.1/registry/securing-exposing-registry.html)
 
-#### 3. Log into the OpenShift Podman/Docker Registry
+#### 5. Log into the OpenShift Podman/Docker Registry
 
 ```
 $ oc project openshift-image-registry
@@ -62,14 +81,7 @@ $ podman login -u default -p ${TOKEN} --tls-verify=false ${HOST}
 
 Simply replace `podman` with `docker` if you're going to use Docker.
 
-#### 4. Use the Podman or Docker CLI to Build the Custom Image
-
-```
-$ cd ../../../
-$ podman build -f TensorFlow/Dockerfiles/custom/Dockerfile.rhel8_cuda10.1 . --tag ${HOST}/openshift-image-registry/cuda_rhel8
-```
-
-#### 5. Push the Image to the OpenShift Registry
+#### 6. Push the Image to the OpenShift Registry
 
 Note: this step may take a while...
 
@@ -85,7 +97,7 @@ NAME          IMAGE REPOSITORY                                                  
 cuda_rhel8    default-route-openshift-image-registry.<cluster_url>/openshift-image-registry/cuda_rhel8    latest   8 minutes ago
 ```
 
-#### 6. Set up Registry Secret
+#### 7. Set up Registry Secret
 
 Set up the registry secret using the same value of `${TOKEN}` as defined in step 3.
 
