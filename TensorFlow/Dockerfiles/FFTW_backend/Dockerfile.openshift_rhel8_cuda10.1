@@ -60,9 +60,9 @@ EXPOSE 8080
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Disable specific repos *if* they're enabled
-RUN if [[ -f /etc/yum.repos.d/rhel8-Latest.repo ]]; then dnf config-manager --disablerepo=RHEL8-Latest; fi && \
-    if [[ -f /etc/yum.repos.d/rhel8-Appstream-Latest.repo ]]; then dnf config-manager --disablerepo=RHEL8-Appstream-Latest; fi && \
-    if [[ -f /etc/yum.repos.d/cuda ]]; then dnf config-manager --disablerepo=cuda; fi
+RUN if [[ -f /etc/yum.repos.d/rhel8-Latest.repo ]]; then dnf config-manager --set-disabled=rhel8-Latest; fi && \
+    if [[ -f /etc/yum.repos.d/rhel8-Appstream-Latest.repo ]]; then dnf config-manager --set-disabled=rhel8-Appstream-Latest; fi && \
+    if [[ -f /etc/yum.repos.d/cuda ]]; then dnf config-manager --set-disabled=cuda; fi
 
 # Install Ansible
 RUN cd ${TOPDIR} && \
