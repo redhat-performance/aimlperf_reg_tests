@@ -5,7 +5,9 @@
   connection: local
 
   vars:
-    RHEL_VERSION: '{{ rhel_version | default("7") }}'
+    rhel_ver: '{{ rhel_version | default("7") }}'
+    yum_update: '{{ update_yum | default("yes") }}'
+    dnf_update: '{{ update_dnf | default("yes") }}'
 
   tasks:
   # XXX:TODO --> For UBI-7, `yum update` is broken.
@@ -15,7 +17,7 @@
 
   - name: Install EPEL (if using RHEL 7)
     yum: pkg=https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-    when: RHEL_VERSION == "7"
+    when: rhel_ver == "7"
 
   - name: Install yum prereqs (if using RHEL 7)
     yum:
@@ -35,11 +37,11 @@
         - patch
         - yum-utils
       state: present
-    when: RHEL_VERSION == "7"
+    when: rhel_ver == "7"
 
   - name: dnf update (if using RHEL 8)
     dnf: name=* state=latest
-    when: RHEL_VERSION == "8"
+    when: rhel_ver == "8" and dnf_update == "yes"
 
   - name: Install dnf prereqs (if using RHEL 8)
     dnf:
@@ -59,4 +61,4 @@
         - patch
         - yum-utils
       state: present
-    when: RHEL_VERSION == "8"
+    when: rhel_ver == "8"

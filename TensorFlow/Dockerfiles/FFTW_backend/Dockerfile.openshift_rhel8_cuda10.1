@@ -71,7 +71,7 @@ RUN cd ${TOPDIR} && \
 
 # Install FFTW + TensorFlow prerequisites via Ansible and pip3
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8'}" && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8', update_dnf: 'no'}" && \
     cd ${TF_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '8', use_s2i_ubi: 'yes'}" && \
     pip3 install awscli
