@@ -57,7 +57,7 @@ To build the image after you've logged into the registry:
 ```
 $ cd ../../../
 $ HOST=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')
-# podman build -f TensorFlow/Dockerfiles/custom/Dockerfile.rhel8_cuda10.1 . --tag ${HOST}/openshift-image-registry/cuda_rhel8
+# podman build -f TensorFlow/Dockerfiles/custom/Dockerfile.rhel8_cuda10.1_with_toolkit . --tag ${HOST}/openshift-image-registry/cuda:rhel8-with-toolkit
 ```
 
 #### 4. Exposing the OpenShift Image Registry
@@ -93,8 +93,8 @@ To confirm the push was successful, you should run `oc get is` and see an output
 
 ```
 $ oc get is
-NAME          IMAGE REPOSITORY                                                                            TAGS     UPDATED
-cuda_rhel8    default-route-openshift-image-registry.<cluster_url>/openshift-image-registry/cuda_rhel8    latest   8 minutes ago
+NAME    IMAGE REPOSITORY                                                                      TAGS                 UPDATED
+cuda    default-route-openshift-image-registry.<cluster_url>/openshift-image-registry/cuda    rhel8-with-toolkit   8 minutes ago
 ```
 
 #### 7. Set up Registry Secret
