@@ -59,6 +59,11 @@ EXPOSE 8080
 # Set up symbolic linking for Python so that TensorFlow build doesn't fail when s2i script is called
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
+# Disable specific repos *if* they're enabled
+RUN if [[ -f /etc/yum.repos.d/rhel8-Latest.repo ]]; then dnf config-manager --disablerepo=RHEL8-Latest; fi && \
+    if [[ -f /etc/yum.repos.d/rhel8-Appstream-Latest.repo ]]; then dnf config-manager --disablerepo=RHEL8-Appstream-Latest; fi && \
+    if [[ -f /etc/yum.repos.d/cuda ]]; then dnf config-manager --disablerepo=cuda; fi
+
 # Install Ansible
 RUN cd ${TOPDIR} && \
     sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
