@@ -81,25 +81,25 @@ RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
 # allow /.aws to be writeable in case the user wants to use an AWS s3 bucket to download NCCL + cuDNN
 RUN chmod 777 /usr/libexec/s2i/run && \
     chmod g=u /etc/passwd /etc/group && \
-    mkdir -p /.ansible/tmp && \
-    chmod 777 /.ansible/tmp && \
-    chmod 777 /.ansible && \
-    mkdir -p /.cache && \
-    chmod -R 777 /.cache && \
+    mkdir -p ${TOPDIR}/.ansible/tmp && \
+    chmod -R 777 ${TOPDIR}/.ansible && \
+    mkdir -p ${TOPDIR}/.cache && \
+    chmod -R 777 ${TOPDIR}/.cache && \
     chmod 777 ${TOPDIR} && \
-    touch //.gitconfig && \
-    chmod 777 //.gitconfig && \
-    mkdir /.aws && \
+    touch ${TOPDIR}/.gitconfig && \
+    chmod 777 ${TOPDIR}/.gitconfig && \
+    mkdir ${TOPDIR}/.aws && \
     mkdir -p ${TOPDIR}/.cache/bazel && \
     chmod -R 777 ${TOPDIR}/.cache/bazel && \
-    chmod -R 777 /.aws
+    chmod -R 777 ${TOPDIR}/.aws
 
 # Set up symbolic linking for Python so that TensorFlow build doesn't fail when s2i script is called
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Set Ansible remote tmp
 RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
-    echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg
+    echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg && \
+    echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_BENCHMARKS}/ansible.cfg
 
 # Set deviceQuery path
 ENV DEMO_SUITE=/usr/local/cuda/extras/demo_suite
