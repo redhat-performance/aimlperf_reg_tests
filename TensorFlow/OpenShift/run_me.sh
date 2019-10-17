@@ -52,6 +52,9 @@ usage() {
 # Set default GPU usage
 USE_GPU="false"
 
+# Set vars
+templates_path="templates"
+
 options=":h:v:b:t:nr:s:i:a:x:d:pm:l:ug:y:z:c:oj:k:l:q:f"
 while getopts "$options" x
 do
@@ -225,6 +228,14 @@ if [[ ! -z ${INSTANCE_TYPE} ]]; then
             num_gpus=8
         elif [[ "${INSTANCE_TYPE}" == "p2.16xlarge" ]]; then
             num_gpus=16
+	elif [[ "${INSTANCE_TYPE}" == "g3.xlarge" ]]; then
+	    num_gpus=1
+	elif [[ "${INSTANCE_TYPE}" == "g3.4xlarge" ]]; then
+	    num_gpus=1
+	elif [[ "${INSTANCE_TYPE}" == "g3.8xlarge" ]]; then
+	    num_gpus=2
+	elif [[ "${INSTANCE_TYPE}" == "g3.16xlarge" ]]; then
+	    num_gpus=4
         else
             num_gpus=444444
             echo "WARNING: Could not determine number of GPUs. Safety check failed. However, this is not an error and the script can continue running."
@@ -353,71 +364,56 @@ else
     fi
 fi
 
-# Load templates
-if [[ -z ${NFD} ]]; then
-    build_image_template_name_prefix="tensorflow-${BACKEND}-build-image-rhel"
-    build_image_template_filename_prefix="templates/standard/tensorflow-${BACKEND}-buildconfig-rhel"
-    build_job_path="templates/standard/tensorflow-build-job.yaml"
-    build_job_name="tensorflow-build-job"
+# Determine build image template name
+if [[ ! -z ${USE_AVX} ]]; then
+    build_image_template_name="tensorflow-${BACKEND}-${AVX}-build-image-rhel${RHEL_VERSION}"
+elif [[ ! -z ${USE_GPU} ]]; then
+    build_image_template_name="tensorflow-${BACKEND}-build-image-rhel${RHEL_VERSION}-gpu"
 else
-
-    # If the user passed in AVX instructions, then set the template variables to point to the proper AVX templates
-    if [[ ! -z ${AVX} ]]; then
-        build_image_template_name_prefix="tensorflow-${BACKEND}-${AVX}-build-image-rhel"
-        build_image_template_filename_prefix="templates/nfd/instruction_sets/${AVX}/buildconfig/tensorflow-${BACKEND}-nfd-buildconfig-rhel"
-        build_job_path_prefix="templates/nfd/instruction_sets/${AVX}/job"
-
-        # If CPU Manager will be used, then specify the proper name
-        if [[ ! -z ${CPU_MANAGER} ]]; then
-            build_job_path="${build_job_path_prefix}/cpu_manager/tensorflow-nfd-build-job.yaml"
-	    build_job_name="tensorflow-${AVX}-nfd-cpu-manager-build-job"
-        else
-            build_job_path="${build_job_path_prefix}/default/tensorflow-nfd-build-job.yaml"
-	    build_job_name="tensorflow-${AVX}-nfd-build-job"
-        fi
-        
-    # If the user passed in an instance type, then set the template variables to point to the instance type templates
-    else
-        build_image_template_name_prefix="tensorflow-${BACKEND}-build-image-rhel"
-        build_image_template_filename_prefix="templates/nfd/instance/buildconfig/tensorflow-${BACKEND}-buildconfig-rhel"
-        build_job_path_prefix="templates/nfd/instance/job"
-	build_job_name="tensorflow-nfd-build-job"
-
-        # If CPU Manager will be used, then specify the proper name
-        if [[ ! -z ${CPU_MANAGER} ]]; then
-            build_job_path="${build_job_path_prefix}/cpu_manager/tensorflow-nfd-build-job.yaml"
-	    build_job_name="tensorflow-nfd-cpu-manager-build-job"
-        # If GPUs will be used, then specify the proper name
-        elif [[ ${USE_GPU} == "true" ]]; then
-            build_job_path="${build_job_path_prefix}/gpu/tensorflow-nfd-build-job.yaml"
-            build_job_name="tensorflow-nfd-build-job-gpu"
-        else
-            build_job_path="${build_job_path_prefix}/default/tensorflow-nfd-build-job.yaml"
-	    build_job_name="tensorflow-nfd-build-job"
-        fi
-    fi
+    build_image_template_name="tensorflow-${BACKEND}-build-image-rhel${RHEL_VERSION}"
 fi
 
-# If we're using GPUs...
-if [[ ${USE_GPU} == "true" ]]; then
-
-    if [[ ${RHEL_VERSION} == 7 ]]; then
-        build_image_template_name="${build_image_template_name_prefix}7-gpu"
-        build_image_template_file="${build_image_template_filename_prefix}7-gpu.yaml"
-    else
-        build_image_template_name="${build_image_template_name_prefix}8-gpu"
-        build_image_template_file="${build_image_template_filename_prefix}8-gpu.yaml"
-    fi
-
-# If the RHEL version is 7 and we're *not* using GPUs, then set the template name and file to point to the RHEL 7 ones
-elif [[ ${RHEL_VERSION} == 7 ]]; then
-    build_image_template_name="${build_image_template_name_prefix}7"
-    build_image_template_file="${build_image_template_filename_prefix}7.yaml"
-
-# Otherwise, point to the RHEL 8 ones
+# Determine build image template filename
+if [[ ! -z ${USE_AVX} ]]; then
+    build_image_template_file="${templates_path}/nfd/instruction_sets/${AVX}/buildconfig/tensorflow-${BACKEND}-nfd-buildconfig-rhel${RHEL_VERSION}.yaml"
+elif [[ ! -z ${USE_GPU} ]]; then
+    build_image_template_file="${templates_path}/nfd/instance/buildconfig/tensorflow-${BACKEND}-buildconfig-rhel${RHEL_VERSION}-gpu.yaml"
+elif [[ ! -z ${INSTANCE_TYPE} ]]; then
+    build_image_template_file="${templates_path}/nfd/instance/buildconfig/tensorflow-${BACKEND}-buildconfig-rhel${RHEL_VERSION}.yaml"
 else
-    build_image_template_name="${build_image_template_name_prefix}8"
-    build_image_template_file="${build_image_template_filename_prefix}8.yaml"
+    build_image_template_file="${templates_path}/standard/tensorflow-${BACKEND}-buildconfig-rhel${RHEL_VERSION}.yaml"
+fi
+
+# Determine build job template name
+if [[ ! -z ${USE_AVX} ]]; then
+    build_job_name="tensorflow-${AVX}-nfd-build-job"
+elif [[ ! -z ${USE_GPU} ]]; then
+    build_job_name="tensorflow-nfd-build-job-gpu"
+elif [[ ! -z ${CPU_MANAGER} ]]; then
+    build_job_name="tensorflow-nfd-cpu-manager-build-job"
+elif [[ ! -z ${INSTANCE_TYPE} ]]; then
+    build_job_name="tensorflow-nfd-build-job"
+else
+    build_job_name="tensorflow-build-job"
+fi
+
+# Determine build job template filename
+if [[ ! -z ${USE_AVX} ]]; then
+    if [[ ! -z ${CPU_MANAGER} ]]; then
+        build_job_path="${templates_path}/nfd/insruction_sets/${AVX}/job/cpu_manager/tensorflow-nfd-build-job.yaml"
+    else
+        build_job_path="${templates_path}/nfd/instruction_sets/${AVX}/job/default/tensorflow-nfd-build-job.yaml"
+    fi
+elif [[ ! -z ${USE_GPU} ]]; then
+    build_job_path="${templates_path}/nfd/instance/job/gpu/tensorflow-nfd-build-job.yaml"
+elif [[ ! -z ${INSTANCE_TYPE} ]]; then
+    if [[ ! -z ${CPU_MANAGER} ]]; then
+        build_job_path="${templates_path}/nfd/instance/job/cpu_manager/tensorflow-nfd-build-job.yaml"
+    else
+        build_job_path="${templates_path}/nfd/instance/job/default/tensorflow-nfd-build-job.yaml"
+    fi
+else
+    build_job_path="${templates_path}/standard/tensorflow-build-job.yaml"
 fi
 
 # Check if the build template already exists. If it does, delete it and re-create it
@@ -451,7 +447,7 @@ check_existing_builds=$(oc get builds | grep ${build_image_template_name})
 if [[ ! -z $check_existing_builds ]]; then
 oc delete build "${build_image_template_name}-1"
 fi
-if [[ "${NFD}" == "nfd" ]]; then
+if [[ ! -z ${NFD} ]]; then
     if [[ ! -z "${AVX}" ]]; then
         if [[ "${RHEL_VERSION}" == "7" ]]; then
             oc new-app --template="${build_image_template_name}" \
