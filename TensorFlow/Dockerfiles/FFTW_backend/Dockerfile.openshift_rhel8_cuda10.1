@@ -91,7 +91,8 @@ RUN chmod 777 /usr/libexec/s2i/run && \
     mkdir ${TOPDIR}/.aws && \
     mkdir -p ${TOPDIR}/.cache/bazel && \
     chmod -R 777 ${TOPDIR}/.cache/bazel && \
-    chmod -R 777 ${TOPDIR}/.aws
+    chmod -R 777 ${TOPDIR}/.aws && \
+    chmod -R 777 /usr/local/cuda
 
 # Set up symbolic linking for Python so that TensorFlow build doesn't fail when s2i script is called
 RUN ln -s /usr/bin/python3 /usr/bin/python
