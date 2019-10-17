@@ -106,8 +106,8 @@ RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.c
 USER default
 
 # Set home dir
-ENV HOME=${TOP_DIR}
+ENV HOME=${TOPDIR}
 
-WORKDIR ${TOPDIR}
+WORKDIR ${HOME}
 
 CMD ["/usr/libexec/s2i/usage"]
