@@ -340,8 +340,8 @@ if [[ -z ${APP_NAME} ]]; then
         fi
     fi
 fi
-if [[ -z ${OC_REGISTRY} ]]; then
-    OC_REGISTRY=$(oc registry info)
+if [[ -z ${OC_REGISTRY} ]]; then 
+     OC_REGISTRY="image-registry.openshift-image-registry.svc:5000"
 fi
 if [[ -z ${NAMESPACE} ]]; then
     NAMESPACE=$(oc project | cut -d" " -f3 | cut -d'"' -f2)
