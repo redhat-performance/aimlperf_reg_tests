@@ -22,7 +22,7 @@ ENV DNF_TIMEOUT=300
 RUN sed -i "/[main]/a timeout=${DNF_TIMEOUT}" /etc/dnf/dnf.conf
 
 # Set top directory
-ENV TOPDIR=/home
+ENV TOPDIR=${HOME}
 
 # Set playbook paths
 ENV FFTW_PREREQS_PLAYBOOK=${TOPDIR}/playbooks/fftw_package_installation
@@ -89,10 +89,9 @@ RUN chmod 777 /usr/libexec/s2i/run && \
     chmod 777 ${TOPDIR} && \
     touch //.gitconfig && \
     chmod 777 //.gitconfig && \
-    chmod -R 777 /usr/local/cuda && \
     mkdir /.aws && \
-    mkdir -p /home/.cache/bazel && \
-    chmod -R 777 /home/.cache/bazel && \
+    mkdir -p ${TOPDIR}/.cache/bazel && \
+    chmod -R 777 ${TOPDIR}/.cache/bazel && \
     chmod -R 777 /.aws
 
 # Set up symbolic linking for Python so that TensorFlow build doesn't fail when s2i script is called
