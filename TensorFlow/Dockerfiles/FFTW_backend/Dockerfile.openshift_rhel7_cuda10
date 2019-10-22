@@ -4,9 +4,6 @@ ENV LANG=en_US.utf8
 USER root
 ENV BUILDER_VERSION 1.0
 
-# Ansible version
-ENV ANSIBLE_GIT_VERSION=v2.7.14
-
 # RHEL version (for building FFTW)
 ENV RHEL_VERSION=7
 
@@ -47,7 +44,6 @@ RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
     mkdir -p ${TOPDIR}/.cache
 
 # Copy playbooks and scripts
-COPY helper_scripts/Ansible/install_ansible_from_source.sh ${TOPDIR}
 COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
 COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
 COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
@@ -59,16 +55,14 @@ COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
 # Put on port 8080
 EXPOSE 8080
 
-# Disable specific repos *if* they're enabled
-RUN if [[ -f /etc/yum.repos.d/rhel7-Latest.repo ]]; then yum-config-manager --disablerepo rhel7-Latest; fi && \
-    if [[ -f /etc/yum.repos.d/rhel8-Appstream-Latest.repo ]]; then yum-config-manager --disablerepo rhel8-Server-Optional; fi && \
-    if [[ -f /etc/yum.repos.d/cuda.repo ]]; then yum-config-manager --disablerepo cuda; fi && \
-    if [[ -f /etc/yum.repos.d/epel.repo ]]; then yum-config-manager --disablerepo epel; fi
-
-# Install Ansible
-RUN cd ${TOPDIR} && \
-    sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
-    rm install_ansible_from_source.sh
+# Install Ansible, git, pip3, and Python 3.4
+RUN yum -y install yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+    yum -y install ansible \
+                   git \
+                   python34 \
+                   python34-devel \
+                   python34-pip && \
+    rm -rf /var/cache/yum/*
 
 # Install FFTW + TensorFlow prerequisites via Ansible and pip3
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
