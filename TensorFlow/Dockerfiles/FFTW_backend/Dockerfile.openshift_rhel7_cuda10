@@ -59,9 +59,6 @@ COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
 # Put on port 8080
 EXPOSE 8080
 
-# Set up symbolic linking for Python so that TensorFlow build doesn't fail when s2i script is called
-RUN ln -s /usr/bin/python3 /usr/bin/python
-
 # Install Ansible
 COPY helper_scripts/Ansible/install_ansible_from_source.sh ${HOME}
 RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
