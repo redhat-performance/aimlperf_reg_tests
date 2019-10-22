@@ -50,7 +50,7 @@ Once you've created your volume, create a dummy pod that will be used for storin
 
 ```
 $ #cd setup/volumes
-$ sh create_temp_pod.sh <volume_id>
+$ sh create_temp_nvidia_pod.sh <volume_id>
 ```
 
 This will create a temporary pod named `tmp-nvidia-pod`, which you can access by executing:
@@ -80,6 +80,32 @@ The RHEL 8 "ubi8" image has a limited set of packages that can be installed thro
 #### Instructions
 
 To build a custom CUDA image from one of the Dockerfiles provided in `../Dockerfiles/custom`, follow the instructions in the `README.md` file under the `setup` folder in this directory. The image **must** be generated on your own machine because the Dockerfile pulls in the `../../repos/cuda.repo` and `../../repos/rhel8-Latest.repo` files for injecting yum/dnf repos into the image. (For images which attempt to download and install `cuda-toolkit`, you'll also need to create `../../repos/rhel8-Appstream-Latest.repo`.) I designed the Dockerfile this way because the `.repo` files legally cannot be uploaded to the internet without specific permissions. Thus, it is the assumption that you yourself have permissions to supply your own `.repo` files.
+
+## Preparing ImageNet
+
+If you would like to use real ImageNet data, please follow the instructions in **setup/README.md** for ImageNet. This process requires using an EBS volume to 'host' your ImageNet data. It is very similar to the approach of creating a temporary NVIDIA pod for holding NVIDIA packages.
+
+To create an ImageNet EBS volume,
+
+```
+$ cd setup/volumes
+$ sh create_ebs_volume.sh -n <volume_name> -t <volume_type> -s <volume_size> -z <aws_availability_zone>
+```
+
+Once you've created your volume, create a dummy pod that will be used for storing data in the EBS storage via a PV (Persistent Volume):
+
+```
+$ #cd setup/volumes
+$ sh create_temp_imagenet_pod.sh <volume_id>
+```
+
+From here, enter the pod via 
+
+```
+oc exec -it tmp-imagenet-pod -- /bin/bash
+```
+
+...then download/upload your ImageNet data to the mounted volume located at `/tmp/imagenet_ebs`. Delete the pod when you're done, if desired.
 
 ## Basics
 

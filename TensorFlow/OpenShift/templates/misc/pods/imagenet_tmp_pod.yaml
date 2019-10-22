@@ -1,0 +1,31 @@
+# Setup template
+apiVersion: "v1"
+kind: "Template"
+metadata:
+  annotations:
+    description: "Template to make a temporary pod for loading ImageNet data into an EBS"
+    tags: "imagenet-ebs-pod"
+  name: "imagenet-ebs-pod"
+objects:
+
+# The pod itself
+- apiVersion: "v1"
+  kind: "Pod"
+  metadata:
+    name: "tmp-imagenet-pod"
+    labels:
+      name: "tmp-imagenet-pod"
+  spec:
+    containers:
+      - name: "imagenet-tmp"
+        image: "registry.access.redhat.com/ubi8/ubi"
+        imagePullPolicy: "Always"
+        restartPolicy: "Never"
+        volumeMounts:
+          - mountPath: "/tmp/imagenet_ebs"
+            name: "imagenet-pv"
+        command: ["/bin/bash", "-ce", "tail -f /dev/null"]
+    volumes:
+      - name: "imagenet-pv"
+        persistentVolumeClaim:
+          claimName: "imagenet-pvc"

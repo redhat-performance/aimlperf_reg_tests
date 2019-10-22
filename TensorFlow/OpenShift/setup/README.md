@@ -119,4 +119,6 @@ $ oc secrets new-dockercfg openshft-image-registry-pull-secret \
 
 Run `create_ebs_volume.sh` to create an EBS volume. Call `sh create_ebs_volumes.sh -h` for help on how to use the script. 
 
-Once the EBS volume has been created, create a dummy pod that can be used to save data to the EBS volume by using the `create_temp_pod.sh` script. It only takes in one argument -- the **volume ID** generated from the `create_ebs_volumes.sh` script.
+Once the EBS volume has been created, create a dummy pod that can be used to save data to the EBS volume by using the `create_temp_nvidia_pod.sh` script or the `create_temp_imagenet_pod.sh` script. Both scripts only take in one argument -- the **volume ID** generated from the `create_ebs_volumes.sh` script.
+
+*If* one of the PV/PVC creation scripts fails or otherwise hangs, exit out of the script and call `force_pv_and_pvc_deletion.sh`. This script takes in only one argument, either: `nvidia` or `imagenet`. The former argument deletes the existing NVIDIA pv and pvc, while the latter deletes the existing ImageNet pv and pvc.

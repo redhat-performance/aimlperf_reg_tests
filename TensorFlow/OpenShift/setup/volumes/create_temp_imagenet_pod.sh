@@ -5,29 +5,29 @@
 VOLUME_ID=$1
 
 # Set paths to PV, PVC, and pod
-NVIDIA_PV_YAML="../../templates/misc/volumes/PersistentVolume_for_nvidia_packages.yaml"
-NVIDIA_PVC_YAML="../../templates/misc/volumes/PersistentVolumeClaim_for_nvidia_packages.yaml"
-NVIDIA_DUMMY_POD_YAML_FOLDER="../../templates/misc/pods"
+IMAGENET_PV_YAML="../../templates/misc/volumes/PersistentVolume_for_ImageNet.yaml"
+IMAGENET_PVC_YAML="../../templates/misc/volumes/PersistentVolumeClaim_for_ImageNet.yaml"
+IMAGENET_DUMMY_POD_YAML="../../templates/misc/pods/imagenet_tmp_pod.yaml"
 
 # Print out warning
 echo "<< WARNING >> If the deletion of the PV and/or PVC hangs, exit out of this script and call the 'force_pv_and_pvc_deletion.sh' script before running this script again."
 
 # Delete existing PV and PVC
-oc delete -f ${NVIDIA_PV_YAML}
-oc delete -f ${NVIDIA_PVC_YAML}
-oc delete -f ${NVIDIA_DUMMY_POD_YAML_FOLDER}
+oc delete -f ${IMAGENET_PV_YAML}
+oc delete -f ${IMAGENET_PVC_YAML}
+oc delete -f ${IMAGENET_DUMMY_POD_YAML}
 
 # Delete existing pod
-oc delete pod/tmp-nvidia-pod
+oc delete pod/tmp-imagenet-pod
 
-# Replace volume ID in ${NVIDIA_PV}
-sed -i "s/    volumeID.*/    volumeID: \"${VOLUME_ID}\"/g" ${NVIDIA_PV_YAML}
+# Replace volume ID in ${IMAGENET_PV}
+sed -i "s/    volumeID.*/    volumeID: \"${VOLUME_ID}\"/g" ${IMAGENET_PV_YAML}
 
 # Create PV
-oc create -f ${NVIDIA_PV_YAML}
+oc create -f ${IMAGENET_PV_YAML}
 
 # Check status of PV
-echo "<< INFO >> Checking status of PV..."
+echo "<< INFO >> Checking status of ImageNet PV..."
 pv_capacity_check=""
 pv_access_mode_check=""
 pv_bound_check=""
@@ -44,8 +44,8 @@ while [[ -z $pv_capacity_check ]] || [[ -z $pv_access_mode_check ]] || [[ -z $pv
     fi
 
     # Get statuses
-    oc_get_pv=$(oc get pv/nvidia-packages-pv)
-    pv_capacity_check=$(echo $oc_get_pv | grep 50Gi)
+    oc_get_pv=$(oc get pv/imagenet-pv)
+    pv_capacity_check=$(echo $oc_get_pv | grep 100Gi)
     pv_access_mode_check=$(echo $oc_get_pv | grep RWX)
     pv_bound_check=$(echo $oc_get_pv | grep Bound)
     pv_available_check=$(echo $oc_get_pv | grep Available)
@@ -69,14 +69,14 @@ while [[ -z $pv_capacity_check ]] || [[ -z $pv_access_mode_check ]] || [[ -z $pv
     sleep 10
 
 done 
-echo "[${min_count}:${sec_count}] pv/nvidia-packages-pv finished initializing."
+echo "[${min_count}:${sec_count}] pv/imagenet-pv finished initializing."
 echo ""
 
 # Create PVC
-oc create -f ${NVIDIA_PVC_YAML}
+oc create -f ${IMAGENET_PVC_YAML}
 
 # Check status of PVC
-echo "<< INFO >> Now checking status of PVC..."
+echo "<< INFO >> Now checking status of ImageNet PVC..."
 pvc_capacity_check=""
 pvc_access_mode_check=""
 pvc_bound_check=""
@@ -92,8 +92,8 @@ while [[ -z $pvc_capacity_check ]] || [[ -z $pvc_access_mode_check ]] || [[ -z $
     fi
 
     # Get statuses
-    oc_get_pvc=$(oc get pvc/nvidia-packages-pvc)
-    pvc_capacity_check=$(echo $oc_get_pvc | grep 50Gi)
+    oc_get_pvc=$(oc get pvc/imagenet-pvc)
+    pvc_capacity_check=$(echo $oc_get_pvc | grep 100Gi)
     pvc_access_mode_check=$(echo $oc_get_pvc | grep RWX)
     pvc_bound_check=$(echo $oc_get_pvc | grep Bound)
 
@@ -110,9 +110,9 @@ while [[ -z $pvc_capacity_check ]] || [[ -z $pvc_access_mode_check ]] || [[ -z $
     sleep 10
 
 done 
-echo "[${min_count}:${sec_count}] PVC finished initializing. PVC is bound to pvc/nvidia-packages-pvc."
+echo "[${min_count}:${sec_count}] PVC finished initializing. PVC is bound to pvc/imagenet-pvc."
 
 
 # Create pod
-oc create -f ${NVIDIA_DUMMY_POD_YAML_FOLDER}
-oc new-app --template=nvidia-ebs-pod
+oc create -f ${IMAGENET_DUMMY_POD_YAML}
+oc new-app --template=imagenet-ebs-pod
