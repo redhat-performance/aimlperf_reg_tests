@@ -22,7 +22,7 @@ EXPOSE 8080
 
 # Set timeout for yum (in seconds) to prevent Curl timeout errors w/ yum
 ENV YUM_TIMEOUT=300
-RUN sed -i "/[main]/a timeout=${YUM_TIMEOUT}" /etc/yum/yum.conf
+RUN sed -i "/[main]/a timeout=${YUM_TIMEOUT}" /etc/yum.conf
 
 # Set top directory
 ENV TOPDIR=${HOME}
