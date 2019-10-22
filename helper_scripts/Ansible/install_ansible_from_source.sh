@@ -17,9 +17,9 @@ fi
 # If the version of RHEL is 7.x, then install EPEL to install python36. Also install git
 if [[ ${RHEL_VERSION} == 7 ]]; then
     yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-    yum -y install git python34
+    yum -y install git python34 python34-devel
     curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-    python34 get-pip.py
+    python3.4 get-pip.py
     rm get-pip.py
 
 # Else, install python36 via dnf
@@ -43,8 +43,8 @@ fi
 
 # Setup Ansible
 if [[ "${RHEL_VERSION}" == "7" ]]; then
-    python34 setup.py build
-    python34 setup.py install
+    python3.4 setup.py build
+    python3.4 setup.py install
 else
     python3.6 setup.py build
     python3.6 setup.py install
