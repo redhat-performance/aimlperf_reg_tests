@@ -37,6 +37,9 @@
     s3_bucket: '{{ bucket | default("null") }}'
     delete_aws_credentials: '{{ delete_aws_credentials_after_installation | default("no") }}'
 
+    # CUDA version
+    cuda_version: '{{ cuda_ver | default("10.1") }}'
+
   roles:
 
     # Check for NVIDIA (CUDA-capable) GPU

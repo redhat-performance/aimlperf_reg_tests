@@ -59,11 +59,6 @@ COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
 # Put on port 8080
 EXPOSE 8080
 
-# Install Ansible
-COPY helper_scripts/Ansible/install_ansible_from_source.sh ${HOME}
-RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
-    rm install_ansible_from_source.sh
-
 # Disable specific repos *if* they're enabled
 RUN if [[ -f /etc/yum.repos.d/rhel7-Latest.repo ]]; then yum-config-manager --disablerepo rhel7-Latest; fi && \
     if [[ -f /etc/yum.repos.d/rhel8-Appstream-Latest.repo ]]; then yum-config-manager --disablerepo rhel8-Server-Optional; fi && \
