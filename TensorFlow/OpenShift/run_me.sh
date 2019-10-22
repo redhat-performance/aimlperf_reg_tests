@@ -460,18 +460,11 @@ if [[ ! -z ${NFD} ]]; then
                        --param=PULL_SECRET=$SECRET
         fi
     else
-        if [[ "${RHEL_VERSION}" == "7" ]]; then
-            oc new-app --template="${build_image_template_name}" \
-                       --param=IMAGESTREAM_NAME=$IS_NAME \
-                       --param=REGISTRY=$OC_REGISTRY \
-                       --param=INSTANCE_TYPE=$INSTANCE_TYPE
-        else
-            oc new-app --template="${build_image_template_name}" \
-                       --param=IMAGESTREAM_NAME=$IS_NAME \
-                       --param=REGISTRY=$OC_REGISTRY \
-                       --param=INSTANCE_TYPE=$INSTANCE_TYPE \
-                       --param=PULL_SECRET=$SECRET
-        fi
+        oc new-app --template="${build_image_template_name}" \
+                   --param=IMAGESTREAM_NAME=$IS_NAME \
+                   --param=REGISTRY=$OC_REGISTRY \
+                   --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                   --param=PULL_SECRET=$SECRET
     fi
 else
     oc new-app --template="${build_image_template_name}" --param=IMAGESTREAM_NAME=$IS_NAME --param=REGISTRY=$OC_REGISTRY

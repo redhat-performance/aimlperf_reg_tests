@@ -2,7 +2,7 @@ apiVersion: "v1"
 kind: "Template"
 metadata:
   annotations:
-    description: "Template to make a TensorFlow build image with an FFTW NumPy backend"
+    description: "Template to make a TensorFlow build image with an FFTW NumPy backend using RHEL 7"
     tags: "tensorflow-fftw-build-image-rhel7-gpu"
   name: "tensorflow-fftw-build-image-rhel7-gpu"
 objects:
