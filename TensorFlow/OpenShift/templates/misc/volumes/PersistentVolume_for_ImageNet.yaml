@@ -10,6 +10,6 @@ spec:
   accessModes:
     - "ReadWriteMany"
   awsElasticBlockStore:
-    volumeID: "[REPLACE ME]"
+    volumeID: "vol-001c089055e7cbdbe"
     fsType: "xfs"
   storageClassName: "gp2"

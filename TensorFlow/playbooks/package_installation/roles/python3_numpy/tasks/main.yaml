@@ -16,7 +16,7 @@
       - gcc-gfortran
       - lapack
       - make
-      - python36-devel
+      - python34-devel
       - subversion
     install_weak_deps: no
   when: rhel_ver == '7' and s2i_ubi == 'no'
@@ -32,7 +32,7 @@
       - gcc-c++
       - gcc-gfortran
       - make
-      - python36-devel
+      - python34-devel
       - zlib-devel
     install_weak_deps: no
   when: rhel_ver == '7' and s2i_ubi == 'yes'

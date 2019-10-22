@@ -3,7 +3,7 @@
 # Install Python 3
 - name: Install Python 3.x on RHEL 7
   yum:
-    name: python36
+    name: python34
   when: rhel_ver == '7'
 
 - name: Install Python 3.x on RHEL 8
