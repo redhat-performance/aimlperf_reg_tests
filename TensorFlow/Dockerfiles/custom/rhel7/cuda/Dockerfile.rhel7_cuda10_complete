@@ -1,36 +1,37 @@
-# This image is based on https://gitlab.com/nvidia/container-images/cuda/blob/master/dist/ubi8/10.1/base/Dockerfile
-FROM registry.redhat.io/rhel8/s2i-core
+# This Dockerfile is based upon: https://gitlab.com/nvidia/container-images/cuda/blob/master/dist/ubi7/10.0/base/Dockerfile
+FROM registry.redhat.io/ubi7/s2i-core
 MAINTAINER "Courtney Pacheco <cpacheco@redhat.com>"
 
 # Set NVIDIA environment vars
-ENV CUDA_PACKAGE_VERSION=10-1
+ENV CUDA_PACKAGE_VERSION=10-0
 ENV CUDA_TOOLKIT_PATH=/usr/local/cuda
 
 #<!-- taken from NVIDIA's Dockerfile -->
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
-ENV NVIDIA_REQUIRE_CUDA="cuda>=10.1 brand=tesla,driver>=384,driver<385 brand=tesla,driver>=396,driver<397 brand=tesla,driver>=410,driver<411"
+ENV NVIDIA_REQUIRE_CUDA "cuda>=10.0 brand=tesla,driver>=384,driver<385 brand=tesla,driver>=410,driver<411"
 #<!-- end -->
 
 # Set PATH vars
 #<!-- taken from NVIDIA's Dockerfile -->
-ENV PATH=/usr/local/nvidia/bin:${CUDA_TOOLKIT_PATH}/bin:${PATH}
+ENV PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
 ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64
 #<!-- end -->
 
-# Copy user's 'rhel8-Latest.repo'
-COPY repos/rhel8-Latest.repo /etc/yum.repos.d/rhel8-Latest.repo
+# Copy user's 'rhel7-Latest.repo'
+COPY repos/rhel7-Latest.repo /etc/yum.repos.d/rhel7-Latest.repo
 
-# Copy user's 'rhel8-Appstream-Latest.repo'
-COPY repos/rhel8-Appstream-Latest.repo /etc/yum.repos.d/rhel8-Appstream-Latest.repo
+# Copy user's 'rhel7-Server-Optional.repo'
+COPY repos/rhel7-Server-Optional.repo /etc/yum.repos.d/rhel7-Server-Optional.repo
 
 # Copy 'cuda repo'
-COPY repos/cuda.repo /etc/yum.repos.d/cuda.repo
+COPY repos/rhel7-cuda.repo /etc/yum.repos.d/cuda.repo
 
-# Install CUDA packages and dependencies
-RUN dnf clean all && \
-    dnf -y install cuda-cudart-${CUDA_PACKAGE_VERSION} \
-                   cuda-compat-${CUDA_PACKAGE_VERSION} \
+# Install CUDA packages
+RUN yum clean all && \
+    yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+    yum -y install cuda-${CUDA_PACKAGE_VERSION} \
+                   cuda-cudart-${CUDA_PACKAGE_VERSION} \
                    cuda-core-${CUDA_PACKAGE_VERSION} \
                    cuda-cudart-dev-${CUDA_PACKAGE_VERSION} \
                    cuda-cufft-${CUDA_PACKAGE_VERSION} \
@@ -43,14 +44,13 @@ RUN dnf clean all && \
                    cuda-cusparse-${CUDA_PACKAGE_VERSION} \
                    cuda-cusparse-dev-${CUDA_PACKAGE_VERSION} \
                    cuda-misc-headers-${CUDA_PACKAGE_VERSION} \
-                   libcublas-devel \
-                   cuda-toolkit-${CUDA_PACKAGE_VERSION} && \
-    rm -rf /var/cache/dnf/*
+                   libcublas-devel && \
+    rm -rf /var/cache/yum/*
 
-# Disable CUDA and RHEL 8 repos (for now). User can re-enable them later if desired.
-RUN dnf config-manager --set-disabled rhel8-Latest && \
-    dnf config-manager --set-disabled rhel8-Appstream-Latest && \
-    dnf config-manager --set-disabled cuda
+# Disable CUDA and RHEL 7 repos (for now). User can re-enable them later if desired.
+RUN yum-config-manager --disablerepo rhel7-Latest && \
+    yum-config-manager --disablerepo rhel7-Server-Optional && \
+    yum-config-manager --disablerepo cuda
 
 # Create 3rd party packages directory
 ENV THIRD_PARTY_PKGS_DIR=${HOME}/3rd_party_pkgs
@@ -58,7 +58,7 @@ RUN mkdir -p ${THIRD_PARTY_PKGS_DIR}/cudnn && \
     mkdir -p ${THIRD_PARTY_PKGS_DIR}/nccl
 
 # Pull in cuDNN
-COPY gpu_packages/cudnn.tgz ${THIRD_PARTY_PKGS_DIR}/cudnn/cudnn.tgz
+COPY gpu_packages/cudnn-cuda-10.0.tgz ${THIRD_PARTY_PKGS_DIR}/cudnn/cudnn.tgz
 RUN cd ${THIRD_PARTY_PKGS_DIR}/cudnn && \
     tar xvf cudnn.tgz --strip-components=1 && \
     cp include/cudnn.h ${CUDA_TOOLKIT_PATH}/include/cudnn.h && \
@@ -66,7 +66,7 @@ RUN cd ${THIRD_PARTY_PKGS_DIR}/cudnn && \
     rm -rf cudnn.tgz
 
 # Pull in NCCL
-COPY gpu_packages/nccl.txz ${THIRD_PARTY_PKGS_DIR}/nccl/nccl.txz
+COPY gpu_packages/nccl-cuda-10.0.txz ${THIRD_PARTY_PKGS_DIR}/nccl/nccl.txz
 RUN cd ${THIRD_PARTY_PKGS_DIR}/nccl && \
     tar xJf nccl.txz --strip-components=1 && \
     rm -rf nccl.txz

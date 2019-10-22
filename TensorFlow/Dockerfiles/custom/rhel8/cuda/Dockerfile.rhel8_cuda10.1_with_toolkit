@@ -17,16 +17,16 @@ ENV PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
 ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64
 #<!-- end -->
 
-# Install EPEL
-RUN dnf clean all && \
-    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
-    dnf -y update && \
-    rm -rf /var/cache/dnf
+# Copy user's 'rhel8-Latest.repo'
+COPY repos/rhel8-Latest.repo /etc/yum.repos.d/rhel8-Latest.repo
+
+# Copy user's 'rhel8-Appstream-Latest.repo'
+COPY repos/rhel8-Appstream-Latest.repo /etc/yum.repos.d/rhel8-Appstream-Latest.repo
 
 # Copy 'cuda repo'
-COPY repos/cuda.repo /etc/yum.repos.d/cuda.repo
+COPY repos/rhel8-cuda.repo /etc/yum.repos.d/cuda.repo
 
-# Install CUDA packages
+# Install CUDA packages and dependencies
 RUN dnf clean all && \
     dnf -y install cuda-cudart-${CUDA_PACKAGE_VERSION} \
                    cuda-compat-${CUDA_PACKAGE_VERSION} \
@@ -42,8 +42,11 @@ RUN dnf clean all && \
                    cuda-cusparse-${CUDA_PACKAGE_VERSION} \
                    cuda-cusparse-dev-${CUDA_PACKAGE_VERSION} \
                    cuda-misc-headers-${CUDA_PACKAGE_VERSION} \
-                   libcublas-devel && \
+                   libcublas-devel \
+                   cuda-toolkit-${CUDA_PACKAGE_VERSION} && \
     rm -rf /var/cache/dnf/*
 
-# Disable CUDA repo (for now). User can re-enable it later if desired.
-RUN dnf config-manager --disablerepo cuda
+# Disable CUDA and RHEL 8 repos (for now). User can re-enable them later if desired.
+RUN dnf config-manager --disablerepo RHEL8-Latest && \
+    dnf config-manager --disablerepo RHEL8-Appstream-Latest && \
+    dnf config-manager --disablerepo cuda

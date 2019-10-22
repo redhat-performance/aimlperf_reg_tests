@@ -20,9 +20,9 @@ Run `add_registry_secret.sh` to add your redhat.io registry secret to OpenShift.
 
 To create a custom CUDA image defined by one of the Dockerfiles in the `TensorFlow/Dockerfiles/custom` folder, you will need to have added your registry.redhat.io secret to Podman/Docker and do the following:
 
-1a. Create `.repo` files in the `../../../repos` folder for `cuda.repo` and `rhel8-Latest.repo`
+1a. Create `.repo` files in the `../../../repos` folder for `cuda.repo` and `rhelx-Latest.repo` (replacing `rhelx` with either `rhel7` or `rhel8`).
 
-1b. Additionally, create a `.repo` file in the `../../../repos` folder for `rhel8-Appstream-Latest.repo` if using a Dockerfile which installs CUDA toolkit
+1b. Additionally, create a `.repo` file in the `../../../repos` folder for `rhelx-Appstream-Latest.repo` if using a Dockerfile which installs CUDA toolkit
 
 2. Log into the redhat.io registry using your credentials. See https://access.redhat.com/RegistryAuthentication for more info.
 
@@ -52,12 +52,18 @@ Enter your registry.redhat.io credentials using:
 
 #### 3. Use the Podman or Docker CLI to Build the Custom Image
 
-To build the image after you've logged into the registry:
+To build a RHEL 8 CUDA image after you've logged into the registry, you'll need to grab the OpenShift Image Registry public URL, then choose a Dockerfile from `TensorFlow/Dockerfiles/custom/rhel8/cuda`. For example,
 
 ```
 $ cd ../../../
 $ HOST=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')
-# podman build -f TensorFlow/Dockerfiles/custom/Dockerfile.rhel8_cuda10.1_with_toolkit . --tag ${HOST}/openshift-image-registry/cuda:rhel8-with-toolkit
+# podman build -f TensorFlow/Dockerfiles/custom/rhel8/cuda/Dockerfile.rhel8_cuda10.1_with_toolkit . --tag ${HOST}/openshift-image-registry/cuda:rhel8-with-toolkit
+```
+
+For a RHEL 7 CUDA image instead, choose a Dockerfile from `TensorFlow/Dockerfiles/custom/rhel7/cuda`. For example,
+
+```
+# podman build -f TensorFlow/Dockerfiles/custom/rhel7/cuda/Dockerfile.rhel7_cuda10.0_complete . --tag ${HOST}/openshift-image-registry/cuda:rhel7-complete
 ```
 
 #### 4. Exposing the OpenShift Image Registry
