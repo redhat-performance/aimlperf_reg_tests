@@ -10,9 +10,6 @@ ENV RHEL_VERSION=7
 # Python version
 ENV PYTHON_VERSION=3.6.9
 
-# Python path
-ENV PYTHONPATH=/usr/local/lib/python3.6
-
 # Ansible version
 ENV ANSIBLE_VERSION=v2.8.6
 
