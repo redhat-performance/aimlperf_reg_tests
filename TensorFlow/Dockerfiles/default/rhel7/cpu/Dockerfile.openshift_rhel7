@@ -1,0 +1,103 @@
+FROM registry.redhat.io/ubi7/s2i-core
+MAINTAINER Courtney Pacheco <cpacheco@redhat.com>
+ENV LANG=en_US.utf8
+USER root
+ENV BUILDER_VERSION 1.0
+
+# RHEL version (for building FFTW)
+ENV RHEL_VERSION=7
+
+# Python version
+ENV PYTHON_VERSION=3.6.9
+
+# Python path
+ENV PYTHONPATH=/usr/local/lib/python3.6
+
+# Ansible version
+ENV ANSIBLE_VERSION=v2.8.6
+
+# Set up labels
+LABEL io.openshift.s2i.scripts-url="image:///usr/libexec/s2i"
+LABEL io.openshift.expose-services="8080:http"
+
+# Put on port 8080
+EXPOSE 8080
+
+# Set timeout for yum (in seconds) to prevent Curl timeout errors w/ yum
+ENV YUM_TIMEOUT=300
+RUN sed -i "/[main]/a timeout=${YUM_TIMEOUT}" /etc/yum.conf
+
+# Set top directory
+ENV TOPDIR=${HOME}
+
+# Set playbook paths
+ENV TENSORFLOW_BENCHMARKS=${TOPDIR}/playbooks/TensorFlow_benchmarks
+
+# Create folders for playbooks and folder for playbooks cache
+RUN mkdir -p ${TENSORFLOW_BENCHMARKS} && \
+    mkdir -p ${TOPDIR}/.cache
+
+# Copy playbooks and scripts
+COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
+
+# Put on port 8080
+EXPOSE 8080
+
+# Install Python version ${PYTHON_VERSION}
+RUN yum -y install gcc \
+                   make \
+                   openssl-devel \
+                   wget \
+                   zlib-devel && \
+    cd /tmp && \
+    wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
+    tar xvf Python-${PYTHON_VERSION}.tgz && \
+    cd Python-${PYTHON_VERSION} && \
+    ./configure --enable-optimizations && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf Python-${PYTHON_VERSION} && \
+    rm -rf Python-${PYTHON_VERSION}.tgz && \
+    rm -rf /var/cache/yum/*
+
+# Install Ansible
+RUN yum -y install git && \
+    cd /tmp && \
+    git clone https://github.com/ansible/ansible.git && \
+    cd ansible && \
+    git checkout tags/${ANSIBLE_VERSION} && \
+    pip3 install -r requirements.txt && \
+    pip3 install packaging && \
+    sed -i "s/PYTHON=python/PYTHON=python3/g" Makefile && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf ansible
+
+# Create and give user permissions to modify certain directories that are required to run the Ansible
+# playbooks that are being pulled into this Dockerfile. Also allow /usr/local/cuda to be writable and
+# allow /.aws to be writeable in case the user wants to use an AWS s3 bucket to download NCCL + cuDNN
+RUN chmod 777 /usr/libexec/s2i/run && \
+    chmod g=u /etc/passwd /etc/group && \
+    mkdir -p ${TOPDIR}/.ansible/tmp && \
+    chmod -R 777 ${TOPDIR}/.ansible && \
+    mkdir -p ${TOPDIR}/.cache && \
+    chmod -R 777 ${TOPDIR}/.cache && \
+    chmod 777 ${TOPDIR} && \
+    touch ${TOPDIR}/.gitconfig && \
+    chmod 777 ${TOPDIR}/.gitconfig && \
+    mkdir ${TOPDIR}/.aws && \
+    mkdir -p ${TOPDIR}/.cache/bazel && \
+    chmod -R 777 ${TOPDIR}/.cache/bazel && \
+    chmod -R 777 ${TOPDIR}/.aws && \
+    chmod -R 777 /usr/local/cuda
+
+# Install TensorFlow GPU
+RUN pip3 install tensorflow==2.0
+
+# Set Ansible remote tmp
+RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_BENCHMARKS}/ansible.cfg
+
+# Set user to 'default'
+USER default
