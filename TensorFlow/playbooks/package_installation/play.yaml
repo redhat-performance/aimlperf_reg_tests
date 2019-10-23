@@ -14,14 +14,14 @@
 
   roles:
 
-    # Install python36
-    - role: rhel_python36
+    # Install python3
+    - role: rhel_python3
 
     # Install pip
-    - role: python36_pip
+    - role: python3_pip
 
     # Install NumPy prereqs
-    - role: python36_numpy
+    - role: python3_numpy
 
     # Install Bazel
     - role: bazel
