@@ -7,6 +7,15 @@ ENV BUILDER_VERSION 1.0
 # RHEL version (for building FFTW)
 ENV RHEL_VERSION=7
 
+# Python version
+ENV PYTHON_VERSION=3.6.9
+
+# Python path
+ENV PYTHONPATH=/usr/local/lib/python3.6
+
+# Ansible version
+ENV ANSIBLE_VERSION=v2.8.6
+
 # Set up labels
 LABEL io.openshift.s2i.scripts-url="image:///usr/libexec/s2i"
 LABEL io.openshift.expose-services="8080:http"
@@ -55,15 +64,36 @@ COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
 # Put on port 8080
 EXPOSE 8080
 
-# Install Ansible, git, pip34, and Python 3.4. Then symlink /usr/bin/pip3.4 to /usr/bin/pip3
-RUN yum -y install yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-    yum -y install ansible \
-                   git \
-                   python34 \
-                   python34-devel \
-                   python34-pip && \
-    rm -rf /var/cache/yum/* && \
-    ln -s /usr/bin/pip3.4 /usr/bin/pip3
+# Install Python version ${PYTHON_VERSION}
+RUN yum -y install gcc \
+                   make \
+                   openssl-devel \
+                   wget \
+                   zlib-devel && \
+    cd /tmp && \
+    wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
+    tar xvf Python-${PYTHON_VERSION}.tgz && \
+    cd Python-${PYTHON_VERSION} && \
+    ./configure --enable-optimizations && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf Python-${PYTHON_VERSION} && \
+    rm -rf Python-${PYTHON_VERSION}.tgz && \
+    rm -rf /var/cache/yum/*
+
+# Install Ansible
+RUN yum -y install git && \
+    cd /tmp && \
+    git clone https://github.com/ansible/ansible.git && \
+    cd ansible && \
+    git checkout tags/${ANSIBLE_VERSION} && \
+    pip3 install -r requirements.txt && \
+    pip3 install packaging && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf ansible
 
 # Install FFTW + TensorFlow prerequisites via Ansible and pip3
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
