@@ -63,7 +63,7 @@ RUN yum -y install yum install https://dl.fedoraproject.org/pub/epel/epel-releas
                    python34-devel \
                    python34-pip && \
     rm -rf /var/cache/yum/* && \
-    ln -s /usr/bin/pip3 /usr/bin/pip3.4
+    ln -s /usr/bin/pip3.4 /usr/bin/pip3
 
 # Install FFTW + TensorFlow prerequisites via Ansible and pip3
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
