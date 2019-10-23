@@ -3,40 +3,41 @@
 ###################################
 #         Install package         #
 ###################################
-- make:
-    chdir: '{{ BUILD_DIR }}/FFTW'
+- name: Install FFTW
+  make:
+    chdir: '{{ build_dir }}/FFTW'
     target: install
     params:
-      DESTDIR: '{{ INSTALL_DIR }}'
+      destdir: '{{ install_dir }}'
 
 ###################################
 #   Prepare for reorganization    #
 ###################################
 - find:
-    paths: '{{ INSTALL_DIR }}/usr/local/include'
+    paths: '{{ install_dir }}/usr/local/include'
     patterns: '*.h'
   register: find_headers
 
 - name: Reorganize header files location
-  command: mv '{{ item["path"] }}' '{{ INSTALL_DIR }}/include'
+  command: mv '{{ item["path"] }}' '{{ install_dir }}/include'
   with_items: '{{ find_headers["files"] }}'
 
 - find:
-    paths: '{{ INSTALL_DIR }}/usr/local/lib'
+    paths: '{{ install_dir }}/usr/local/lib'
     patterns: '*.so*'
   register: find_libs_so_versioned
 
 - find:
-    paths: '{{ INSTALL_DIR }}/usr/local/lib'
+    paths: '{{ install_dir }}/usr/local/lib'
     patterns: '*.a'
   register: find_libs_a
 
 - name: Reorganize shared object libs location
-  command: mv '{{ item["path"] }}' '{{ INSTALL_DIR }}/lib'
+  command: mv '{{ item["path"] }}' '{{ install_dir }}/lib'
   with_items: '{{ find_libs_so_versioned["files"] }}'
 
 - name: Reorganize static object libs location
-  command: mv '{{ item["path"] }}' '{{ INSTALL_DIR }}/lib'
+  command: mv '{{ item["path"] }}' '{{ install_dir }}/lib'
   with_items: '{{ find_libs_a["files"] }}'
 
 ###################################
@@ -44,57 +45,57 @@
 ###################################
 - block:
   - name: RHEL 7 --> Reorganize symlink for libfftw.so
-    command: mv '{{ INSTALL_DIR }}/usr/local/lib/libfftw.so' '{{ INSTALL_DIR }}/lib'
+    command: mv '{{ install_dir }}/usr/local/lib/libfftw.so' '{{ install_dir }}/lib'
 
   - name: RHEL 7 --> Reorganize symlink for librfftw.so
-    command: mv '{{ INSTALL_DIR }}/usr/local/lib/librfftw.so' '{{ INSTALL_DIR }}/lib'
+    command: mv '{{ install_dir }}/usr/local/lib/librfftw.so' '{{ install_dir }}/lib'
 
   - name: RHEL 7 --> Reorganize symlink for libfftw.so.2
-    command: mv '{{ INSTALL_DIR }}/usr/local/lib/libfftw.so.2' '{{ INSTALL_DIR }}/lib'
+    command: mv '{{ install_dir }}/usr/local/lib/libfftw.so.2' '{{ install_dir }}/lib'
 
   - name: RHEL 7 --> Reorganize symlink for librfftw.so.2
-    command: mv '{{ INSTALL_DIR }}/usr/local/lib/librfftw.so.2' '{{ INSTALL_DIR }}/lib'
+    command: mv '{{ install_dir }}/usr/local/lib/librfftw.so.2' '{{ install_dir }}/lib'
 
   - name: RHEL 7 --> Reorganize symlink for libfftw_threads.so
-    command: mv '{{ INSTALL_DIR }}/usr/local/lib/libfftw_threads.so' '{{ INSTALL_DIR }}/lib'
+    command: mv '{{ install_dir }}/usr/local/lib/libfftw_threads.so' '{{ install_dir }}/lib'
 
   - name: RHEL 7 --> Reorganize symlink for librfftw_threads.so
-    command: mv '{{ INSTALL_DIR }}/usr/local/lib/librfftw_threads.so' '{{ INSTALL_DIR }}/lib'
+    command: mv '{{ install_dir }}/usr/local/lib/librfftw_threads.so' '{{ install_dir }}/lib'
 
   - name: RHEL 7 --> Reorganize symlink for libfftw_threads.so.2
-    command: mv '{{ INSTALL_DIR }}/usr/local/lib/libfftw_threads.so.2' '{{ INSTALL_DIR }}/lib'
+    command: mv '{{ install_dir }}/usr/local/lib/libfftw_threads.so.2' '{{ install_dir }}/lib'
 
   - name: RHEL 7 --> Reorganize symlink for librfftw_threads.so.2
-    command: mv '{{ INSTALL_DIR }}/usr/local/lib/librfftw_threads.so.2' '{{ INSTALL_DIR }}/lib'
+    command: mv '{{ install_dir }}/usr/local/lib/librfftw_threads.so.2' '{{ install_dir }}/lib'
 
-  when: RHEL_VERSION == '7'
+  when: rhel_ver == '7'
 
 ###################################
 #         For RHEL 8 only         #
 ###################################
 - block:
   - name: RHEL 8 --> Reorganize symlink for libfftw3.so.3
-    command: mv '{{ INSTALL_DIR }}/usr/local/lib/libfftw3.so.3' '{{ INSTALL_DIR }}/lib'
+    command: mv '{{ install_dir }}/usr/local/lib/libfftw3.so.3' '{{ install_dir }}/lib'
 
   - name: RHEL 8 --> Reorganize symlink for libfftw3_threads.so
-    command: mv '{{ INSTALL_DIR }}/usr/local/lib/libfftw3_threads.so' '{{ INSTALL_DIR }}/lib'
+    command: mv '{{ install_dir }}/usr/local/lib/libfftw3_threads.so' '{{ install_dir }}/lib'
 
   - name: RHEL 8 --> Reorganize symlink for libfftw3_threads.so.3
-    command: mv '{{ INSTALL_DIR }}/usr/local/lib/libfftw3_threads.so.3' '{{ INSTALL_DIR }}/lib'
+    command: mv '{{ install_dir }}/usr/local/lib/libfftw3_threads.so.3' '{{ install_dir }}/lib'
 
   - name: RHEL 8 --> Add symlink to create 'libfftw3.so'
     file:
       state: link
-      src: '{{ INSTALL_DIR }}/lib/libfftw3.so.3'
-      dest: '{{ INSTALL_DIR }}/lib/libfftw3.so'
+      src: '{{ install_dir }}/lib/libfftw3.so.3'
+      dest: '{{ install_dir }}/lib/libfftw3.so'
 
-  when: RHEL_VERSION == '8'
+  when: rhel_ver == '8'
 
 
 ###################################
 #            Clean up             #
 ###################################
-- name: Remove {{ INSTALL_DIR }}/usr
+- name: Remove {{ install_dir }}/usr
   file:
-    path: '{{ INSTALL_DIR }}/usr'
+    path: '{{ install_dir }}/usr'
     state: absent

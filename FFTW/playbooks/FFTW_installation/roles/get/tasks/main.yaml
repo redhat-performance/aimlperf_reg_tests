@@ -6,18 +6,18 @@
 #                    RHEL 7                    #
 ################################################
 - block:
-  - name: If using RHEL 7, get FFTW2 source rpm
+  - name: If using RHEL 7 and non-s2i/non-ubi, get FFTW2 source rpm
     shell: |
-      cd {{ BUILD_DIR }}
+      cd {{ build_dir }}
       yumdownloader --source fftw2
 
-  - name: Unpack source rpm and place the spec file in '{{ BUILD_DIR }}'
+  - name: Unpack source rpm and place the spec file in {{ build_dir }}
     shell: |
-      cd {{ BUILD_DIR }}
+      cd {{ build_dir }}
       rpm2cpio fftw*.rpm | cpio -civ '*.spec'
 
   - find:
-      paths: '{{ BUILD_DIR }}'
+      paths: '{{ build_dir }}'
       patterns: '*.rpm'
     register: find_output
 
@@ -28,7 +28,7 @@
     with_items: '{{ find_output["files"] }}'
 
   - name: If using RHEL 7, get FFTW2 version specified in the spec file
-    shell: cd {{ BUILD_DIR }} && cat fftw2.spec | grep "Version:" | rev | cut -d " " -f 1 | rev
+    shell: cd {{ build_dir }} && cat fftw2.spec | grep "Version:" | rev | cut -d " " -f 1 | rev
     register: fftw2_version
 
   - name: For RHEL 7 only -- FFTW2 version
@@ -39,32 +39,32 @@
   - name: For RHEL 7, get FFTW2 from fftw.org
     unarchive:
       src: 'http://fftw.org/fftw-{{ fftw2_version.stdout }}.tar.gz'
-      dest: '{{ BUILD_DIR }}'
+      dest: '{{ build_dir }}'
       remote_src: yes
 
   - name: If using RHEL 7, Remove FFTW2 spec file
     file:
       state: absent
-      path: '{{ BUILD_DIR }}/fftw2.spec'
+      path: '{{ build_dir }}/fftw2.spec'
 
   - name: Rename fftw-2.x.y to FFTW
-    command: mv {{ BUILD_DIR }}/fftw-{{ fftw2_version.stdout }} {{ BUILD_DIR }}/FFTW
+    command: mv {{ build_dir }}/fftw-{{ fftw2_version.stdout }} {{ build_dir }}/FFTW
 
-  when: RHEL_VERSION == "7"
+  when: rhel_ver == "7" and ubi == "no" and s2i == "no"
 
 ################################################
-#                    RHEL 8                    #
+#                 RHEL 8 / ubi7                #
 ################################################
 - block:
 
   # Grab FFTW3 sources
-  - name: For RHEL 8, get FFTW3 from fftw.org
+  - name: For RHEL 8 and ubi7 builds, get FFTW3 from fftw.org
     unarchive:
-      src: 'http://fftw.org/fftw-{{ FFTW3_VERSION }}.tar.gz'
-      dest: '{{ BUILD_DIR }}'
+      src: 'http://fftw.org/fftw-{{ fftw3_version }}.tar.gz'
+      dest: '{{ build_dir }}'
       remote_src: yes
 
-  - name: Rename fftw-{{ FFTW3_VERSION }} to FFTW
-    command: mv {{ BUILD_DIR }}/fftw-{{ FFTW3_VERSION }} {{ BUILD_DIR }}/FFTW
+  - name: Rename fftw-{{ fftw3_ver }} to FFTW
+    command: mv {{ build_dir }}/fftw-{{ fftw3_ver }} {{ build_dir }}/FFTW
 
-  when: RHEL_VERSION == "8"
+  when: rhel_ver == "8" or (rhel_ver == "7" and s2i == "yes") or (rhel_ver == "7" and ubi == "yes")

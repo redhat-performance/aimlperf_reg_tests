@@ -95,7 +95,7 @@ RUN yum -y install git && \
 
 # Install FFTW + TensorFlow prerequisites via Ansible and pip3
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
-    PYTHONPATH=/usr/lib/python2.7 ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', update_yum: 'no', ansible_python_interpreter: '/usr/bin/python2.7'}" && \
+    PYTHONPATH=/usr/lib/python2.7 ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', use_ubi: 'yes', update_yum: 'no', ansible_python_interpreter: '/usr/bin/python2.7'}" && \
     cd ${TF_PREREQS_PLAYBOOK} && \
     PYTHONPATH=/usr/lib/python2.7 ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', use_s2i_ubi: 'yes', ansible_python_interpreter: '/usr/bin/python2.7'}" && \
     pip3 install awscli

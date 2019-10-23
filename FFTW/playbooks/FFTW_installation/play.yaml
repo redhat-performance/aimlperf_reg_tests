@@ -5,11 +5,25 @@
 
   # Set global vars
   vars:
-    BUILD_DIR: '{{ build_dir | default("${HOME}/build") }}'
-    INSTALL_DIR: '{{ install_dir | default("${HOME}/custom_fftw") }}'
-    RHEL_VERSION: '{{ rhel_version | default("7") }}'
-    CC: '{{ cc | default("/usr/bin/gcc") }}'
-    FFTW3_VERSION: '{{ fftw3_version | default("3.3.8") }}'
+
+    # FFTW build directory
+    build_dir: '{{ build_dir | default("${HOME}/build") }}'
+
+    # FFTW install directory
+    install_dir: '{{ install_dir | default("${HOME}/custom_fftw") }}'
+
+    # RHEL version
+    rhel_ver: '{{ rhel_version | default("7") }}'
+
+    # GCC path
+    gcc: '{{ cc | default("/usr/bin/gcc") }}'
+
+    # Version of FFTW3
+    fftw3_ver: '{{ fftw3_version | default("3.3.8") }}'
+
+    # Use s2i or ubi?
+    ubi: '{{ use_ubi | default("no") }}'
+    s2i: '{{ use_s2i | default("no") }}'
 
   roles:
     # Creates necessary directories for building and installing FFTW

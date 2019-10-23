@@ -2,30 +2,30 @@
 
 - name: Remove build dir if it exists
   file:
-    path: '{{ BUILD_DIR }}'
+    path: '{{ build_dir }}'
     state: absent
 
 - name: Setup build dir
   file:
-    path: '{{ BUILD_DIR }}'
+    path: '{{ build_dir }}'
     state: directory
 
 - name: Remove install dir if it exists
   file:
-    path: '{{ INSTALL_DIR }}'
+    path: '{{ install_dir }}'
     state: absent
 
 - name: Setup install dir
   file:
-    path: '{{ INSTALL_DIR }}'
+    path: '{{ install_dir }}'
     state: directory
 
 - name: Setup 'include' folder under install dir
   file:
-    path: '{{ INSTALL_DIR }}/include'
+    path: '{{ install_dir }}/include'
     state: directory
 
 - name: Setup 'lib' folder under install dir
   file:
-    path: '{{ INSTALL_DIR }}/lib'
+    path: '{{ install_dir }}/lib'
     state: directory
