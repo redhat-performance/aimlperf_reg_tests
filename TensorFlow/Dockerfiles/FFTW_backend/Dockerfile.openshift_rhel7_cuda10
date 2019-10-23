@@ -55,7 +55,7 @@ COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
 # Put on port 8080
 EXPOSE 8080
 
-# Install Ansible, git, pip34, and Python 3.4. Then symlink /usr/bin/pip34 to /usr/bin/pip3
+# Install Ansible, git, pip34, and Python 3.4. Then symlink /usr/bin/pip3.4 to /usr/bin/pip3
 RUN yum -y install yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
     yum -y install ansible \
                    git \
@@ -63,7 +63,7 @@ RUN yum -y install yum install https://dl.fedoraproject.org/pub/epel/epel-releas
                    python34-devel \
                    python34-pip && \
     rm -rf /var/cache/yum/* && \
-    ln -s /usr/bin/pip3 /usr/bin/pip34
+    ln -s /usr/bin/pip3 /usr/bin/pip3.4
 
 # Install FFTW + TensorFlow prerequisites via Ansible and pip3
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
