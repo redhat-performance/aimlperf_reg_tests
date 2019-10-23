@@ -136,7 +136,7 @@
     TF_PYTHON_CONFIG_REPO: '@org_tensorflow//third_party/toolchains/cpus/py'
     TF_SET_ANDROID_WORKSPACE: '0'
     PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
-    PYTHON_LIB_PATH: '{{ PYTHON_LIB_PATH }}'
+    PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
     NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
   register: tensorflow_configure_log_cpu
@@ -179,7 +179,7 @@
     TF_PYTHON_CONFIG_REPO: '@org_tensorflow//third_party/toolchains/cpus/py'
     TF_SET_ANDROID_WORKSPACE: '0'
     PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
-    PYTHON_LIB_PATH: '{{ PYTHON_LIB_PATH }}'
+    PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
     NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
   register: tensorflow_configure_log_gpu

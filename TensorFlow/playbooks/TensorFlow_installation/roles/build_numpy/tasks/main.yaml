@@ -43,6 +43,7 @@
     CC="{{ CC }} -lblas -lgfortran -lm" python3 setup.py build_ext --build-lib fftw --fcompiler=gnu95
   environment:
     LD_LIBRARY_PATH: '/usr/lib:/usr/lib64:/usr/lib64/atlas:/usr/local/lib:{{ GCC_LIBS }}'
+    PYTHONPATH: '{{ PYTHONPATH }}'
   when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no'
   register: numpy_fftw_log
 
@@ -64,6 +65,7 @@
     CC="{{ CC }} -lblas -lgfortran -lm" python3 setup.py build_ext --build-lib fftw --fcompiler=gnu95
   environment:
     LD_LIBRARY_PATH: '/usr/lib:/usr/lib64:/usr/lib64/atlas:{{ GCC_LIBS }}'
+    PYTHONPATH: '{{ PYTHONPATH }}'
   when: USE_FFTW == 'no' and USE_OPENBLAS == 'yes'
   register: numpy_openblas_log
 

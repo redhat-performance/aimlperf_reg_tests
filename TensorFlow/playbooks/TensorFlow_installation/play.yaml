@@ -39,6 +39,9 @@
     CC: '{{ cc | default("/usr/bin/gcc") }}'
     GCC_LIBS: '{{ gcc_libs | default("/usr/lib64") }}'
 
+    # Python path
+    PYTHONPATH: '{{ pythonpath | default("/usr/lib/python3.6") }}'
+
   roles:
     # Setup NumPy and TensorFlow build folders
     - role: setup

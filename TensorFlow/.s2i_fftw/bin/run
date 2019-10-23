@@ -12,7 +12,7 @@ NUM_DEVICES=$3
 # C compiler? e.g., '/usr/bin/gcc'
 CC=$4
 
-# Use s3 bucket or URL? Set this variable to 's3' for s3 bucket or 'url' for URL
+# Use s3 bucket, URL, or none? Set this variable to 's3' for s3 bucket, 'url' for URL, or 'none' for none
 WHICH_SOURCE=$5
 
 # NCCL download. Either an s3 path or a URL
@@ -64,6 +64,8 @@ elif [[ ${WHICH_SOURCE} == "s3" ]] || [[ ${WHICH_SOURCE} == "S3" ]]; then
     echo "  Using AWS s3"
 elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]]; then
     echo "  Using EBS"
+elif [[ ${WHICH_SOURCE} == "none" ]] || [[ ${WHICH_SOURCE} == "NONE" ]]; then
+    echo "  Self installed"
 else
     echo "ERROR. Unrecognized source '${WHICH_SOURCE}'. Please choose from one of the following: {url, s3}"
     exit 1
@@ -121,7 +123,7 @@ if [[ ${DEVICE} == "gpu" ]]; then
     if [[ ${WHICH_SOURCE} == "url" ]] || [[ ${WHICH_SOURCE} == "URL" ]]; then
         echo "  NCCL installer:    ${NCCL}"
         echo ""
-    elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]]; then
+    elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]] || [[ ${WHICH_SOURCE} == "none" ]] || [[ ${WHICH_SOURCE} == "NONE" ]]; then
         echo ""
     else
         echo "  NCCL s3 bucket:        ${NCCL}"
@@ -132,22 +134,26 @@ if [[ ${DEVICE} == "gpu" ]]; then
         echo ""
     fi
 
-    # Change to appropriate directory
-    cd ${TOPDIR}/playbooks/nccl_installation
+    # Change to appropriate directory (if installing NCCL)
+    if [[ ${WHICH_SOURCE} != "none" ]] && [[ ${WHICH_SOURCE} != "NONE" ]]; then
+        cd ${TOPDIR}/playbooks/nccl_installation
+    fi
 
     # Build and install NCCL
     if [[ ${WHICH_SOURCE} == "url" ]] || [[ ${WHICH_SOURCE} == "URL" ]]; then
         ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_url: 'yes', use_ebs: 'no', use_awscli: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', nccl_installer: '${NCCL}', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
     elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]]; then
         ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_url: 'no', use_ebs: 'yes', use_awscli: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
-    else
+    elif [[ ${WHICH_SOURCE} == "s3" ]] || [[ ${WHICH_SOURCE} == "S3" ]]; then
         ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_url: 'no', use_ebs: 'yes', use_awscli: 'yes', nccl_install_path: '${NCCL_INSTALL_PATH}', use_aws: 'yes', bucket: '${NCCL}', aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
     fi
 
     # Print out success message
-    echo ""
-    echo "<< SUCCESS >> NCCL installed!"
-    echo ""
+    if [[ ${WHICH_SOURCE} != "none" ]] && [[ ${WHICH_SOURCE} != "NONE" ]]; then
+        echo ""
+        echo "<< SUCCESS >> NCCL installed!"
+        echo ""
+    fi
 fi
 
 ##########################################
@@ -162,7 +168,7 @@ if [[ ${DEVICE} == "gpu" ]]; then
     if [[ ${WHICH_SOURCE} == "url" ]] || [[ ${WHICH_SOURCE} == "URL" ]]; then
         echo "  cuDNN installer:   ${CUDNN}"
         echo ""
-    elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]]; then
+    elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]] || [[ ${WHICH_SOURCE} == "none" ]] || [[ ${WHICH_SOURCE} == "NONE" ]]; then
         echo ""
     else
         echo "cuDNN installation params:"
@@ -176,22 +182,26 @@ if [[ ${DEVICE} == "gpu" ]]; then
         echo ""
     fi
 
-    # Change to appropriate directory
-    cd ${TOPDIR}/playbooks/cudnn_installation
+    # Change to appropriate directory (if installing cuDNN)
+    if [[ ${WHICH_SOURCE} != "none" ]] && [[ ${WHICH_SOURCE} != "NONE" ]]; then
+        cd ${TOPDIR}/playbooks/cudnn_installation
+    fi
 
     # Build and install cuDNN
     if [[ ${WHICH_SOURCE} == "url" ]] || [[ ${WHICH_SOURCE} == "URL" ]]; then
         ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', cudnn: '${CUDNN}', cuda_install_path: '${CUDA_INSTALL_PATH}', use_ebs: 'no', use_awscli: 'no', use_url: 'yes',  gpu_check: 'no'}"
     elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]]; then
         ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', cudnn: '${CUDNN}', cuda_install_path: '${CUDA_INSTALL_PATH}', use_ebs: 'yes', use_awscli: 'no',  use_url: 'no', gpu_check: 'no'}"
-    else
+    elif [[ ${WHICH_SOURCE} == "s3" ]] || [[ ${WHICH_SOURCE} == "S3" ]]; then
         ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_ebs: 'no', use_url: 'no', use_awscli: 'yes', bucket: '${CUDNN}', aws_profile: '${AWS_PROFILE}', add_aws_credentials: 'yes', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
     fi
 
     # Print out success message
-    echo ""
-    echo "<< SUCCESS >> cuDNN installed!"
-    echo ""
+    if [[ ${WHICH_SOURCE} != "none" ]] && [[ ${WHICH_SOURCE} != "NONE" ]]; then
+        echo ""
+        echo "<< SUCCESS >> cuDNN installed!"
+        echo ""
+    fi
 fi
 
 ##########################################

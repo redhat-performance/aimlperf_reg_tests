@@ -90,6 +90,7 @@ RUN yum -y install git && \
     git checkout tags/${ANSIBLE_VERSION} && \
     pip3 install -r requirements.txt && \
     pip3 install packaging && \
+    sed -i "s/PYTHON=python/PYTHON=python3/g" Makefile && \
     make && \
     make install && \
     cd .. && \
@@ -97,9 +98,9 @@ RUN yum -y install git && \
 
 # Install FFTW + TensorFlow prerequisites via Ansible and pip3
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', update_dnf: 'no'}" && \
+    PYTHONPATH=/usr/lib/python2.7 ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', update_yum: 'no', ansible_python_interpreter: '/usr/bin/python2.7'}" && \
     cd ${TF_PREREQS_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', use_s2i_ubi: 'yes'}" && \
+    PYTHONPATH=/usr/lib/python2.7 ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', use_s2i_ubi: 'yes', ansible_python_interpreter: '/usr/bin/python2.7'}" && \
     pip3 install awscli
 
 # Create and give user permissions to modify certain directories that are required to run the Ansible
