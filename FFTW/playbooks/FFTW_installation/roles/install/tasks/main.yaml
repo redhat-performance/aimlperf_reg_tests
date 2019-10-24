@@ -68,28 +68,28 @@
   - name: RHEL 7 --> Reorganize symlink for librfftw_threads.so.2
     command: mv '{{ install_directory }}/usr/local/lib/librfftw_threads.so.2' '{{ install_directory }}/lib'
 
-  when: rhel_ver == '7'
+  when: rhel_ver == '7' and s2i == 'no' and ubi == 'no'
 
 ###################################
-#         For RHEL 8 only         #
+#     For RHEL 8 or ubi7 Only     #
 ###################################
 - block:
-  - name: RHEL 8 --> Reorganize symlink for libfftw3.so.3
+  - name: RHEL 8 / ubi7 --> Reorganize symlink for libfftw3.so.3
     command: mv '{{ install_directory }}/usr/local/lib/libfftw3.so.3' '{{ install_directory }}/lib'
 
-  - name: RHEL 8 --> Reorganize symlink for libfftw3_threads.so
+  - name: RHEL 8 / ubi7 --> Reorganize symlink for libfftw3_threads.so
     command: mv '{{ install_directory }}/usr/local/lib/libfftw3_threads.so' '{{ install_directory }}/lib'
 
-  - name: RHEL 8 --> Reorganize symlink for libfftw3_threads.so.3
+  - name: RHEL 8 / ubi7 --> Reorganize symlink for libfftw3_threads.so.3
     command: mv '{{ install_directory }}/usr/local/lib/libfftw3_threads.so.3' '{{ install_directory }}/lib'
 
-  - name: RHEL 8 --> Add symlink to create 'libfftw3.so'
+  - name: RHEL 8 / ubi7 --> Add symlink to create 'libfftw3.so'
     file:
       state: link
       src: '{{ install_directory }}/lib/libfftw3.so.3'
       dest: '{{ install_directory }}/lib/libfftw3.so'
 
-  when: rhel_ver == '8'
+  when: rhel_ver == '8' or (rhel_ver == '7' and ubi == 'yes') or (rhel_ver == '7' and s2i == 'yes')
 
 
 ###################################
