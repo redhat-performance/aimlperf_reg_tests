@@ -23,7 +23,7 @@ objects:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
-          args: ["${RHEL_VERSION}", "gpu", "${NUM_GPUS}", "${CC}", "${WHICH_SOURCE}", "${NCCL_URL}", "${CUDNN_URL}", "${AWS_PROFILE}", "${AWS_REGION}", "${AWS_ACCESS_KEY}", "${AWS_SECRET_ACCESS_KEY}"]
+          args: ["${RHEL_VERSION}", "gpu", "${NUM_GPUS}", "${CC}", "${WHICH_SOURCE}", "${PATH_TO_PYTHON}", "${NCCL_URL}", "${CUDNN_URL}", "${AWS_PROFILE}", "${AWS_REGION}", "${AWS_ACCESS_KEY}", "${AWS_SECRET_ACCESS_KEY}"]
           volumeMounts:
             - mountPath: "/tmp/nvidia_ebs"
               name: "nvidia-packages-pv"
@@ -78,6 +78,10 @@ parameters:
 - description: "Which source? s3 bucket or url"
   name: "WHICH_SOURCE"
   value: "url"
+  required: true
+- description: "Path to Python"
+  name: "PATH_TO_PYTHON"
+  value: "/usr/local/lib/python3.6"
   required: true
 - description: "URL or s3 bucket to download NCCL from"
   name: "NCCL_URL"
