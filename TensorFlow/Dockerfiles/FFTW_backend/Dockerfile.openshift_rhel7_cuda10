@@ -61,6 +61,9 @@ COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
 # Put on port 8080
 EXPOSE 8080
 
+# Create symlink for NumPy so that it can find endian.h
+RUN ln -s /usr/include/endian.h /usr/include/sys/endian.h
+
 # Install Python version ${PYTHON_VERSION}
 RUN yum -y install gcc \
                    make \
