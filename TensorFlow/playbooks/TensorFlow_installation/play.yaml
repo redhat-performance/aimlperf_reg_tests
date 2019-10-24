@@ -40,7 +40,7 @@
     GCC_LIBS: '{{ gcc_libs | default("/usr/lib64") }}'
 
     # Python path
-    PYTHONPATH: '{{ pythonpath | default("/usr/lib/python3.6") }}'
+    PYTHONPATH: '{{ pythonpath | default("/usr/lib/python3.6/site-packages") }}'
 
   roles:
     # Setup NumPy and TensorFlow build folders
