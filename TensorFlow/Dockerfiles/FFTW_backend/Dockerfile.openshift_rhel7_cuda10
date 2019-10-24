@@ -123,9 +123,5 @@ RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.c
     echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg && \
     echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_BENCHMARKS}/ansible.cfg
 
-# Set deviceQuery path
-ENV DEMO_SUITE=/usr/local/cuda/extras/demo_suite
-RUN if [[ ! -f ${DEMO_SUITE} ]]; then mkdir -p ${DEMO_SUITE} && ln -s /usr/local/cuda/samples/1_Utilities/deviceQuery ${DEMO_SUITE}/deviceQuery; fi
-
 # Set user to 'default'
 USER default
