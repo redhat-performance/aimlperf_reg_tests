@@ -60,7 +60,7 @@
   # Grab FFTW3 sources
   - name: For RHEL 8 and ubi7 builds, get FFTW3 from fftw.org
     unarchive:
-      src: 'http://fftw.org/fftw-{{ fftw3_version }}.tar.gz'
+      src: 'http://fftw.org/fftw-{{ fftw3_ver }}.tar.gz'
       dest: '{{ build_dir }}'
       remote_src: yes
 
