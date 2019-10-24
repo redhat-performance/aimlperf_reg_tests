@@ -4,10 +4,10 @@
   command: rpm --eval '%{optflags}'
   args:
     warn: false
-  register: CFLAGS
+  register: cflags
 
 - debug:
-    var: CFLAGS.stdout
+    var: cflags.stdout
 
 - name: Determine if we have AVX
   shell: |
