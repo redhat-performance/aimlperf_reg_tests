@@ -16,7 +16,7 @@
     TENSORFLOW_INSTALL_DIR: '{{ tf_install_dir | default("/home/tensorflow") }}'
 
     # Version of NumPy to use
-    NUMPY_VERSION: '{{ np_version | default("1.16.4") }}'
+    NUMPY_VERSION: '{{ np_version | default("1.17.3") }}'
 
     # Use FFTW or OpenBLAS?
     USE_FFTW: '{{ use_fftw | default("yes") }}'
