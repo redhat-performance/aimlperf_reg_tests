@@ -46,6 +46,8 @@ usage() {
     echo "      -q  AWS profile name"
     echo ""
     echo "  -f  Use EBS for getting NCCL and cuDNN"
+    echo ""
+    echo "  -g  Use pre-installed GPU packages"
     exit
 }
 
@@ -55,7 +57,7 @@ USE_GPU="false"
 # Set vars
 templates_path="templates"
 
-options=":h:v:b:t:nr:s:i:a:x:d:pm:l:ug:y:z:c:oj:k:l:q:f"
+options=":h:v:b:t:nr:s:i:a:x:d:pm:l:ugy:z:c:oj:k:l:q:f"
 while getopts "$options" x
 do
     case "$x" in
@@ -131,6 +133,9 @@ do
       f)
           USE_EBS="true"
           ;;
+      g)
+	  USE_PREINSTALLED="true"
+	  ;;
       *)
           usage
           ;;
@@ -290,13 +295,13 @@ if [[ ${USE_GPU} == "true" ]]; then
     fi
 
     # Make sure the user passed in a download URL or s3 bucket folder for NCCL if not using EBS
-    if [[ -z ${NCCL_URL} ]] && [[ -z ${USE_EBS} ]]; then
+    if [[ -z ${NCCL_URL} ]] && [[ -z ${USE_EBS} ]] && [[ -z ${USE_PREINSTALLED} ]]; then
         echo "ERROR. NCCL download URL or s3 bucket folder name is missing. Please provide an NCCL URL or s3 bucket with the -y option."
         exit 1
     fi
 
     # Do the same with cuDNN if not using EBS
-    if [[ -z ${CUDNN_URL} ]] && [[ -z ${USE_EBS} ]]; then
+    if [[ -z ${CUDNN_URL} ]] && [[ -z ${USE_EBS} ]] && [[ -z ${USE_PREINSTALLED} ]]; then
         echo "ERROR. cuDNN download URL or s3 bucket folder name is missing. Please provide a cuDNN URL or s3 bucket with the -z option."
         exit 1
     fi
@@ -442,7 +447,7 @@ if [[ ! -z $check_imagestream ]]; then
     oc delete is $IS_NAME
 fi
 
-# Build the image
+## Build the image
 check_existing_builds=$(oc get builds | grep ${build_image_template_name})
 if [[ ! -z $check_existing_builds ]]; then
 oc delete build "${build_image_template_name}-1"
@@ -641,6 +646,17 @@ elif [[ "${NFD}" == "nfd" ]]; then
                            --param=NUM_GPUS=$NUM_DEVICES \
                            --param=CC=$GCC \
                            --param=WHICH_SOURCE="ebs"
+            elif [[ ! -z ${USE_PREINSTALLED} ]]; then
+                oc new-app --template="${build_job_name}" \
+                           --param=IMAGESTREAM_NAME=$IS_NAME \
+                           --param=REGISTRY=$OC_REGISTRY \
+                           --param=APP_NAME=$APP_NAME \
+                           --param=NAMESPACE=$NAMESPACE \
+                           --param=INSTANCE_TYPE=$INSTANCE_TYPE \
+                           --param=RHEL_VERSION=$RHEL_VERSION \
+                           --param=NUM_GPUS=$NUM_DEVICES \
+                           --param=CC=$GCC \
+                           --param=WHICH_SOURCE="none"
             else
                 oc new-app --template="${build_job_name}" \
                            --param=IMAGESTREAM_NAME=$IS_NAME \
