@@ -4,36 +4,10 @@
 
 This folder contains files used for launching the [official TensorFlow High-Performance CNN benchmarks](https://github.com/tensorflow/benchmarks/tree/master/scripts/tf_cnn_benchmarks) as an app in OpenShift on AWS. If you wish to build and run TensorFlow on RHEL 8, follow the instructions in the next section carefully. They are required. Otherwise, for RHEL 7 builds, you can skip to the **Basics** section.
 
-## Using redhat.io Images (REQUIRED FOR NON-CUDA RHEL 8 BUILDS)
+## Using redhat.io Images (REQUIRED FOR CUDA RHEL 7 BUILDS + NON-CUDA RHEL 8 BUILDS)
 
-For RHEL 8, you will need to use one of the images located in the container catalog, under the name registry.redhat.io.
+Follow the instructions in the `setup` folder in this directory.
 
-To use images from the redhat.io image registry, you will need to do the following:
-
-  1. Download your secret. The "secret" should be named something along the lines of "<your-username>-secret.yaml" and save it to `../../secrets`.
-  2. Submit your secret to the cluster
-  3. Create a template with `setup/images/rhel8_s2i_image_buildconfig.yaml` to add the image to the repository
-  4. Import the image
-
-For more information on (1.) and how to acquire a secret, visit [The Container Catalog](https://access.redhat.com/containers/). The YAML file should look something like this:
-
-```
-apiVersion: v1
-kind: Secret
-metadata:
-  name: 1234567-USERNAME-pull-secret
-data:
-  .dockerconfigjson: <hash>
-type: kubernetes.io/dockerconfigjson
-```
-
-but `1234567` will be a very specific 7-digit ID number, `USERNAME` is your registry username, and `<hash>` is a long string that contains your secret for accessing the redhat.io registry.
-
-You should save this file as `../../secrets/redhat_io_registry.yaml`. Now run:
-
-```
-$ sh setup/images/add_registry_secret.sh
-```
 
 ## Preparing for CUDA Builds (REQUIRED FOR CUDA BUILDS!!)
 

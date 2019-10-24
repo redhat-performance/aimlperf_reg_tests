@@ -2,19 +2,24 @@
 
 This folder contains files for setting up various things in OpenShift related to the TensorFlow parent folder.
 
-Currently, there are two folders:
+Currently, there are three folders:
 
   1. `images`
-  2. `volumes`
+  2. `templates`
+  3. `volumes`
 
-The `images` folder contains files for setting up OpenShift to pull images from registry.redhat.io, while the `volumes` folder contains files for setting up OpenShift to create an EBS for storing NVIDIA related files, such as the cuDNN and NCCL tarballs, such that they can be used for building TensorFlow.
+The `images` folder contains files for setting up OpenShift to pull images from registry.redhat.io. The `templates` folder loads all the OpenShift templates. Finally, the `volumes` folder contains files for setting up OpenShift to create an EBS for storing NVIDIA related files, such as the cuDNN and NCCL tarballs, such that they can be used for building TensorFlow.
 
 ## Images
 
 
 ### registry.redhat.io Images
 
-Run `add_registry_secret.sh` to add your redhat.io registry secret to OpenShift. Make sure you have a registry secret already added to the top level `secrets` folder in this repository. See the main `../OpenShift/README.md` file for more information.
+Create a registry secret file under ../../../../secrets. Follow the instructions on the README. Then run
+
+```
+$ make -C images redhat_io_secret
+```
 
 ### Custom CUDA Images (from ../../Dockerfiles/custom)
 
@@ -105,14 +110,10 @@ cuda    default-route-openshift-image-registry.<cluster_url>/openshift-image-reg
 
 #### 7. Set up Registry Secret
 
-Set up the registry secret using the same value of `${TOKEN}` as defined in step 3.
+To setup the registry secret,
 
 ```
-$ oc secrets new-dockercfg openshft-image-registry-pull-secret \
-                           --docker-server=image-registry.openshift-image-registry.svc:5000 \
-                           --docker-username=default \
-                           --docker-password=${TOKEN} \
-                           --docker-email=null
+$ make -C images openshift_secret
 ```
 
 ## Volumes
