@@ -15,8 +15,8 @@ CC=$4
 # Use s3 bucket, URL, or none? Set this variable to 's3' for s3 bucket, 'url' for URL, or 'none' for none
 WHICH_SOURCE=$5
 
-# Python path (do not call this 'PYTHONPATH' or it'll mess things up!)
-PATH_TO_PYTHON=$6
+# Path to Python executable (do not call this 'PYTHONPATH' or it'll mess things up!)
+PYTHON_EXECUTABLE=$6
 
 # NCCL download. Either an s3 path or a URL
 NCCL=$7
@@ -266,12 +266,18 @@ fi
 
 # Now build and install TensorFlow
 if [[ ${DEVICE} == "cpu" ]]; then
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', pythonpath: '${PATH_TO_PYTHON}'}"
-else
-    if [[ ${PATH_TO_PYTHON} != "/usr/bin/python3" ]]; then
-        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', pythonpath: '${PATH_TO_PYTHON}', ansible_python_interpreter: '${PATH_TO_PYTHON}}'"
+    if [[ ${PYTHON_EXECUTABLE} != "/usr/bin/python3" ]]; then
+        PATH_TO_PYTHON="/usr/local/lib/python3.6"
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', pythonpath: '${PATH_TO_PYTHON}'}"
     else
-        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', pythonpath: '${PATH_TO_PYTHON}'}"
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}}"
+    fi
+else
+    if [[ ${PYTHON_EXECUTABLE} != "/usr/bin/python3" ]]; then
+	PATH_TO_PYTHON="/usr/local/lib/python3.6"
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', pythonpath: '${PATH_TO_PYTHON}', ansible_python_interpreter: '${PYTHON_EXECUTABLE}'}"
+    else
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}'}"
     fi
 fi
 
