@@ -226,7 +226,7 @@ echo ""
 cd ${TOPDIR}/playbooks/FFTW_installation
 
 # Build and install FFTW
-ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: '${FFTW_INSTALL_DIR}', build_dir: '${FFTW_BUILD_DIR}', rhel_version: '${RHEL_VERSION}', cc: '${CC}'}"
+ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: '${FFTW_INSTALL_DIR}', build_dir: '${FFTW_BUILD_DIR}', rhel_version: '${RHEL_VERSION}', cc: '${CC}', s2i: 'yes'}"
 
 # Print out success message
 echo ""
