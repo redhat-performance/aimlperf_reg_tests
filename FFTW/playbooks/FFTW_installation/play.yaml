@@ -7,10 +7,10 @@
   vars:
 
     # FFTW build directory
-    build_dir: '{{ build_dir | default("${HOME}/build") }}'
+    build_directory: '{{ build_dir | default("${HOME}/build") }}'
 
     # FFTW install directory
-    install_dir: '{{ install_dir | default("${HOME}/custom_fftw") }}'
+    install_directory: '{{ install_dir | default("${HOME}/custom_fftw") }}'
 
     # RHEL version
     rhel_ver: '{{ rhel_version | default("7") }}'
