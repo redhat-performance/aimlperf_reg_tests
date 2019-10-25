@@ -39,8 +39,9 @@
     CC: '{{ cc | default("/usr/bin/gcc") }}'
     GCC_LIBS: '{{ gcc_libs | default("/usr/lib64") }}'
 
-    # Python path
+    # Python path + executable path
     PYTHONPATH: '{{ pythonpath | default("/usr/lib/python3.6/site-packages") }}'
+    PYTHON_BIN_PATH: '{{ python_executable | default("/usr/bin/python3") }}'
 
     # Use UBI or s2i?
     UBI: '{{ use_ubi | default("no") }}'

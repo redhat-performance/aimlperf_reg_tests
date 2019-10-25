@@ -16,7 +16,7 @@
     echo '' >> {{ NUMPY_SITE_CFG }}
     echo '[atlas]' >> {{ NUMPY_SITE_CFG }}
     echo 'atlas_libs = lapack, blas, cblas, tatlas' >> {{ NUMPY_SITE_CFG }}
-  when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no' and RHEL_VERSION == '7'
+  when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no' and RHEL_VERSION == '7' and UBI == 'no' and S2I == 'no'
 
 - name: Set NumPy site config file for RHEL 8 and ubi7 -- use FFTW if specified
   shell: |
