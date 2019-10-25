@@ -1,5 +1,10 @@
 ---
 
+- name: Create NumPy 'site-packages' install folder so that NumPy can write to it
+  file:
+    state: directory
+    path: '{{ NUMPPY_INSTALL_DIR }}/lib/python3.6/site-packages'
+
 - name: Install NumPy
   shell: |
     cd {{ NUMPY_BUILD_DIR }}
