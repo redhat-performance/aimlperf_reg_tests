@@ -197,6 +197,19 @@
 - debug:
     msg: "TensorFlow config logs saved to {{ TENSORFLOW_BUILD_DIR }}/configure.log"
 
+# Update 'WORKSPACE'
+- name: Workaround --> update {{ TENSORFLOW_BUILD_DIR }}/WORKSPACE to add the 'io_bazel_rules_docker' http archive so that bazel rules can be cloned
+  blockinfile:
+    path: {{ TENSORFLOW_BUILD_DIR }}/WORKSPACE
+    insertafter: 'load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")'
+    block: |
+      http_archive(
+          name = "io_bazel_rules_docker",
+          sha256 = "aed1c249d4ec8f703edddf35cbe9dfaca0b5f5ea6e4cd9e83e99f3b0d1136c3d",
+          strip_prefix = "rules_docker-0.7.0",
+          urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.7.0.tar.gz"],
+      )
+
 # Now it's time to build TensorFlow for the CPU. We want to use the optimization flags that we
 # found earlier, if applicable.
 - name: Build TensorFlow for the CPU
