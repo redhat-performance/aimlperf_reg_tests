@@ -137,8 +137,8 @@
     TF_SET_ANDROID_WORKSPACE: '0'
     PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
     PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
-    NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
-    LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
+    NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
+    LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
   register: tensorflow_configure_log_cpu
   when: USE_CPU == 'yes' and USE_GPU == 'no'
 
@@ -180,8 +180,8 @@
     TF_SET_ANDROID_WORKSPACE: '0'
     PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
     PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
-    NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
-    LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
+    NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
+    LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
   register: tensorflow_configure_log_gpu
   when: USE_CPU == 'no' and USE_GPU == 'yes'
 
