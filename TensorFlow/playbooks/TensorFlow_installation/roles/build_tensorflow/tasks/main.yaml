@@ -200,7 +200,7 @@
 # Update 'WORKSPACE'
 - name: Workaround --> update {{ TENSORFLOW_BUILD_DIR }}/WORKSPACE to add the 'io_bazel_rules_docker' http archive so that bazel rules can be cloned
   blockinfile:
-    path: {{ TENSORFLOW_BUILD_DIR }}/WORKSPACE
+    path: '{{ TENSORFLOW_BUILD_DIR }}/WORKSPACE'
     insertafter: 'load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")'
     block: |
       http_archive(
