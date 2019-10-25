@@ -23,7 +23,7 @@ objects:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
-          args: ["${RHEL_VERSION}", "cpu", " "]
+          args: ["${RHEL_VERSION}", "cpu", "${NUM_CPUS}", "${CC}", "none", "${PYTHON_EXECUTABLE}"]
         restartPolicy: "Never"
         affinity:
           nodeAffinity:
@@ -78,11 +78,19 @@ parameters:
   from: '[0-9]{1}'
   value: "7"
   required: true
+- description: "Path to Python executable"
+  name: "PYTHON_EXECUTABLE"
+  value: "/usr/bin/python3"
+  required: true
 - description: "Number of CPUs to use"
-  name: "N_CPUS"
+  name: "NUM_CPUS"
   value: "1"
   required: true
 - description: "Memory size"
   name: "MEMORY_SIZE"
   value: "1G"
+  required: true
+- description: "Path to gcc"
+  name: "CC"
+  value: "/usr/bin/gcc"
   required: true
