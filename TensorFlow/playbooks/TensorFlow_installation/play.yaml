@@ -42,6 +42,10 @@
     # Python path
     PYTHONPATH: '{{ pythonpath | default("/usr/lib/python3.6/site-packages") }}'
 
+    # Use UBI or s2i?
+    UBI: '{{ use_ubi | default("no") }}'
+    S2I: '{{ use_s2i | default("no") }}'
+
   roles:
     # Setup NumPy and TensorFlow build folders
     - role: setup
