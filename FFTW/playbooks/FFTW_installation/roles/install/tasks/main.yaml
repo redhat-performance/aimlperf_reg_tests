@@ -95,7 +95,7 @@
       src: '{{ install_directory }}/lib/libfftw3.so.3'
       dest: '{{ install_directory }}/lib/libfftw3.so'
 
-  when: (rhel_ver == '8' or (rhel_ver == '7' and ubi == 'yes') or (rhel_ver == '7' and s2i == 'yes')) and ls_install_dir_output.stdout == ""
+  when: (rhel_ver == '8' or (rhel_ver == '7' and ubi == 'yes') or (rhel_ver == '7' and s2i == 'yes')) and ls_install_dir_output.stdout != ""
 
 
 ###################################
