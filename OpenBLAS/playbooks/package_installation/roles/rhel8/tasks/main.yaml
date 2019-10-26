@@ -1,0 +1,75 @@
+---
+
+
+- block: 
+  - name: Optional -- RHEL 8 dnf update
+    dnf: name=* state=latest
+
+  - name: Install dnf prereqs (if using RHEL 8)
+    dnf:
+      name:
+        - automake
+        - bzip2
+        - cpio
+        - cpp
+        - gcc
+        - gcc-c++
+        - gcc-gfortran
+        - git
+        - libdb-devel
+        - libgfortran
+        - libquadmath
+        - libquadmath-devel
+        - libtool
+        - make
+        - nspr
+        - nss
+        - patch
+        - perl
+        - perl-interpreter
+        - perl-libs
+        - python36-python-setuptools
+        - wget
+        - yum-utils
+        - zlib-devel
+    state: present
+  when: use_s2i == 'no' and use_ubi == 'no'
+
+- block:
+  - name: << s2i/ubi >> Install basic dnf pkgs that are available
+    yum:
+      name:
+      - automake
+      - bzip2
+      - cpp
+      - gcc
+      - gcc-c++
+      - gcc-gfortran
+      - git
+      - libdb-devel
+      - libgfortran
+      - libtool
+      - make
+      - nspr
+      - nss
+      - patch
+      - python36-python-setuptools
+      - wget
+      - yum-utils
+      - zlib-devel
+
+  - name: << s2i/ubi >> Clone gyp
+    git:
+      repo: https://chromium.googlesource.com/external/gyp
+      dest: /tmp
+      version: '{{ gyp_version }}'
+
+  - name: << s2i/ubi >> Install gyp
+    shell: |
+      cd /tmp/gyp
+      python3 setup.py install
+
+  - name: << s2i/ubi >> Remove gyp build repo
+    command: rm /tmp/gyp
+
+  when: use_ubi == 'yes' or use_s2i == 'yes'
