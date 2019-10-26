@@ -25,6 +25,8 @@ usage() {
     echo "  -e  Namespace to use"
     echo ""
     echo "  -u  Use the GPU"
+    echo ""
+    echo "  -d  Use a Dockerfile where TensorFlow was installed by 'pip3 install tensorflow-gpu'"
     exit
 }
 
@@ -34,7 +36,7 @@ USE_GPU="false"
 # Set vars
 templates_path="templates"
 
-options=":hv:b:s:nt:x:i:r:e:u"
+options=":hv:b:s:nt:x:i:r:e:ud"
 while getopts "$options" x
 do
     case "$x" in
@@ -71,6 +73,9 @@ do
       u)
           USE_GPU="true"
           ;;
+      d)
+	  USE_OFFICIAL_PIP_TENSORFLOW="true"
+	  ;;
       *)
           usage
           ;;
@@ -125,23 +130,14 @@ if [[ -z ${IS_NAME} ]]; then
 
     if [[ ! -z ${AVX} ]]; then
         IS_NAME="tensorflow-${BACKEND}-rhel${RHEL_VERSION}-${AVX}"
-    elif [[ ${USE_GPU} == "true" ]]; then
-        IS_NAME="tensorflow-${BACKEND}-rhel${RHEL_VERSION}-gpu"
+    elif [[ ! -z ${USE_GPU} ]]; then
+        if [[ ! -z ${USE_OFFICIAL_PIP_TENSORFLOW} ]]; then
+            IS_NAME="tensorflow-official-rhel${RHEL_VERSION}-gpu"
+        else
+            IS_NAME="tensorflow-${BACKEND}-rhel${RHEL_VERSION}-gpu"
+	fi
     else
         IS_NAME="tensorflow-${BACKEND}-rhel${RHEL_VERSION}"
-    fi
-fi
-
-# Initialize app name (if not specified)
-if [[ -z ${APP_NAME} ]]; then
-    if [[ ! -z ${CPU_MANAGER} ]] && [[ ! -z ${AVX} ]]; then
-        APP_NAME="tensorflow-s2i-benchmark-app-rhel${RHEL_VERSION}-${AVX}-cpu-managed"
-    elif [[ ! -z ${AVX} ]]; then
-        APP_NAME="tensorflow-s2i-benchmark-app-rhel${RHEL_VERSION}-${AVX}"
-    elif [[ ${USE_GPU} == "true" ]]; then
-        APP_NAME="tensorflow-s2i-benchmark-app-rhel${RHEL_VERSION}-gpu"
-    else
-        APP_NAME="tensorflow-s2i-benchmark-app-rhel${RHEL_VERSION}"
     fi
 fi
 
@@ -165,7 +161,11 @@ fi
 if [[ ! -z ${USE_AVX} ]]; then
     build_image_template_name="tensorflow-${BACKEND}-${AVX}-build-image-rhel${RHEL_VERSION}"
 elif [[ ! -z ${USE_GPU} ]]; then
-    build_image_template_name="tensorflow-${BACKEND}-build-image-rhel${RHEL_VERSION}-gpu"
+    if [[ ! -z ${USE_OFFICIAL_PIP_TENSORFLOW} ]]; then
+        build_image_template_name="tensorflow-pip-build-image-rhel${RHEL_VERSION}-gpu"
+    else
+        build_image_template_name="tensorflow-${BACKEND}-build-image-rhel${RHEL_VERSION}-gpu"
+    fi
 else
     build_image_template_name="tensorflow-${BACKEND}-build-image-rhel${RHEL_VERSION}"
 fi
