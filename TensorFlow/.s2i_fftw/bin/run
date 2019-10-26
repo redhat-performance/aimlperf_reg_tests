@@ -115,7 +115,12 @@ echo ""
 ##########################################
 if [[ ${DEVICE} == "gpu" ]]; then
     # Set NCCL and CUDA paths
-    NCCL_INSTALL_PATH="${TOPDIR}/nccl"
+
+    if [[ ${WHICH_SOURCE} == "none" ]]; then
+	NCCL_INSTALL_PATH="${TOPDIR}/3rd_party_pkgs/nccl"
+    else
+        NCCL_INSTALL_PATH="${TOPDIR}/nccl"
+    fi
     CUDA_INSTALL_PATH="/usr/local/cuda"
 
     # Print out info
