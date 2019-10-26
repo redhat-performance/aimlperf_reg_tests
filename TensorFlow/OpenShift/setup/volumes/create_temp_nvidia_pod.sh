@@ -15,7 +15,7 @@ echo "<< WARNING >> If the deletion of the PV and/or PVC hangs, exit out of this
 # Delete existing PV and PVC
 oc delete -f ${NVIDIA_PV_YAML}
 oc delete -f ${NVIDIA_PVC_YAML}
-oc delete -f ${NVIDIA_DUMMY_POD_YAML_FOLDER}
+oc delete -f ${NVIDIA_DUMMY_POD_YAML}
 
 # Delete existing pod
 oc delete pod/tmp-nvidia-pod
