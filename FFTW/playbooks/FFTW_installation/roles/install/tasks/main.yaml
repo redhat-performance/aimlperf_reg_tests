@@ -73,6 +73,12 @@
 ###################################
 #     For RHEL 8 or ubi7 Only     #
 ###################################
+
+- name: Check symlinks
+  shell: ls '{{ install_directory }}/usr'
+  register: ls_install_dir_output
+  ignore_errors: yes
+
 - block:
   - name: RHEL 8 / ubi7 --> Reorganize symlink for libfftw3.so.3
     command: mv '{{ install_directory }}/usr/local/lib/libfftw3.so.3' '{{ install_directory }}/lib'
@@ -89,7 +95,7 @@
       src: '{{ install_directory }}/lib/libfftw3.so.3'
       dest: '{{ install_directory }}/lib/libfftw3.so'
 
-  when: rhel_ver == '8' or (rhel_ver == '7' and ubi == 'yes') or (rhel_ver == '7' and s2i == 'yes')
+  when: (rhel_ver == '8' or (rhel_ver == '7' and ubi == 'yes') or (rhel_ver == '7' and s2i == 'yes')) and ls_install_dir_output.stdout == ""
 
 
 ###################################
