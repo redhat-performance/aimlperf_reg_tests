@@ -4,16 +4,29 @@
 
 This folder contains files used for launching the [official TensorFlow High-Performance CNN benchmarks](https://github.com/tensorflow/benchmarks/tree/master/scripts/tf_cnn_benchmarks) as an app in OpenShift on AWS. If you wish to build and run TensorFlow on RHEL 8, follow the instructions in the next section carefully. They are required. Otherwise, for RHEL 7 builds, you can skip to the **Basics** section.
 
-## Using redhat.io Images (REQUIRED FOR CUDA RHEL 7 BUILDS + NON-CUDA RHEL 8 BUILDS)
+## PREP WORK: Using redhat.io Images (REQUIRED FOR CUDA RHEL 7 BUILDS + NON-CUDA RHEL 8 BUILDS)
 
-Follow the instructions in the `setup` folder in this directory.
+Follow the instructions in the `setup` folder in this directory. You will need to run a `make` command and create a 'secret' file.
 
+## PREP WORK: Preparing for CUDA Builds (REQUIRED FOR CUDA BUILDS!!)
 
-## Preparing for CUDA Builds (REQUIRED FOR CUDA BUILDS!!)
+### Setting up the Cluster with SRO (Special Resource Operator)
 
-### Setting up an EBS Volume
+Before you begin with anything, install the Special Resource Operator:
 
-To prepare for CUDA builds, you will first need to create an EBS volume, like so:
+```
+$ sh ../../helper_scripts/OpenShift/gpu_setup.sh 
+```
+
+This command will install the necessary NVIDIA drivers to your GPU nodes.
+
+### Building and Using a CUDA "Base Image" from this Repository
+
+To prepare for a CUDA build using a "base image," make sure to build one of the Docker images under `../Dockerfiles/custom/rhel7/cuda` or `../Dockerfiles/custom/rhel8/cuda`. Follow the instructions in the **setup** folder in this directory to do so. Such base images have cuDNN and NCCL pre-installed, which means you can skip the next subsection "Setting up an EBS Volume."
+
+### Setting up an EBS Volume (for Non Custom Base Images)
+
+To prepare for CUDA builds in images which do *not* have cuDNN and NCCL preinstalled, you will first need to create an EBS volume, like so:
 
 ```
 $ cd setup/volumes
@@ -45,15 +58,9 @@ $ oc delete pod/tmp-nvidia-pod
 
 Now you're all set! The EBS volume should have your cuDNN and NCCL tar files!
 
-### Building Your Custom CUDA "Base" Image
-
 #### Warning About Using ubi8 and Related Images
 
 The RHEL 8 "ubi8" image has a limited set of packages that can be installed through its included repos. Even NVIDIA's `nvidia/cuda:<tag>` images reference ubi8, so the same issue lies there. Thus, in order to obtain the packages that *cannot* be installed through those repos, you will need to create your own image using one of the custom provided Dockerfiles in `../Dockerfiles/custom` and supply your own `.repo` files to point to RHEL 8 repositories.
-
-#### Instructions
-
-To build a custom CUDA image from one of the Dockerfiles provided in `../Dockerfiles/custom`, follow the instructions in the `README.md` file under the `setup` folder in this directory. The image **must** be generated on your own machine because the Dockerfile pulls in the `../../repos/cuda.repo` and `../../repos/rhel8-Latest.repo` files for injecting yum/dnf repos into the image. (For images which attempt to download and install `cuda-toolkit`, you'll also need to create `../../repos/rhel8-Appstream-Latest.repo`.) I designed the Dockerfile this way because the `.repo` files legally cannot be uploaded to the internet without specific permissions. Thus, it is the assumption that you yourself have permissions to supply your own `.repo` files.
 
 ## Preparing ImageNet
 
@@ -101,24 +108,22 @@ or
 $ sh build_imagestream.sh -v 8 -b fftw
 ```
 
-For additional help, run:
+You can use GPUs, Node Feature Discovery, etc. For additional help and more info on how to use such features, run:
 
 ```
 $ sh build_imagestream.sh -h
 ```
 
-The above command will load the templates from the `templates` folder into a random AWS instance, then create a build image special for the TensorFlow benchmarks.
-
 Once the image has been built, you may run the build job, which uses the ImageStream you just built to launch the benchmark app, which builds TensorFlow and its dependencies, then runs the benchmarks:
 
 ```
-$ sh build_job.sh -v <rhel_version> -b <blas_backend_to_use> -i <imagestream_name> [optional args]
+$ sh launch_app.sh -v <rhel_version> -b <blas_backend_to_use> -i <imagestream_name> [optional args]
 ```
 
 For additional help,
 
 ```
-$ sh build_job.sh -h
+$ sh launch_app.sh -h
 ```
 
 ## How it Works
@@ -141,13 +146,13 @@ $ sh ../../helper_scripts/OpenShift/nfd_setup.sh
 Once the above operator has been deployed, run one of the the following commands to define which instance you would like to run the app on:
 
 ```
-$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -t <instance_type> -d <num_devices_to_use> [optional args]
+$ sh build_imagestream.sh -v 7 -b <blas_backend_to_use> -n -t <instance_type> -d <num_devices_to_use> [optional args]
 ```
 
 or
 
 ```
-$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -x <avx_instruction_set_name> -d <num_devices_to_use> [optional args]
+$ sh build_imagestream.sh -v 7 -b <blas_backend_to_use> -n -x <avx_instruction_set_name> -d <num_devices_to_use> [optional args]
 ```
 
 (And of course, you can use RHEL 8 instead of RHEL 7 by passing in the value `8` when using the `-v` option.)
@@ -157,7 +162,7 @@ Using the `-n` option calls for NFD to be used when building and running the Ten
 If you're using AVX512 instructions with RHEL 7, you will need to pass in the path to the new gcc to match the gcc version you specified in `../Dockerfiles/FFTW_backend/Dockerfile.openshift_rhel7_avx512`. (The default gcc path specified in that file is `/usr/local/gcc-${GCC_VERSION}/bin/gcc-${GCC_VERSION}`.) In other words, if you specified version `9.2.0`,
 
 ```
-$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -x avx512 -c '/usr/local/gcc-9.2.0/bin/gcc-9.2.0' -d <num_devices_to_use> [optional args]
+$ sh build_imagestream.sh -v 7 -b <blas_backend_to_use> -n -x avx512 -c '/usr/local/gcc-9.2.0/bin/gcc-9.2.0' -d <num_devices_to_use> [optional args]
 ```
 
 Note that this specific RHEL 7 AVX512 image build will take a **significant** amount of time, on the order of a *few hours*. This is normal.
@@ -257,17 +262,19 @@ To use CPU Manager, pass in the `-p` option and choose values for `-d` and `-m`.
 
 
 ```
-$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -x <avx_instruction_set_name> -p -d <num_cpus> -m <nG> [optional args]
+$ sh launch_app.sh -v 7 -b <blas_backend_to_use> -n -x <avx_instruction_set_name> -p -d <num_cpus> -m <nG> [optional args]
 ```
 
 or
 
 ```
-$ sh run_me.sh -v 7 -b <blas_backend_to_use> -n -t <instance_type> -p -d <num_cpus> -m <nG> [optional args]
+$ sh launch_app.sh -v 7 -b <blas_backend_to_use> -n -t <instance_type> -p -d <num_cpus> -m <nG> [optional args]
 ```
 
 ## Using the GPU
 
-To use the GPU, pass in the `-u` option to let the script know that you're planning to use the GPU. Then provide either a URL or s3 bucket path for NCCL with the `-y` option, and provide either a URL or s3 bucket path for cuDNN with the `-z` option. Note that, due to limitations of my playbooks, NCCL and cuDNN must both be hosted in an s3 bucket in order for s3 buckets to be used.
+To use the GPU, pass in the `-u` option to let the script know that you're planning to use the GPU. If you're not using a custom base image from this repository, then provide either a URL or s3 bucket path for NCCL with the `-y` option, and provide either a URL or s3 bucket path for cuDNN with the `-z` option. Note that, due to limitations of my playbooks, NCCL and cuDNN must both be hosted in an s3 bucket in order for s3 buckets to be used.
 
 If you are going to use s3 buckets, additional information is required. You will need to pass in the `-o` option to provide: (1.) AWS access key, (2.) AWS secret access key, (3.) AWS region, and (4.) AWS profile. (See `run_me.sh -h` for more info on the AWS arguments that are required to be passed in.)
+
+If you are going to use EBS, simply pass in the `-f` option.

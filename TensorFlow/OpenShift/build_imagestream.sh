@@ -170,16 +170,17 @@ else
     build_image_template_name="tensorflow-${BACKEND}-build-image-rhel${RHEL_VERSION}"
 fi
 
-# Check image streams
+# Check image streams. If the image stream name already exists, append a number.
 check_imagestream=$(oc get is $IS_NAME | grep NAME)
-if [[ ! -z $check_imagestream ]]; then
-    oc delete is $IS_NAME
-fi
-
-# Check the existing image builds
-check_existing_builds=$(oc get builds | grep ${build_image_template_name})
-if [[ ! -z $check_existing_builds ]]; then
-    oc delete build "${build_image_template_name}-1"
+if [[ ! -z ${check_imagestream} ]]; then
+    original_is_name=${IS_NAME}
+    count=1;
+    while [[ ! -z ${check_imagestream} ]]; do
+        IS_NAME="${IS_NAME}-${count}"
+	count=$((count+1))
+	check_imagestream=$(oc get is $IS_NAME | grep NAME)
+    done
+    echo "WARNING: Image Stream name '${original_is_name}' already exists. Rather than deleting ${original_is_name}, the proposed Image Stream name '${IS_NAME}' will be used."
 fi
 
 echo "------------------"
@@ -287,18 +288,41 @@ while [[ -z $build_succeeded_status ]] && [[ -z $build_failed_status ]] && [[ -z
 
 done
 
+# Set the final second count
+if (( sec_count == 0 )); then
+    final_sec="00"
+else
+    final_sec="${sec_count}"
+fi
+
+# Prepare for debug statements
+if [[ ! -z ${USE_GPU} ]]; then
+    if [[ ${RHEL_VERSION} == "7" ]]; then
+        cuda_version="10"
+        dockerfile_suffix="_cuda10"
+    else
+        cuda_version="10.1"
+        dockerfile_suffix="_cuda10.1"
+    fi
+elif [[ ${AVX} == "avx512" ]]; then
+    dockerfile_suffix="_avx512"
+fi
+if [[ ${BACKEND} == "fftw" ]]; then
+    dockerfile_folder="FFTW_backend"
+else
+    dockerfile_folder="OpenBLAS_backend"
+fi
+
 if [[ ! -z $build_failed_status ]]; then
-    if (( sec_count == 0 )); then
-        echo "[FATAL - ${min_count}:00 ] Image build FAILED, so build job will not run."
-    else
-        echo "[FATAL - ${min_count}:${sec_count} ] Image build FAILED, so build job will not run."
-    fi
+    echo "[FATAL - ${min_count}:${final_sec}] Image build FAILED, so build job will not run."
+    echo "[DEBUG - ${min_count}:${final_sec}] Possible solutions:"
+    echo "[DEBUG - ${min_count}:${final_sec}]     >> Check if you've created an OpenShift Image Registry pull secret via a dockercfg. To create a dockercfg, run 'make -C setup/images openshift-secret' from the command line."
+    echo "[DEBUG - ${min_count}:${final_sec}]     >> Check if you've forked this repository and modified your OpenShift image under ../Dockerfiles/${dockerfile_folder}/Dockerfile.openshift_rhel${RHEL_VERSION}${dockerfile_suffix}"
+    echo "[DEBUG - ${min_count}:${final_sec}]     >> If you're using the GPU, check if you've modified and made a mistake in your base image (../Dockerfiles/custom/rhel${RHEL_VERSION}/cuda/Dockerfile.rhel${RHEL_VERSION}_cuda${cuda_version})."
 elif [[ ! -z $build_stopped_status ]]; then
-    if (( sec_count == 0 )); then
-        echo "[FATAL - ${min_count}:00 ] Image build STOPPED, so build job will not run."
-    else
-        echo "[FATAL - ${min_count}:${sec_count} ] Image build STOPPED, so build job will not run."
-    fi
+    echo "[FATAL] - ${min_count}:${final_sec}] Image build STOPPED, so build job will not run. This happens when the previous build was interruped (e.g., CTRL+C or CTRL+Z was pressed). Please rerun this script as it usually solves that error."
+else
+    echo "[INFO] - ${min_count}:${final_sec}] Image '${IS_NAME}' was built successfully! Please reference this image name when running 'launch_app.py'"
 fi
 
 rm statuses.txt
