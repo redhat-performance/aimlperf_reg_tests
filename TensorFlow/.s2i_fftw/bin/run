@@ -300,14 +300,3 @@ mkdir benchmarks && cd benchmarks
 # Clone the 'models' repo, which contains benchmarks
 git clone https://github.com/tensorflow/models.git
 
-# Export the PYTHONPATH to point to: (1.) Default Python site packages, (2.) the new TensorFlow installation, and (3.) the 'models' repo
-export PYTHONPATH="${PATH_TO_PYTHON_SITE_PKGS}:${TENSORFLOW_INSTALL_DIR}:${TOPDIR}/benchmarks/models"
-
-# Enter the 'image_classification' directory
-cd models/official/vision/image_classification
-
-# Now get CIFAR-10 dataset
-python3 ../../r1/resnet/cifar10_download_and_extract.py
-
-# Run the benchmarks
-python3 resnet_cifar_main.py --num_gpus=${NUM_DEVICES}

@@ -35,7 +35,7 @@ ENV FFTW_PREREQS_PLAYBOOK=${TOPDIR}/playbooks/fftw_package_installation
 ENV TF_PREREQS_PLAYBOOK=${TOPDIR}/playbooks/tensorflow_package_installation
 ENV FFTW_INSTALLATION=${TOPDIR}/playbooks/FFTW_installation
 ENV TENSORFLOW_INSTALLATION=${TOPDIR}/playbooks/TensorFlow_installation
-ENV TENSORFLOW_BENCHMARKS=${TOPDIR}/playbooks/TensorFlow_benchmarks
+ENV TENSORFLOW_MODELS=${TOPDIR}/playbooks/TensorFlow_Models
 ENV NCCL_INSTALLATION=${TOPDIR}/playbooks/nccl_installation
 ENV CUDNN_INSTALLATION=${TOPDIR}/playbooks/cudnn_installation
 
@@ -44,7 +44,7 @@ RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
     mkdir -p ${TF_PREREQS_PLAYBOOK} && \
     mkdir -p ${FFTW_INSTALLATION} && \
     mkdir -p ${TENSORFLOW_INSTALLATION} && \
-    mkdir -p ${TENSORFLOW_BENCHMARKS} && \
+    mkdir -p ${TENSORFLOW_MODELS} && \
     mkdir -p ${NCCL_INSTALLATION} && \
     mkdir -p ${CUDNN_INSTALLATION} && \
     mkdir -p ${TOPDIR}/.cache
@@ -54,7 +54,7 @@ COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
 COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
 COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
 COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
-COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
+COPY TensorFlow/playbooks/TensorFlow_Models ${TENSORFLOW_MODELS}
 COPY TensorFlow/playbooks/nccl_installation ${NCCL_INSTALLATION}
 COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
 
@@ -124,7 +124,7 @@ RUN chmod 777 /usr/libexec/s2i/run && \
 # Set Ansible remote tmp
 RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
     echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg && \
-    echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_BENCHMARKS}/ansible.cfg
+    echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_MODELS}/ansible.cfg
 
 # Set user to 'default'
 USER default

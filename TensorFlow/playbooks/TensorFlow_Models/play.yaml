@@ -1,0 +1,67 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  # Set global vars
+  vars:
+
+    # Destination directory for benchmarks
+    benchmarks_dest_dir: '{{ benchmarks_path | default("${HOME}/benchmarks") }}'
+
+    # Which device to use? cpu or gpu
+    device: '{{ device_type | default("cpu") }}'
+
+    # Number of GPUs/CPUs to use
+    num_devices: '{{ num_devices | default("1") }}'
+
+    # Set path to TensorFlow
+    tensorflow_dir: '{{ tensorflow_path | default("${HOME}/tensorflow") }}'
+   
+    # Set path to Python
+    python3_lib_dir: '{{ python3_libs_path | default("/usr/local/lib/python3.6/site-packages") }}' 
+
+  # Begin
+  tasks:
+
+    # Check for benchmarks
+    - name: Checking for benchmarks 'models' folder
+      shell: ls '{{ benchmarks_dest_dir }}'
+      register: ls_benchmarks_dest_dir
+      ignore_errors: yes
+
+    # Download the benchmarks if they're not found
+    - block:
+
+      # Create install directory where the benchmarks will reside
+      - name: If benchmarks are not found, create benchmark install directory
+        file:
+          state: directory
+          path: '{{ benchmarks_dest_dir }}'
+
+      - name: If benchmarks are not found, clone benchmarks
+        git:
+          repo: https://github.com/tensorflow/models.git
+          path: '{{ benchmarks_dest_dir }}'
+
+      when: ls_benchmarks_dest_dir.stdout == ""
+
+    # Download CIFAR-10
+    - name: Download the CIFAR-10 dataset
+      shell: |
+        cd '{{ benchmarks }}/models/official/vision/image_classification'
+        python3 ../../r1/resnet/cifar10_download_and_extract.py
+      environment: 
+        PYTHONPATH: '{{ tensorflow_dir }}/{{ python3_lib_dir }}/{{ benchmarks_dest_dir }}'
+
+    # Run the benchmarks
+    - name: Run the benchmarks
+      shell: |
+        cd '{{ benchmarks }}/models/official/vision/image_classification'
+        python3 resnet_cifar_main.py --num_gpus=${num_devices} 
+      environment:
+        PYTHONPATH: '{{ tensorflow_dir }}/{{ python3_lib_dir }}/{{ benchmarks_dest_dir }}'
+      register: resnet56_cifar10_benchmarks_output
+
+    - debug:
+        var: resnet56_cifar10_benchmarks_output.stdout_lines

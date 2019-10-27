@@ -8,8 +8,10 @@ This folder contains three playbooks for building, installing, and running Tenso
   4. `package_installation`
   5. `TensorFlow_installation`
   6. `TensorFlow_benchmarks`
+  7. `TensorFlow_Models`
 
-The first playbook installs CUDA devel packages for building TensorFlow on the GPU. It requires super user. The second playbook installs cuDNN to /usr/local/cuda (or wherever you've installed CUDA to). The third playbook installs NCCL. The fourth package installs the necessary requirements for building TensorFlow (e.g., required packages, etc.). The fifth package installs TensorFlow itself, but it does not use super user. Instead, it installs the package locally to `${HOME}/.local/lib/python3.6/site-packages`. And finally, the last playbook downloads the benchmarks and runs them.
+The first playbook installs CUDA devel packages for building TensorFlow on the GPU. It requires super user. The second playbook installs cuDNN to /usr/local/cuda (or wherever you've installed CUDA to). The third playbook installs NCCL. The fourth package installs the necessary requirements for building TensorFlow (e.g., required packages, etc.). The fifth package installs TensorFlow itself, but it does not use super user. Instead, it installs the package locally to `${HOME}/.local/lib/python3.6/site-packages`. And finally, the last two playbooks download the benchmarks and runs them. However, note that `TensorFlow_benchmarks`
+only works for TensorFlow 1.x. Use `TensorFlow_Models` for TensorFlow 2.0.0 and up.
 
 ## CUDA Optional Installation
 
@@ -99,9 +101,9 @@ $ cd TensorFlow_installation
 $ ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: 8}"
 ```
 
-## TensorFlow Benchmarks
+## TensorFlow 1.x Benchmarks
 
-To run the Resnet50 TensorFlow benchmarks on a RHEL 7 *or* RHEL 8 machine,
+To run the Resnet50 TensorFlow 1.x benchmarks on a RHEL 7 *or* RHEL 8 machine,
 
 ```
 $ cd TensorFlow_benchmarks
@@ -113,3 +115,15 @@ Alternatively, you can use a different benchmark by passing in `--extra-vars="{m
 You can also run the benchmarks on a GPU if you'd prefer the GPU over the CPU. To do so, pass in `--extra-vars="{device: gpu}"
 
 Benchmark results are saved to a file named `[model]-[device]-benchmark-[yyyy]-[mm]-[dd]-[hh]:[mm]:[ss].log` under `${HOME}/tensorflow_benchmarks/tf_cnn_benchmraks`.
+
+
+## TensorFlow Models (TensorFlow 2.x Benchmarks)
+
+To run the Resnet56 TensorFlow 2.x benchmarks on a RHEL 7 *or* RHEL 8 machine,
+
+```
+$ cd TensorFlow_Models
+$ ansible-playbook -i hosts play.yaml --extra-vars="{tensorflow_path: '/path/to/tensorflow', python3_libs_path: '/path/to/python3.x/site-packages', benchmarks_path: '/path/to/benchmarks'}"
+```
+
+The benchmarks will be downloaded if the benchmarks in the provided `/path/to/benchmarks` path does not have the benchmarks. Otherwise, the benchmarks will automatically run. Thus, the script only downloads the benchmarks *once* unless you specify different paths for the benchmarks each time. You do not have to do anything special/extra to get the benchmarks.
