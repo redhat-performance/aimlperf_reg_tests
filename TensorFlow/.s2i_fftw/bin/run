@@ -294,9 +294,8 @@ echo ""
 ##########################################
 #        RUN TENSORFLOW BENCHMARKS       #
 ##########################################
-cd ${TOPDIR}
-mkdir benchmarks && cd benchmarks
+cd ${TOPDIR}/playbooks/TensorFlow_Models
 
-# Clone the 'models' repo, which contains benchmarks
-git clone https://github.com/tensorflow/models.git
-
+# Run the benchmarks
+benchmarks_path="${TOPDIR}/benchmarks"
+ansible-playbook -i hosts play.yaml --extra-vars="{tensorflow_path: '${TENSORFLOW_INSTALL_DIR}', python3_libs_path: '${PATH_TO_PYTHON_SITE_PKGS}', benchmarks_path: '${benchmarks_path}', device_type: '${DEVICE}', num_devices: ${NUM_DEVICES}}"
