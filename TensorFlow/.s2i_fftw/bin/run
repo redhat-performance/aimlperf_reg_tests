@@ -301,7 +301,7 @@ mkdir benchmarks && cd benchmarks
 git clone https://github.com/tensorflow/models.git
 
 # Export the PYTHONPATH to point to: (1.) Default Python site packages, (2.) the new TensorFlow installation, and (3.) the 'models' repo
-export PYTHONPATH="${PATH_TO_PYTHON_SITE_PKGS}:${TENSORFLOW_INSTALL_DIR}:${TOPDIR}/models"
+export PYTHONPATH="${PATH_TO_PYTHON_SITE_PKGS}:${TENSORFLOW_INSTALL_DIR}:${TOPDIR}/benchmarks/models"
 
 # Enter the 'image_classification' directory
 cd models/official/vision/image_classification
