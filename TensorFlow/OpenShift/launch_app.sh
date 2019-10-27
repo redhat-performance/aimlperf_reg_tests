@@ -602,7 +602,7 @@ if [[ ! -z ${job_failed2_ignore_check} ]]; then
 fi
 
 # A secondary check for the same thing:
-if [[ ! -z ${USE_GPU} ]] || [[ ! -z ${RHEL_VERSION} == "8" ]]; then
+if [[ ! -z ${USE_GPU} ]] || [[ ${RHEL_VERSION} == "8" ]]; then
     fftw_install_dir="/opt/app-root/src/custom_fftw"
 else
     fftw_install_dir="home/custom_fftw"
