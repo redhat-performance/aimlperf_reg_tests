@@ -21,12 +21,15 @@
     # Set path to Python
     python3_lib_dir: '{{ python3_libs_path | default("/usr/local/lib/python3.6/site-packages") }}' 
 
+    # Python 3 requests library
+    python3_requests: '{{ lookup("env", "HOME") }}/requests'
+
   # Begin
   tasks:
 
     # Check for benchmarks
     - name: Checking for benchmarks 'models' folder
-      shell: ls '{{ benchmarks_dest_dir }}'
+      shell: ls '{{ benchmarks_dest_dir }}/models'
       register: ls_benchmarks_dest_dir
       ignore_errors: yes
 
@@ -37,30 +40,56 @@
       - name: If benchmarks are not found, create benchmark install directory
         file:
           state: directory
-          path: '{{ benchmarks_dest_dir }}'
+          path: '{{ benchmarks_dest_dir }}/models'
 
       - name: If benchmarks are not found, clone benchmarks
         git:
           repo: https://github.com/tensorflow/models.git
-          dest: '{{ benchmarks_dest_dir }}'
+          dest: '{{ benchmarks_dest_dir }}/models'
 
       when: ls_benchmarks_dest_dir.stdout == ""
+
+    # Check for Python 'requests' library
+    - name: Check for Python 'requests' library under {{ python3_libs_path }}
+      shell: ls '{{ python3_libs_path }}/requests'
+      register: ls_python3_requests
+      ignore_errors: yes
+
+    - name: Check for Python 'requests' library under {{ python3_requests }}
+      shell: ls '{{ python3_requests }}'
+      register: ls_python3_requests_non_standard
+      ignore_errors: yes
+      when: ls_python3_requests.stdout == ''
+
+    # If Python 3 requests is not installed, then install it
+    - block:
+
+      - name: If 'requests' is not installed, create directory for it under {{ python3_requests }}
+        file:
+          state: directory
+          path: '{{ python3_requests }}'
+
+      - name: Install 'requests' to {{ python3_requests }}
+        pip:
+          name: requests
+          executable: pip3
+      when: ls_python3_requests_non_standard.stdout == '' and ls_python3_requests.stdout == ''
 
     # Download CIFAR-10
     - name: Download the CIFAR-10 dataset
       shell: |
-        cd '{{ benchmarks }}/models/official/vision/image_classification'
+        cd '{{ benchmarks_dest_dir }}/models/official/vision/image_classification'
         python3 ../../r1/resnet/cifar10_download_and_extract.py
       environment: 
-        PYTHONPATH: '{{ tensorflow_dir }}/{{ python3_lib_dir }}/{{ benchmarks_dest_dir }}'
+        PYTHONPATH: '{{ tensorflow_dir }}:{{ python3_lib_dir }}:{{ benchmarks_dest_dir }}/models:{{ python3_requests }}'
 
     # Run the benchmarks
     - name: Run the benchmarks
       shell: |
-        cd '{{ benchmarks }}/models/official/vision/image_classification'
+        cd '{{ benchmarks_dest_dir }}/models/official/vision/image_classification'
         python3 resnet_cifar_main.py --num_gpus=${num_devices} 
       environment:
-        PYTHONPATH: '{{ tensorflow_dir }}/{{ python3_lib_dir }}/{{ benchmarks_dest_dir }}'
+        PYTHONPATH: '{{ tensorflow_dir }}:{{ python3_lib_dir }}:{{ benchmarks_dest_dir }}/models:{{ python3_requests }}'
       register: resnet56_cifar10_benchmarks_output
 
     - debug:
