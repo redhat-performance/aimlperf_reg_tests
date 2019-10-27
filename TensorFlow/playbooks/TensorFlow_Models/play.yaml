@@ -42,7 +42,7 @@
       - name: If benchmarks are not found, clone benchmarks
         git:
           repo: https://github.com/tensorflow/models.git
-          path: '{{ benchmarks_dest_dir }}'
+          dest: '{{ benchmarks_dest_dir }}'
 
       when: ls_benchmarks_dest_dir.stdout == ""
 
