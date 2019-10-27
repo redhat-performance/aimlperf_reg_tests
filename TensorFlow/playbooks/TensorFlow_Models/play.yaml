@@ -59,7 +59,6 @@
       shell: ls '{{ python3_requests }}'
       register: ls_python3_requests_non_standard
       ignore_errors: yes
-      when: ls_python3_requests.stdout == ''
 
     # If Python 3 requests is not installed, then install it
     - block:
@@ -87,7 +86,7 @@
     - name: Run the benchmarks
       shell: |
         cd '{{ benchmarks_dest_dir }}/models/official/vision/image_classification'
-        python3 resnet_cifar_main.py --num_gpus=${num_devices} 
+        python3 resnet_cifar_main.py --num_gpus={{ num_devices }} 
       environment:
         PYTHONPATH: '{{ tensorflow_dir }}:{{ python3_lib_dir }}:{{ benchmarks_dest_dir }}/models:{{ python3_requests }}'
       register: resnet56_cifar10_benchmarks_output
