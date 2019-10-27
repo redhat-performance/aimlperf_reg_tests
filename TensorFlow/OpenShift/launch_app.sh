@@ -555,7 +555,7 @@ fi
 time (oc logs job/${APP_NAME}) > app_logs.txt 2> logs_time.txt
 
 # Grep for any failures
-job_failed1=$(cat app_logs.txt | grep "failed")    # TensorFlow fails
+job_failed1=$(cat app_logs.txt | grep "failed")    # TensorFlow/playbook fails (e.g., "failed=1")
 job_failed2=$(cat app_logs.txt| grep "FAILED! =>") # Playbook fails
 job_failed3=$(cat app_logs.txt| grep "Failed")     # TensorFlow fails
 
@@ -565,10 +565,31 @@ job_errors2=$(cat app_logs.txt| grep "error")  # TensorFlow error
 job_errors3=$(cat app_logs.txt | grep "Error") # TensorFlow error
 
 # Check if the Ansible output has 'failed=0' in it. If it does, then the job hasn't actually
-# failed. The 'failed=0' just means the Ansible status shows that no failures occurred.
+# failed. The 'failed=0' just means the Ansible status shows that no failures occurred at
+# that particular step. But we still need to see if other failures occurred.
 job_failed1_ansible_status_check=$(echo ${job_failed1} | grep "failed=0")
+
+# If we found 'failed=0', then let's check if there are any 'failed=1', 'failed=2', etc.
+# substrings in the 'job_failed1' string
 if [[ ! -z ${job_failed1_ansible_status_check} ]]; then
-    job_failed1=""
+
+    # Keep track of the number of failures
+    num_failures=0
+
+    # Loop to check the number of failures. At most, we can have 9 the way I've designed 
+    # things.
+    for c in {0..9}; do
+        other_failures_check=$(echo ${job_failed1} | grep "failed=${c}")
+	if [[ ! -z ${other_failures_check} ]]; then
+	    break
+	fi
+	num_failures=${c}
+    done
+
+    # If there are no failures, then we're okay.
+    if (( num_failures == 0 )); then
+        job_failed1=""
+    fi
 fi
 
 # Check if one of the failures is from the installation of FFTW (because there is a part which 
@@ -577,6 +598,17 @@ fi
 # it's not a "real" error; Ansible just *thinks* an empty output is an error).
 job_failed2_ignore_check=$(echo ${job_failed2} | grep "...ignoring")
 if [[ ! -z ${job_failed2_ignore_check} ]]; then
+    job_failed2=""
+fi
+
+# A secondary check for the same thing:
+if [[ ! -z ${USE_GPU} ]] || [[ ! -z ${RHEL_VERSION} == "8" ]]; then
+    fftw_install_dir="/opt/app-root/src/custom_fftw"
+else
+    fftw_install_dir="home/custom_fftw"
+fi
+job_failed2_ls_check=$(echo ${job_failed2} | grep "ls: cannot access ${fftw_install_dir}/usr: No such file or directory")
+if [[ ! -z ${job_failed2_ls_check} ]]; then
     job_failed2=""
 fi
 
