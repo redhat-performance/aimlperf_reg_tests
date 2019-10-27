@@ -366,10 +366,11 @@ if [[ ! -z ${check_app_name} ]]; then
     original_app_name=${APP_NAME}
     count=1;
     while [[ ! -z ${check_app_name} ]]; do
-        APP_NAME="${APP_NAME}-${count}"
+        new_app_name="${APP_NAME}-${count}"
 	count=$((count+1))
-	check_app_name=$(oc get jobs | grep $APP_NAME)
+	check_app_name=$(oc get jobs | grep ${new_app_name})
     done
+    APP_NAME=${new_app_name}
     echo "WARNING: App name '${original_app_name}' already exists. Rather than deleting ${original_app_name}, the proposed app name '${APP_NAME}' will be used."
 fi
 
@@ -562,6 +563,13 @@ job_failed3=$(cat app_logs.txt| grep "Failed")     # TensorFlow fails
 job_errors1=$(cat app_logs.txt | grep "ERROR") # TensorFlow/playbook error
 job_errors2=$(cat app_logs.txt| grep "error")  # TensorFlow error
 job_errors3=$(cat app_logs.txt | grep "Error") # TensorFlow error
+
+# Check if the Ansible output has 'failed=0' in it. If it does, then the job hasn't actually
+# failed. The 'failed=0' just means the Ansible status shows that no failures occurred.
+job_failed1_ansible_status_check=$(echo ${job_failed1} | grep "failed=0")
+if [[ ! -z ${job_failed1_ansible_status_check} ]]; then
+    job_failed1=""
+fi
 
 # Check if one of the failures is from the installation of FFTW (because there is a part which 
 # sometimes throws an error depending on the Podman/Docker image used, but the errors is
