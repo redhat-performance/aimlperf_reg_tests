@@ -72,6 +72,7 @@
         pip:
           name: requests
           executable: pip3
+          extra_args: '--target={{ python3_requests }}'
       when: ls_python3_requests_non_standard.stdout == '' and ls_python3_requests.stdout == ''
 
     # Download CIFAR-10
