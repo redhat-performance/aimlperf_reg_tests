@@ -90,6 +90,7 @@
       environment:
         PYTHONPATH: '{{ tensorflow_dir }}:{{ python3_lib_dir }}:{{ benchmarks_dest_dir }}/models:{{ python3_requests }}'
       register: resnet56_cifar10_benchmarks_output
+      ignore_errors: yes
 
     - debug:
         var: resnet56_cifar10_benchmarks_output.stdout_lines
