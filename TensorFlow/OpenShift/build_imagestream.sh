@@ -93,8 +93,8 @@ fi
 if [[ ${BACKEND} != "fftw" ]] && [[ ${BACKEND} != "openblas" ]]; then
     echo "Invalid backend choice '${BACKEND}'. Choose from: {fftw,openblas}"
     exit 1
-elif [[ ${BACKEND} == "openblas" ]]; then
-    echo "OpenBLAS backend build not implemented yet."
+elif [[ ${BACKEND} == "openblas" ]] && [[ -z ${USE_GPU} ]]; then
+    echo "The OpenBLAS backend build for the CPU is not implemented yet. Only the GPU OpenBLAS backend build is implemented at this time."
     exit 1
 fi
 
