@@ -30,36 +30,25 @@ RUN sed -i "/[main]/a timeout=${YUM_TIMEOUT}" /etc/yum.conf
 # Set top directory
 ENV TOPDIR=${HOME}
 
-# Set playbook paths
-ENV TENSORFLOW_BENCHMARKS=${TOPDIR}/playbooks/TensorFlow_benchmarks
+# Set playbook and scripts paths
+ENV TENSORFLOW_BENCHMARKS=${TOPDIR}/playbooks/TensorFlow_Models
+ENV SCRIPTS_FOLDER=${TOPDIR}/scripts
 
 # Create folders for playbooks and folder for playbooks cache
 RUN mkdir -p ${TENSORFLOW_BENCHMARKS} && \
+    mkdir -p ${SCRIPTS_FOLDER} && \
     mkdir -p ${TOPDIR}/.cache
 
 # Copy playbooks and scripts
-COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
+COPY TensorFlow/playbooks/TensorFlow_Models ${TENSORFLOW_BENCHMARKS}
+COPY helper_scripts/Python/install_python_from_source.sh ${SCRIPTS_FOLDER}
 
 # Put on port 8080
 EXPOSE 8080
 
 # Install Python version ${PYTHON_VERSION}
-RUN yum -y install gcc \
-                   make \
-                   openssl-devel \
-                   wget \
-                   zlib-devel && \
-    cd /tmp && \
-    wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
-    tar xvf Python-${PYTHON_VERSION}.tgz && \
-    cd Python-${PYTHON_VERSION} && \
-    ./configure --enable-optimizations && \
-    make && \
-    make install && \
-    cd .. && \
-    rm -rf Python-${PYTHON_VERSION} && \
-    rm -rf Python-${PYTHON_VERSION}.tgz && \
-    rm -rf /var/cache/yum/*
+RUN cd ${SCRIPTS_FOLDER} && \
+    sh install_python_from_source.sh ${PYTHON_VERSION}
 
 # Install Ansible
 RUN yum -y install git && \
@@ -94,7 +83,7 @@ RUN chmod 777 /usr/libexec/s2i/run && \
     chmod -R 777 /usr/local/cuda
 
 # Install TensorFlow GPU
-RUN pip3 install tensorflow-gpu==2.0
+RUN pip3 install tensorflow-gpu==2.0.0b1
 
 # Set Ansible remote tmp
 RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_BENCHMARKS}/ansible.cfg
