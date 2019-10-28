@@ -4,9 +4,6 @@ ENV LANG=en_US.utf8
 USER root
 ENV BUILDER_VERSION 1.0
 
-# RHEL version (for building FFTW)
-ENV RHEL_VERSION=7
-
 # Python version
 ENV PYTHON_VERSION=3.6.9
 
