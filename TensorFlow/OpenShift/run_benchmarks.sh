@@ -1,10 +1,10 @@
 #!/bin/bash
 
 usage() {
-    echo "This script launches the TensorFlow CNN High-Performance benchmark app on an AWS OpenShift cluster for RHEL 7 or RHEL 8. Node Feature Discovery may optionally be used for selecting specific nodes, and CPU Manager may optionally be used as well."
+    echo "This script runs the TensorFlow 'models' benchmarks using an s2i image data."
     echo ""
     echo ""
-    echo "Usage: $0 [-v rhel_version] [-b backend] [-d number_of_devices] [-s secret_name] [-n] [-t instance_type] [-i custom_imagestream_name] [-a custom_app_name] [-x instruction_set] [-p] [-c gcc_path] [-m memory_size] [-g] [-o] [-j aws_access_key] [-k aws_secret_access_key] [-l aws_region] [-q aws_profile_name]"
+    echo "Usage: $0 [-v rhel_version] [-b backend] [-d number_of_devices] [-s secret_name] [-n] [-t instance_type] [-i custom_imagestream_name] [-a custom_app_name] [-x instruction_set] [-p] [-c gcc_path] [-m memory_size] [-g]"
     echo "  REQUIRED:"
     echo "  -v  Version of RHEL to use. Choose from: {7, 8}."
     echo ""
@@ -12,40 +12,26 @@ usage() {
     echo ""
     echo "  -d  Number of devices to use. Must be an integer"
     echo ""
+    echo "  -i  The name of the ImageStream to use."
     echo ""
-    echo "  REQUIRED FOR RHEL 8 BUILDS and CUDA RHEL 8 BUILDS:"
+    echo ""
+    echo "  REQUIRED FOR RHEL 8 BUILDS and CUDA RHEL 7+8 BUILDS:"
     echo "  -s  Pull secret name for pulling images from registry.redhat.io. (You must have already created and loaded the secret into OpenShift.)"
     echo ""
     echo ""
     echo "  OPTIONAL:"
-    echo "  -e  Python executable. (e.g., '/usr/bin/python3' or '/usr/local/bin/python3')"
-    echo ""
     echo "  -c  C compiler (gcc). Only usable with RHEL 7 when using the -x argument. (e.g., '/usr/bin/gcc')"
     echo ""
-    echo "  -n  Use NFD. (Requires option -i *or* -x to be used!)"
-    echo "      -i  Custom ImageStream name (this is what your image will be named). Default: fftw-rhel<rhel-version>"
+    echo "  -n  Use NFD. (Requires option -i *or* -t to be used!)"
+    echo "      -t  Instance type (e.g., m4.4xlarge, m4.large, etc.). Currently cannot be combined with AVX* instructions (this is a TODO)"
     echo "      -x  Use no-AVX, AVX, AVX2, or AVX512 instructions. Choose from: {no_avx, avx, avx2, avx512}. Currently cannot be combined with -i (this is a TODO)"
-    echo ""
-    echo "  -t  Instance type (e.g., m4.4xlarge, m4.large, etc.). Currently cannot be combined with AVX* instructions (this is a TODO)"
     echo ""
     echo "  -a  Custom app name (this is what your app will be named). Default: tensorflow-s2i-benchmark-app-rhel7"
     echo ""
     echo "  -p  Use CPU Manager. (Requires options -d and -m to be used!)"
     echo "      -m  Memory size to use with CPU Manager"
     echo ""
-    echo "  -u  Use GPUs (Requires option -t, -d, -y, and -z to be used!)"
-    echo "      -y  NCCL download URL (e.g., https://www.example.com/nccl.txz) or s3 bucket path (e.g., s3://some_bucket/nccl.txz)"
-    echo "      -z  cuDNN download URL (e.g., https://www.example.com/cudnn.tgz) or s3 bucket path (e.g., s3://some_bucket/cudnn.tgz)"
-    echo ""
-    echo "  -o  Use AWS for downloading cuDNN and NCCL. (Currently, either use AWS for downloading both or don't use AWS at all. This is a TODO.)"
-    echo "      -j  AWS access key"
-    echo "      -k  AWS secret access key"
-    echo "      -l  AWS region"
-    echo "      -q  AWS profile name"
-    echo ""
-    echo "  -f  Use EBS for getting NCCL and cuDNN"
-    echo ""
-    echo "  -g  Use pre-installed GPU packages"
+    echo "  -u  Use the GPU"
     exit
 }
 
@@ -55,7 +41,7 @@ USE_GPU="false"
 # Set vars
 templates_path="templates"
 
-options=":h:v:b:t:ns:i:a:x:d:pm:l:ugy:z:c:oj:k:l:q:fe:"
+options=":h:v:b:t:ns:i:a:x:d:pm:u"
 while getopts "$options" x
 do
     case "$x" in
@@ -107,30 +93,6 @@ do
       s)
           SECRET=${OPTARG}
           ;;
-      o)
-          USE_AWS="true"
-          ;;
-      j)
-          AWS_ACCESS_KEY=${OPTARG}
-          ;;
-      k)
-          AWS_SECRET_ACCESS_KEY=${OPTARG}
-          ;;
-      l)
-          AWS_REGION=${OPTARG}
-          ;;
-      q)
-          AWS_PROFILE_NAME=${OPTARG}
-          ;;
-      f)
-          USE_EBS="true"
-          ;;
-      g)
-	  USE_PREINSTALLED="true"
-	  ;;
-      e)
-	  PYTHON_EXECUTABLE=${OPTARG}
-	  ;;
       *)
           usage
           ;;
@@ -192,16 +154,6 @@ elif [[ ! ${NUM_DEVICES} =~ ^[0-9]+$ ]]; then
 elif (( NUM_DEVICES <= 0 )); then
     echo "ERROR. Number of devices must be a positive number. You entered: ${NUM_DEVICES}"
     exit 1
-fi
-
-# Check Python executable and guess what it should be
-if [[ -z ${PYTHON_EXECUTABLE} ]]; then
-    if [[ ${RHEL_VERSION} == "7" ]]; then
-        PYTHON_EXECUTABLE="/usr/local/bin/python3"
-    else
-	PYTHON_EXECUTABLE="/usr/bin/python3"
-    fi
-    echo "WARNING. No Python executable path was passed. Guessing which executable to use. Using ${PYTHON_EXECUTABLE}."
 fi
 
 # Check the instance type, if passed in
@@ -280,82 +232,38 @@ elif [[ ${CPU_MANAGER} ]] && [[ ${USE_GPU} == "true" ]]; then
     exit 1
 fi
 
-# Check GPU options
-if [[ ${USE_GPU} == "true" ]]; then
-
-    # Check if using AWS
-    if [[ ! -z ${USE_AWS} ]]; then
-        if [[ -z ${AWS_ACCESS_KEY} ]]; then
-            echo "ERROR. The -o option was passed in to use AWS, but no access key was provided. Please provide an access key with the -j option."
-            exit 1
-        elif [[ -z ${AWS_SECRET_ACCESS_KEY} ]]; then
-            echo "ERROR. The -o option was passed in to use AWS and an AWS access key was provided, but no secret access key was provided. Please provide a secret access key with the -k option."
-            exit 1
-        elif [[ -z ${AWS_REGION} ]]; then
-            echo "ERROR. The -o option was passed in to use AWS and both the AWS access and secret access keys were provided, but a region was not provided. Please provide a region using the -l option."
-            exit 1
-        elif [[ -z ${AWS_PROFILE_NAME} ]]; then
-            echo "ERROR. The -o option was passed in to use AWS and all required arguments were provided except for the AWS profile name. Please provide a profile name with the -q option."
-            exit 1
-        fi
-    fi
-
-    # Make sure that the user didn't pass in more than one NCCL/cuDNN acquire method
-    if [[ ! -z ${USE_AWS} ]] && [[ ! -z ${USE_EBS} ]]; then
-	echo "ERROR. Cannot use AWS (-o) and EBS (-f) at the same time for installing NCCL and cuDNN. Please choose one or the other."
-        exit 1
-    fi
-
-    # Make sure that the user didn't pass in -g (for using preinstalled NCCL + cuDNN) and EBS or AWS
-    if [[ ! -z ${USE_AWS} ]] && [[ ! -z ${USE_PREINSTALLED} ]]; then
-	echo "ERROR. Cannot use AWS (-o) for installing NCCL and cuDNN when the preinstalled installation option (-g) is passed in. Please choose one or the other."
-        exit 1
-    elif [[ ! -z ${USE_EBS} ]] && [[ ! -z ${USE_PREINSTALLED} ]]; then
-	echo "ERROR. Cannot use EBS (-f) for installing NCCL and cuDNN when the preinstalled installation option (-g) is passed in. Please choose one or the other."
-        exit 1
-    fi	
-
-    # Make sure the user passed in a download URL or s3 bucket folder for NCCL if not using EBS
-    if [[ -z ${NCCL_URL} ]] && [[ -z ${USE_EBS} ]] && [[ -z ${USE_PREINSTALLED} ]]; then
-        echo "ERROR. NCCL download URL or s3 bucket folder name is missing. Please provide an NCCL URL or s3 bucket with the -y option."
-        exit 1
-    fi
-
-    # Do the same with cuDNN if not using EBS
-    if [[ -z ${CUDNN_URL} ]] && [[ -z ${USE_EBS} ]] && [[ -z ${USE_PREINSTALLED} ]]; then
-        echo "ERROR. cuDNN download URL or s3 bucket folder name is missing. Please provide a cuDNN URL or s3 bucket with the -z option."
-        exit 1
-    fi
-fi
-
 # Initialize app name (if not specified)
 if [[ -z ${APP_NAME} ]]; then
     if [[ ! -z ${CPU_MANAGER} ]] && [[ ! -z ${AVX} ]]; then
-        APP_NAME="tensorflow-s2i-benchmark-app-rhel${RHEL_VERSION}-${AVX}-cpu-managed"
+        APP_NAME="tensorflow-benchmarks-rhel${RHEL_VERSION}-${AVX}-cpu-managed"
+    elif [[ ! -z ${CPU_MANAGER} ]] && [[ -z ${AVX} ]]; then
+        APP_NAME="tensorflow-benchmarks-rhel${RHEL_VERSION}-cpu-managed"
     elif [[ ! -z ${AVX} ]]; then
-        APP_NAME="tensorflow-s2i-benchmark-app-rhel${RHEL_VERSION}-${AVX}"
+        APP_NAME="tensorflow-benchmarks-app-rhel${RHEL_VERSION}-${AVX}"
     elif [[ ${USE_GPU} == "true" ]]; then
-        APP_NAME="tensorflow-s2i-benchmark-app-rhel${RHEL_VERSION}-gpu"
+        APP_NAME="tensorflow-benchmarks-app-rhel${RHEL_VERSION}-gpu"
     else
-        APP_NAME="tensorflow-s2i-benchmark-app-rhel${RHEL_VERSION}"
+        APP_NAME="tensorflow-benchmarks-app-rhel${RHEL_VERSION}"
     fi
 fi
 
-# Determine build job template name
-if [[ ! -z ${USE_AVX} ]]; then
-    build_job_name="tensorflow-${AVX}-nfd-build-job"
+# Determine benchmarks job template name
+if [[ ! -z ${USE_AVX} ]] && [[ -z ${CPU_MANAGER} ]]; then
+    benchmarks_job_name="tensorflow-nfd-benchmarks-job-${AVX}"
+elif [[ -z ${USE_AVX} ]] && [[ ! -z ${CPU_MANAGER} ]]; then
+    benchmarks_job_name="tensorflow-nfd-benchmarks-job-cpu-mgr"
+elif [[ ! -z ${USE_AVX} ]] && [[ ! -z ${CPU_MANAGER} ]]; then
+    benchmarks_job_name="tensorflow-nfd-benchmarks-job-${AVX}-cpu-mgr"
 elif [[ ! -z ${USE_GPU} ]]; then
-    build_job_name="tensorflow-nfd-build-job-gpu"
-elif [[ ! -z ${CPU_MANAGER} ]]; then
-    build_job_name="tensorflow-nfd-cpu-manager-build-job"
+    benchmarks_job_name="tensorflow-nfd-benchmarks-job-gpu"
 elif [[ ! -z ${INSTANCE_TYPE} ]]; then
-    build_job_name="tensorflow-nfd-build-job"
+    benchmarks_job_name="tensorflow-nfd-benchmarks-job"
 else
-    build_job_name="tensorflow-build-job"
+    benchmarks_job_name="tensorflow-benchmarks-job"
 fi
 
 # Check if the build job template has been added.
-check_job_template=$(oc get templates ${build_job_name} | grep NAME)
+check_job_template=$(oc get templates ${benchmarks_job_name} | grep NAME)
 if [[ -z $check_job_template ]]; then
     echo "ERROR. Job template does not exist. Please run 'make -C setup/templates' before running this script."
 fi
@@ -377,104 +285,51 @@ fi
 if [[ "${NFD}" == "nfd" ]]; then
     if [[ ! -z "${AVX}" ]]; then
         if [[ ! -z "${CPU_MANAGER}" ]]; then
-            oc new-app --template="${build_job_name}" \
+            oc new-app --template="${benchmarks_job_name}" \
                        --param=IMAGESTREAM_NAME=$IS_NAME \
                        --param=APP_NAME=$APP_NAME \
-                       --param=RHEL_VERSION=$RHEL_VERSION \
                        --param=NUM_CPUS=$NUM_DEVICES \
                        --param=N_CPUS=$NUM_DEVICES \
                        --param=MEMORY_SIZE=$MEMORY_SIZE \
-                       --param=CC=$GCC \
-		       --param=PYTHON_EXECUTABLE=$PYTHON_EXECUTABLE
+		       --param=BACKEND=$BACKEND
         else
-            oc new-app --template="${build_job_name}" \
+            oc new-app --template="${benchmarks_job_name}" \
                        --param=IMAGESTREAM_NAME=$IS_NAME \
                        --param=APP_NAME=$APP_NAME \
-                       --param=RHEL_VERSION=$RHEL_VERSION \
                        --param=NUM_CPUS=$NUM_DEVICES \
-                       --param=CC=$GCC \
-		       --param=PYTHON_EXECUTABLE=$PYTHON_EXECUTABLE
+		       --param=BACKEND=$BACKEND
         fi
     else
         if [[ ! -z "${CPU_MANAGER}" ]]; then
-            oc new-app --template="${build_job_name}" \
+            oc new-app --template="${benchmarks_job_name}" \
                        --param=IMAGESTREAM_NAME=$IS_NAME \
                        --param=APP_NAME=$APP_NAME \
                        --param=INSTANCE_TYPE=$INSTANCE_TYPE \
-                       --param=RHEL_VERSION=$RHEL_VERSION \
                        --param=NUM_CPUS=$NUM_DEVICES \
-                       --param=N_CPUS=$NUM_DEVICES \
                        --param=MEMORY_SIZE=$MEMORY_SIZE \
-                       --param=CC=$GCC \
-		       --param=PYTHON_EXECUTABLE=$PYTHON_EXECUTABLE
+		       --param=BACKEND=$BACKEND
         elif [[ ${USE_GPU} == "true" ]]; then
-            if [[ ${USE_AWS} == "true" ]]; then
-                oc new-app --template="${build_job_name}" \
-                           --param=IMAGESTREAM_NAME=$IS_NAME \
-                           --param=APP_NAME=$APP_NAME \
-                           --param=INSTANCE_TYPE=$INSTANCE_TYPE \
-                           --param=RHEL_VERSION=$RHEL_VERSION \
-                           --param=NUM_GPUS=$NUM_DEVICES \
-                           --param=NCCL_URL=$NCCL_URL \
-                           --param=CUDNN_URL=$CUDNN_URL \
-                           --param=CC=$GCC \
-		           --param=PYTHON_EXECUTABLE=$PYTHON_EXECUTABLE \
-                           --param=AWS_ACCESS_KEY=$AWS_ACCESS_KEY \
-                           --param=AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-                           --param=AWS_REGION=$AWS_REGION \
-                           --param=AWS_PROFILE=$AWS_PROFILE_NAME \
-                           --param=WHICH_SOURCE="s3"
-            elif [[ ! -z ${USE_EBS} ]]; then
-                oc new-app --template="${build_job_name}" \
-                           --param=IMAGESTREAM_NAME=$IS_NAME \
-                           --param=APP_NAME=$APP_NAME \
-                           --param=INSTANCE_TYPE=$INSTANCE_TYPE \
-                           --param=RHEL_VERSION=$RHEL_VERSION \
-                           --param=NUM_GPUS=$NUM_DEVICES \
-                           --param=CC=$GCC \
-		           --param=PYTHON_EXECUTABLE=$PYTHON_EXECUTABLE \
-                           --param=WHICH_SOURCE="ebs"
-            elif [[ ! -z ${USE_PREINSTALLED} ]]; then
-                oc new-app --template="${build_job_name}" \
-                           --param=IMAGESTREAM_NAME=$IS_NAME \
-                           --param=APP_NAME=$APP_NAME \
-                           --param=INSTANCE_TYPE=$INSTANCE_TYPE \
-                           --param=RHEL_VERSION=$RHEL_VERSION \
-                           --param=NUM_GPUS=$NUM_DEVICES \
-                           --param=CC=$GCC \
-		           --param=PYTHON_EXECUTABLE=$PYTHON_EXECUTABLE \
-                           --param=WHICH_SOURCE="none"
-            else
-                oc new-app --template="${build_job_name}" \
-                           --param=IMAGESTREAM_NAME=$IS_NAME \
-                           --param=APP_NAME=$APP_NAME \
-                           --param=INSTANCE_TYPE=$INSTANCE_TYPE \
-                           --param=RHEL_VERSION=$RHEL_VERSION \
-                           --param=NUM_GPUS=$NUM_DEVICES \
-                           --param=NCCL_URL=$NCCL_URL \
-                           --param=CUDNN_URL=$CUDNN_URL \
-                           --param=CC=$GCC \
-		           --param=PYTHON_EXECUTABLE=$PYTHON_EXECUTABLE
-            fi
-        else
-            oc new-app --template="${build_job_name}" \
+            oc new-app --template="${benchmarks_job_name}" \
                        --param=IMAGESTREAM_NAME=$IS_NAME \
                        --param=APP_NAME=$APP_NAME \
                        --param=INSTANCE_TYPE=$INSTANCE_TYPE \
-                       --param=RHEL_VERSION=$RHEL_VERSION \
+                       --param=NUM_GPUS=$NUM_DEVICES \
+		       --param=BACKEND=$BACKEND
+        else
+            oc new-app --template="${benchmarks_job_name}" \
+                       --param=IMAGESTREAM_NAME=$IS_NAME \
+                       --param=APP_NAME=$APP_NAME \
+                       --param=INSTANCE_TYPE=$INSTANCE_TYPE \
                        --param=NUM_CPUS=$NUM_DEVICES \
-                       --param=CC=$GCC \
-		       --param=PYTHON_EXECUTABLE=$PYTHON_EXECUTABLE
+		       --param=BACKEND=$BACKEND
         fi
     fi
 else
-    oc new-app --template=$build_job_name \
+    oc new-app --template=$benchmarks_job_name \
                --param=IMAGESTREAM_NAME=$IS_NAME \
                --param=APP_NAME=$APP_NAME \
-               --param=RHEL_VERSION=$RHEL_VERSION \
                --param=NUM_CPUS=$NUM_DEVICES \
-               --param=CC=$GCC \
-               --param=PYTHON_EXECUTABLE=$PYTHON_EXECUTABLE
+	       --param=BACKEND=$BACKEND
 fi
 
 # Check the app status

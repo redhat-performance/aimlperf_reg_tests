@@ -2,9 +2,9 @@ apiVersion: "v1"
 kind: "Template"
 metadata:
   annotations:
-    description: "Template to run a TensorFlow build job"
-    tags: "tensorflow-nfd-build-job"
-  name: "tensorflow-nfd-build-job"
+    description: "Template to run the TensorFlow benchmarks on the GPU"
+    tags: "tensorflow-nfd-benchmarks-job-gpu"
+  name: "tensorflow-nfd-benchmarks-job-gpu"
 objects:
 - apiVersion: "batch/v1"
   kind: "Job"
@@ -22,20 +22,21 @@ objects:
         containers:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
-          command: ["/usr/libexec/s2i/run"]
+          command: ["sh", "-c"]
+          args:
+            - "cd /mnt/tensorflow_ebs"
+            - "ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: \"${TENSORFLOW_TOP_DIR}/${BACKEND}_backend/tensorflow\", device_type: \"${DEVICE}\", benchmarks_path: \"${BENCHMARKS_PATH}\", num_devices: \"${NUM_DEVICES}\"}'"]
           env:
-            - name: "RHEL_VERSION"
-              value: "${RHEL_VERSION}"
+            - name: "TENSORFLOW_TOP_DIR"
+              value: "/mnt/tensorflow_ebs/tensorflow-gpu"
             - name: "DEVICE"
-              value: "cpu"
+              value: "gpu"
+            - name: "BENCHMARKS_PATH"
+              value: "/home/benchmarks"
             - name: "NUM_DEVICES"
-              value: "${NUM_CPUS}"
-            - name: "CC"
-              value: "${CC}"
-            - name: "WHICH_SOURCE"
-              value: "none"
-            - name: "PYTHON_EXECUTABLE"
-              value: "${PYTHON_EXECUTABLE}"
+              value: "${NUM_GPUS}"
+            - name: "BACKEND"
+              value: "${BACKEND}"
           volumeMounts:
             - mountPath: "/mnt/tensorflow_ebs"
               name: "tensorflow-pv"
@@ -44,8 +45,15 @@ objects:
           persistentVolumeClaim:
             claimName: "tensorflow-pvc"
         restartPolicy: "Never"
-        nodeSelector:
-          beta.kubernetes.io/instance-type: "${INSTANCE_TYPE}"
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: "beta.kubernetes.io/instance-type"
+                  operator: "In"
+                  values:
+                  - "${INSTANCE_TYPE}"
 parameters:
 - description: "ImageStream name"
   name: "IMAGESTREAM_NAME"
@@ -55,7 +63,7 @@ parameters:
 - description: "TensorFlow benchmark app name"
   name: "APP_NAME"
   from: '[A-Z0-9]{20}'
-  value: "tensorflow-s2i-benchmark-app"
+  value: "tensorflow-benchmarks-app"
   required: true
 - description: "Registry route. Use `oc registry info` to get the route after exposing it."
   name: "REGISTRY"
@@ -66,23 +74,13 @@ parameters:
   from: '[A-Z0-9]{15}'
   value: "openshift-image-registry"
   required: true
-- description: "AWS instance type"
-  name: "INSTANCE_TYPE"
-  value: "m4.4xlarge"
-- description: "Version of RHEL to use"
-  name: "RHEL_VERSION"
-  from: '[0-9]{1}'
-  value: "7"
-- description: "Path to Python executable"
-  name: "PYTHON_EXECUTABLE"
-  value: "/usr/bin/python3"
-  required: true
-- description: "Number of CPUs to use (must be an integer)"
-  name: "NUM_CPUS"
+- description: "Number of GPUs to use (must be an integer)"
+  name: "NUM_GPUS"
   from: '[0-9]{5}'
   value: ""
   required: false
-- description: "Path to gcc"
-  name: "CC"
-  value: "/usr/bin/gcc"
-  required: true
+- description: "Backend -- Either 'fftw' or 'openblas'"
+  name: "BACKEND"
+  from: '[A-Z]{8}'
+  value: "fftw"
+  required: false

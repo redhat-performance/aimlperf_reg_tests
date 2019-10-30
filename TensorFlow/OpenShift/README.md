@@ -114,23 +114,30 @@ You can use GPUs, Node Feature Discovery, etc. For additional help and more info
 $ sh build_imagestream.sh -h
 ```
 
-Once the image has been built, you may run the build job, which uses the ImageStream you just built to launch the benchmark app, which builds TensorFlow and its dependencies, then runs the benchmarks:
+Once the image has been built, you may run the build job to build the TensorFlow library, which uses the ImageStream you just built to launch the s2i builder app, which builds TensorFlow and its dependencies:
 
 ```
-$ sh launch_app.sh -v <rhel_version> -b <blas_backend_to_use> -i <imagestream_name> [optional args]
+$ sh launch_s2i_build.sh -v <rhel_version> -b <blas_backend_to_use> -i <imagestream_name> [optional args]
 ```
 
 For additional help,
 
 ```
-$ sh launch_app.sh -h
+$ sh launch_s2i_build.sh -h
 ```
+
+Once all is said and done, you can finally launch the benchmarks app. Use `run_benchmarks.sh` to launch the benchmarks app. For more info on how to launch the app, see:
+
+```
+$ sh run_benchmarks.sh -h
+```
+
 
 ## How it Works
 
 By default, your OpenShift image will be named `tensorflow-rhel7` for RHEL 7 or `tensorflow-rhel8` for RHEL 8, and will be saved to your exposed OpenShift image registry. (NOTE: You don't need to tell the `run_me.sh` script the link to your registry since the script automatically determines the link for you. However, if you have *multiple* registries for whatever reason, you may want to edit which registry to use. So, edit the `REGISTRY` variable.)
 
-You can run `run_me.sh` multiple times if you want. It is safe to do so, as it cleans up the environment every time you want to start a new build.
+You can run `build_imagestream.sh` and `launch_app.sh` multiple times if you want. It is safe to do so, as it cleans up the environment every time you want to start a new build.
 
 
 ## Advanced Usage: Node Feature Discovery

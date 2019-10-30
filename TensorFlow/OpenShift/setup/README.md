@@ -118,8 +118,26 @@ $ make -C images openshift_secret
 
 ## Volumes
 
-Run `create_ebs_volume.sh` to create an EBS volume. Call `sh create_ebs_volumes.sh -h` for help on how to use the script. 
+The first step in creating any `PersistentVolume` or `PersistentVolumeClaim` is to create an EBS volume. You can create one by following the steps in the next subsection.
 
-Once the EBS volume has been created, create a dummy pod that can be used to save data to the EBS volume by using the `create_temp_nvidia_pod.sh` script or the `create_temp_imagenet_pod.sh` script. Both scripts only take in one argument -- the **volume ID** generated from the `create_ebs_volumes.sh` script.
+### Creating an EBS Volume (the Easy Way)
 
-*If* one of the PV/PVC creation scripts fails or otherwise hangs, exit out of the script and call `force_pv_and_pvc_deletion.sh`. This script takes in only one argument, either: `nvidia` or `imagenet`. The former argument deletes the existing NVIDIA pv and pvc, while the latter deletes the existing ImageNet pv and pvc.
+Run `volumes/create_ebs_volume.sh` to create an EBS volume. Call `sh create_ebs_volumes.sh -h` for help on how to use the script. 
+
+### TensorFlow Volumes
+
+Once your EBS volume has been created, grab the **volume ID** and run
+
+```
+$ sh volumes/setup_tensorflow_ebs.sh <VOLUME-ID>
+```
+
+This will create a TensorFlow PV and TensorFlow PVC based on the EBS volumes.
+
+### ImageNet and NVIDIA Packages
+
+The following instructions pertain to populating EBS volumes with ImageNet data and NVIDIA packages:
+
+Once the EBS volume has been created, create a dummy pod that can be used to save data to the EBS volume by using the `volumes/create_temp_nvidia_pod.sh` script or the `volumes/create_temp_imagenet_pod.sh` script. Both scripts only take in one argument -- the **volume ID** generated from the `create_ebs_volumes.sh` script.
+
+*If* one of the PV/PVC creation scripts fails or otherwise hangs, exit out of the script and call `volumes/force_pv_and_pvc_deletion.sh`. This script takes in only one argument, either: `nvidia` or `imagenet`. The former argument deletes the existing NVIDIA pv and pvc, while the latter deletes the existing ImageNet pv and pvc.

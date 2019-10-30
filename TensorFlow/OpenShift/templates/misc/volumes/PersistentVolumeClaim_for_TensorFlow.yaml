@@ -1,0 +1,13 @@
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  name: "tensorflow-pvc"
+spec:
+  accessModes:
+    - "ReadWriteMany"
+  resources:
+    requests:
+      storage: "50Gi"
+  volumeName: "tensorflow-pv"
+  fsType: "xfs"
+  storageClassName: "gp2"

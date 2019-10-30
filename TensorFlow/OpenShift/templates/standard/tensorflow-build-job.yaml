@@ -36,6 +36,13 @@ objects:
               value: "none"
             - name: "PYTHON_EXECUTABLE"
               value: "${PYTHON_EXECUTABLE}"
+          volumeMounts:
+            - mountPath: "/mnt/tensorflow_ebs"
+              name: "tensorflow-pv"
+        volumes:
+        - name: "tensorflow-pv"
+          persistentVolumeClaim:
+            claimName: "tensorflow-pvc"
         restartPolicy: "Never"
 parameters:
 - description: "ImageStream name"

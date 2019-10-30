@@ -49,12 +49,12 @@ objects:
             - name: "AWS_SECRET_ACCESS_KEY"
               value: "${AWS_SECRET_ACCESS_KEY}"
           volumeMounts:
-            - mountPath: "/tmp/nvidia_ebs"
-              name: "nvidia-packages-pv"
+            - mountPath: "/mnt/tensorflow_ebs"
+              name: "tensorflow-pv"
         volumes:
-        - name: "nvidia-packages-pv"
+        - name: "tensorflow-pv"
           persistentVolumeClaim:
-            claimName: "nvidia-packages-pvc"
+            claimName: "tensorflow-pvc"
         restartPolicy: "Never"
         affinity:
           nodeAffinity:
