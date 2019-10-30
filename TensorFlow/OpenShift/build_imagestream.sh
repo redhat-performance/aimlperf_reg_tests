@@ -176,11 +176,12 @@ if [[ ! -z ${check_imagestream} ]]; then
     original_is_name=${IS_NAME}
     count=1;
     while [[ ! -z ${check_imagestream} ]]; do
-        IS_NAME="${IS_NAME}-${count}"
+        new_is_name="${IS_NAME}-${count}"
 	count=$((count+1))
-	check_imagestream=$(oc get is $IS_NAME | grep NAME)
+	check_imagestream=$(oc get jobs | grep ${new_is_name})
     done
-    echo "WARNING: Image Stream name '${original_is_name}' already exists. Rather than deleting ${original_is_name}, the proposed Image Stream name '${IS_NAME}' will be used."
+    echo "WARNING: Image Stream name '${original_is_name}' already exists. Rather than deleting ${original_is_name}, the proposed Image Stream name '${new_is_name}' will be used."
+    IS_NAME=${new_is_name}
 fi
 
 echo "------------------"
