@@ -1,35 +1,5 @@
 #!/bin/bash
 
-# Which version of RHEL?
-RHEL_VERSION=$1
-
-# Which device? 'cpu' or 'gpu'
-DEVICE=$2
-
-# How many GPUs or CPUs to use?
-NUM_DEVICES=$3
-
-# C compiler? e.g., '/usr/bin/gcc'
-CC=$4
-
-# Use s3 bucket, URL, or none? Set this variable to 's3' for s3 bucket, 'url' for URL, or 'none' for none
-WHICH_SOURCE=$5
-
-# Path to Python executable (do not call this 'PYTHONPATH' or it'll mess things up!)
-PYTHON_EXECUTABLE=$6
-
-# NCCL download. Either an s3 path or a URL
-NCCL=$7
-
-# cuDNN download. Either an s3 path or a URL
-CUDNN=$8
-
-# AWS credentials info
-AWS_PROFILE=$9
-AWS_REGION=$10
-AWS_ACCESS_KEY=$11
-AWS_SECRET_ACCESS_KEY=$12
-
 # Check device input
 if [[ ${DEVICE} != "cpu" ]] && [[ ${DEVICE} != "gpu" ]]; then
     echo "ERROR. Unrecognized device '${DEVICE}'"

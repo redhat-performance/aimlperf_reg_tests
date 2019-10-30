@@ -23,7 +23,19 @@ objects:
         - name: "${APP_NAME}"
           image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM_NAME}:latest"
           command: ["/usr/libexec/s2i/run"]
-          args: ["${RHEL_VERSION}", "cpu", "${NUM_CPUS}", "${CC}", "none", "${PYTHON_EXECUTABLE}"]
+          env:
+            - name: "RHEL_VERSION"
+              value: "${RHEL_VERSION}"
+            - name: "DEVICE"
+              value: "cpu"
+            - name: "NUM_DEVICES"
+              value: "${NUM_CPUS}"
+            - name: "CC"
+              value: "${CC}"
+            - name: "WHICH_SOURCE"
+              value: "none"
+            - name: "PYTHON_EXECUTABLE"
+              value: "${PYTHON_EXECUTABLE}"
         restartPolicy: "Never"
         nodeSelector:
           beta.kubernetes.io/instance-type: "${INSTANCE_TYPE}"
