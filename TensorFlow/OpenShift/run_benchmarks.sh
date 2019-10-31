@@ -119,7 +119,13 @@ fi
 if [[ -z ${IS_NAME} ]]; then
     echo "ERROR. ImageStream name missing. Please pass in an argument for the image name with the -i option."
     exit 1
+fi
 
+# Check if the imagestream name exists
+check_is_name=$(oc get is/${IS_NAME})
+if [[ -z ${check_is_name} ]]; then
+    echo "ERROR. Provided ImageStream name does not exist. Please build the ImageStream object using 'build_imagestream.sh' or provide a valid ImageStream name."
+    exit 1
 fi
 
 # Check NFD options

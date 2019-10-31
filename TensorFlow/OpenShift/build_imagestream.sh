@@ -323,7 +323,7 @@ if [[ ! -z $build_failed_status ]]; then
 elif [[ ! -z $build_stopped_status ]]; then
     echo "[FATAL] - ${min_count}:${final_sec}] Image build STOPPED, so build job will not run. This happens when the previous build was interruped (e.g., CTRL+C or CTRL+Z was pressed). Please rerun this script as it usually solves that error."
 else
-    echo "[INFO] - ${min_count}:${final_sec}] Image '${IS_NAME}' was built successfully! Please reference this image name when running 'launch_app.py'"
+    echo "[INFO] - ${min_count}:${final_sec}] Image '${IS_NAME}' was built successfully! Please reference this image name when running 'launch_s2i_build.py'"
 fi
 
 rm statuses.txt
