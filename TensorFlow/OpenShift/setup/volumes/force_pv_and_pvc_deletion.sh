@@ -6,12 +6,15 @@ EBS_TYPE=$1
 if [[ -z ${EBS_TYPE} ]]; then
     echo "ERROR. Please pass in an EBS type, either: 'nvidia' or 'imagenet'."
     exit 1
-elif [[ ${EBS_TYPE} != "nvidia" ]] && [[ ${EBS_TYPE} != "imagenet" ]]; then
-    echo "ERROR. Invalid EBS type '${EBS_TYPE}'. Please use either 'nvidia' or 'imagenet'."
+elif [[ ${EBS_TYPE} != "nvidia" ]] && [[ ${EBS_TYPE} != "imagenet" ]] && [[ ${EBS_TYPE} != "tensorflow" ]]; then
+    echo "ERROR. Invalid EBS type '${EBS_TYPE}'. Please use one of the following: {'nvidia', 'imagenet', 'tensorflow'}"
     exit 1
 elif [[ ${EBS_TYPE} == "nvidia" ]]; then
     PVC="nvidia-packages-pvc"
     PV="nvidia-packages-pv"
+elif [[ ${EBS_TYPE} == "tensorflow" ]]; then
+    PVC="tensorflow-pvc"
+    PV="tensorflow-pv"
 else
     PVC="imagenet-pvc"
     PV="imagenet-pv"
