@@ -107,8 +107,8 @@ ENV DEMO_SUITE=/usr/local/cuda/extras/demo_suite
 RUN if [[ ! -f ${DEMO_SUITE} ]]; then mkdir -p ${DEMO_SUITE}; fi && \
     ln -s /usr/local/cuda/samples/1_Utilities/deviceQuery ${DEMO_SUITE}/deviceQuery
 
-# Set user to 'default'
-USER default
+# Set user to '1001'
+USER 1001
 
 # Set work directory to 'HOME'
 WORKDIR ${HOME}

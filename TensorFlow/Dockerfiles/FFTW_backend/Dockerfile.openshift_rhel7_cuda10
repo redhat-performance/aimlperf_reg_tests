@@ -126,5 +126,5 @@ RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.c
     echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg && \
     echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_MODELS}/ansible.cfg
 
-# Set user to 'default'
-USER default
+# Set user to '1001'
+USER 1001
