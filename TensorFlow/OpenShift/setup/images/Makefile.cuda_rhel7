@@ -1,0 +1,26 @@
+IMAGE_BUILDER=$(shell if [[ ! -z `which podman` ]]; then echo `which podman`; elif [[ ! -z `which docker` ]]; then echo `which docker`; else echo " "; fi)
+REDHAT_IO_REGISTRY_SECRET_FILE=../../../secrets/redhat_io_registry.yaml
+REDHAT_IO_PULL_TOKEN=$(shell cat ../../../secrets/redhat_io_registry_password)
+REDHAT_IO_PULL_SECRET_NAME=$(shell while IFS=" " read -r t || [ -n "$$t" ]; do \
+			if [[ "$$t" == *"name:"* ]]; then echo $$t | cut -d ' ' -f 2 && break; fi; \
+done < "$(REDHAT_IO_REGISTRY_SECRET_FILE)")
+REDHAT_IO_PULL_ID=$(shell echo $(REDHAT_IO_PULL_SECRET_NAME) | cut -d'-' -f 1)
+REDHAT_IO_PULL_USER=$(shell echo $(REDHAT_IO_PULL_SECRET_NAME) | cut -d'-' -f 2)
+PUSH_TOKEN=$(shell oc serviceaccounts get-token 'builder')
+
+all: patch_registry build push
+
+patch_registry:
+	oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge
+
+build:
+	oc project openshift-image-registry
+	$(IMAGE_BUILDER) login -u '$(REDHAT_IO_PULL_ID)|$(REDHAT_IO_PULL_USER)' -p $(REDHAT_IO_PULL_TOKEN) registry.redhat.io
+	$(IMAGE_BUILDER) build --tag $(shell oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')/cuda:rhel7_with_toolkit -f Dockerfiles/custom/rhel7/cuda/Dockerfile.rhel7_cuda10_complete ../../../
+
+push:
+	$(IMAGE_BUILDER) login -u default -p $(PUSH_TOKEN) $(shell oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')
+	$(IMAGE_BUILDER) push $(shell oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}'):rhel7_cuda_with_toolkit --tls-verify=false
+
+clean:
+	$(IMAGE_BUILDER) rmi localhost/cuda:rhel7_with_toolkit
