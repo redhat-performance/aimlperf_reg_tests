@@ -260,32 +260,3 @@ fi
 echo ""
 echo "<< SUCCESS >> TensorFlow + NumPy built and installed!"
 echo ""
-
-##########################################
-#      SAVE BUILDS TO TENSORFLOW EBS     #
-##########################################
-# Set mount device
-tensorflow_mnt="/mnt/tensorflow_ebs"
-
-# Move TensorFlow build to EBS volume. This will overwrite 'tensorflow-gpu' or 'tensorflow-cpu'!
-tensorflow_ebs_install_dir="${tensorflow_mnt}/tensorflow-${DEVICE}/fftw_backend"
-if [[ ! -d ${tensorflow_ebs_install_dir} ]]; then
-    mkdir -p ${tensorflow_ebs_install_dir}
-fi
-mv ${TENSORFLOW_INSTALL_DIR} ${tensorflow_ebs_install_dir}
-
-# Move NumPy build to EBS volume
-mv ${HOME}/numpy ${tensorflow_mnt}
-
-# Make symlink from 'tensorflow-${DEVICE}/tensorflow/numpy' to 'tensorflow-${DEVICE}/numpy'
-rm -rf ${tensorflow_ebs_install_dir}/tensorflow/numpy
-ln -s ${tensorflow_mnt}/numpy ${tensorflow_ebs_install_dir}/tensorflow/numpy
-
-# Move FFTW to EBS
-mv ${FFTW_INSTALL_DIR} ${tensorflow_mnt}
-
-# Copy TensorFlow benchmarks to EBS volume only if it doesn't exist
-benchmarks_playbook_dir="${HOME}/playbooks/TensorFlow_Models"
-if [[ ! -d ${tensorflow_mnt}/TensorFlow_Models ]]; then
-    mv ${benchmarks_playbook_dir} ${tensorflow_mnt}
-fi
