@@ -25,7 +25,7 @@ objects:
           command: ["sh", "-c"]
           args:
             - "cd /mnt/tensorflow_ebs"
-            - "ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: \"${TENSORFLOW_TOP_DIR}/${BACKEND}_backend/tensorflow\", device_type: \"${DEVICE}\", benchmarks_path: \"${BENCHMARKS_PATH}\", num_devices: \"${NUM_DEVICES}\"}'"]
+            - "ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: \"${TENSORFLOW_TOP_DIR}/${BACKEND}_backend/tensorflow\", device_type: \"${DEVICE}\", benchmarks_path: \"${BENCHMARKS_PATH}\", num_devices: \"${NUM_DEVICES}\"}'"
           env:
             - name: "TENSORFLOW_TOP_DIR"
               value: "/mnt/tensorflow_ebs/tensorflow-cpu"
