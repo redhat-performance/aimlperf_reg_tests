@@ -169,6 +169,19 @@
       dest: '{{ LZ4_BUILD_DIR }}'
       version: '{{ LZ4_VERSION }}'
 
+  - name: << s2i/ubi only >> Check for any existing LZ4 binaries/symlinks
+    shell: ls /usr/local/bin | grep lz4
+    register: lz4_executables
+
+  - name: << s2i/ubi only >> Remove LZ4 symlinks
+    command: rm '{{ item }}'
+    with_items:
+      - '/usr/local/bin/lz4'
+      - '/usr/local/bin/lz4c'
+      - '/usr/local/bin/lz4cat'
+      - '/usr/local/bin/unlz4'
+    when: lz4_executables.stdout != ""
+
   - name: << s2i/ubi only >> Make LZ4 library
     make:
       target: all
@@ -207,7 +220,7 @@
 
   - name: << s2i/ubi only >> Get subversion
     unarchive:
-      src: http://apache.mirrors.tds.net/subversion/subversion-1.12.0.tar.gz
+      src: https://archive.apache.org/dist/subversion/subversion-1.13.0.tar.gz
       dest: '{{ SUBVERSION_BUILD_DIR }}'
       remote_src: yes
 
