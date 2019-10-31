@@ -21,9 +21,9 @@ Create a registry secret file under ../../../../secrets. Follow the instructions
 $ make -C images redhat_io_secret
 ```
 
-### Custom CUDA Images (from ../../Dockerfiles/custom)
+### Custom RHEL CUDA Images (from ../../Dockerfiles/custom)
 
-#### 1. Create .repo Files for CUDA and RHEL 8
+#### 1. Create .repo Files for CUDA as well as RHEL 7 and/or RHEL 8
 
 Follow the directions described in `../../../repos/README.md` for creating the necessary `.repo` files.
 
@@ -39,12 +39,21 @@ To load the necessary push and pull secrets for registry.redhat.io and your Open
 $ make -C images
 ```
 
+This will build a CUDA RHEL 7 image.
+
 To confirm the push was successful, you should run `oc get is` and see an output such as:
 
 ```
 $ oc get is
 NAME    IMAGE REPOSITORY                                                                      TAGS                 UPDATED
 cuda    default-route-openshift-image-registry.<cluster_url>/openshift-image-registry/cuda    rhel7-with-toolkit   8 minutes ago
+```
+
+If you wish to build a CUDA RHEL 8 image, you will have to do it with two different 'make' commands (for now):
+
+```
+$ make -C images secrets
+$ make -C images cuda_rhel8
 ```
 
 ## Volumes
