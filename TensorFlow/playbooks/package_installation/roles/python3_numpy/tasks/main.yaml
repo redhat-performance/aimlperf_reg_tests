@@ -172,6 +172,7 @@
   - name: << s2i/ubi only >> Check for any existing LZ4 binaries/symlinks
     shell: ls /usr/local/bin | grep lz4
     register: lz4_executables
+    ignore_errors: yes
 
   - name: << s2i/ubi only >> Remove LZ4 symlinks
     command: rm '{{ item }}'
