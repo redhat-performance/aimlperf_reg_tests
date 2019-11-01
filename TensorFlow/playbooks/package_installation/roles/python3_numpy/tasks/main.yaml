@@ -80,68 +80,67 @@
       name: Cython
       executable: pip3
 
-  - name: << s2i/ubi only >> Create APR build directory
+  - name: << s2i/ubi only >> Create build dirs for APR (Apache Portable Runtime), APR util, SQLite, LZ4, utf8proc, and Subversion
     file:
       state: directory
-      path: '{{ APR_BUILD_DIR }}'
+      path: '{{ item }}'
+    with_items:
+      - '{{ APR_BUILD_DIR }}'
+      - '{{ APR_UTIL_BUILD_DIR }}'
+      - '{{ SQLITE_BUILD_DIR }}'
+      - '{{ LZ4_BUILD_DIR }}'
+      - '{{ UTF8PROC_BUILD_DIR }}'
+      - '{{ SUBVERSION_BUILD_DIR }}'
 
-  - name: << s2i/ubi only >> Get APR (Apache Portable Runtime)
+  - name: << s2i/ubi only >> Download tarballs for APR, APR Util, SQLite, and Subversion
     unarchive:
-      src: https://archive.apache.org/dist/apr/apr-1.6.5.tar.gz
-      dest: '{{ APR_BUILD_DIR }}'
+      src: '{{ item.src }}'
+      dest: '{{ item.dest }}'
       remote_src: yes
+    with_items:
+      - { src: 'https://archive.apache.org/dist/apr/apr-{{ APR_VERSION }}.tar.gz', dest: '{{ APR_BUILD_DIR }}' }
+      - { src: 'https://archive.apache.org/dist/apr/apr-util-{{ APR_UTIL_VERSION }}.tar.gz', dest: '{{ APR_UTIL_BUILD_DIR }}' }
+      - { src: 'https://www.sqlite.org/2019/sqlite-autoconf-3280000.tar.gz', dest: '{{ SQLITE_BUILD_DIR }}'}
+      - { src: 'https://archive.apache.org/dist/subversion/subversion-{{ SUBVERSION_VERSION }}.tar.gz', dest: '{{ SUBVERSION_BUILD_DIR }}' }
+
+  - name: << s2i/ubi only >> Clone repositories for LZ4 and utf8proc
+    git:
+      repo: '{{ item.repo }}'
+      version: '{{ item.version }}'
+      dest: '{{ item.dest }}'
+    with_items:
+      - { repo: 'https://github.com/lz4/lz4.git', version: '{{ LZ4_VERSION }}', dest: '{{ LZ4_BUILD_DIR }}' }
+      - { repo: 'https://github.com/JuliaStrings/utf8proc.git', version: '{{ UTF8PROC_VERSION }}', dest: '{{ UTF8PROC_BUILD_DIR }}' }
 
   - name: << s2i/ubi only >> Configure APR
     shell: |
-      cd {{ APR_BUILD_DIR }}/apr-1.6.5
+      cd {{ APR_BUILD_DIR }}/apr-{{ APR_VERSION }}
       ./configure
 
   - name: << s2i/ubi only >> Make APR
     make:
       target: all
-      chdir: '{{ APR_BUILD_DIR }}/apr-1.6.5'
+      chdir: '{{ APR_BUILD_DIR }}/apr-{{ APR_VERSION }}'
 
   - name: << s2i/ubi only >> Install APR
     make:
       target: install
-      chdir: '{{ APR_BUILD_DIR }}/apr-1.6.5'
-
-  - name: << s2i/ubi only >> Create APR-util build directory
-    file:
-      state: directory
-      path: '{{ APR_UTIL_BUILD_DIR }}'
-
-  - name: << s2i/ubi only >> Get APR-util
-    unarchive:
-      src: http://apache.mirrors.hoobly.com//apr/apr-util-1.6.1.tar.gz
-      dest: '{{ APR_UTIL_BUILD_DIR }}'
-      remote_src: yes
+      chdir: '{{ APR_BUILD_DIR }}/apr-{{ APR_VERSION }}'
 
   - name: << s2i/ubi only >> Configure APR-util
     shell: |
-      cd {{ APR_UTIL_BUILD_DIR }}/apr-util-1.6.1
+      cd {{ APR_UTIL_BUILD_DIR }}/apr-util-{{ APR_UTIL_VERSION }}
       ./configure --with-apr=/usr/local/apr
 
   - name: << s2i/ubi only >> Make APR-util
     make:
       target: all
-      chdir: '{{ APR_UTIL_BUILD_DIR }}/apr-util-1.6.1'
+      chdir: '{{ APR_UTIL_BUILD_DIR }}/apr-util-{{ APR_UTIL_VERSION }}'
 
   - name: << s2i/ubi only >> Install APR-util
     make:
       target: install
-      chdir: '{{ APR_UTIL_BUILD_DIR }}/apr-util-1.6.1'
-
-  - name: << s2i/ubi only >> Create SQLite build directory
-    file:
-      state: directory
-      path: '{{ SQLITE_BUILD_DIR }}'
-
-  - name: << s2i/ubi only >> Get SQLite
-    unarchive:
-      src: https://www.sqlite.org/2019/sqlite-autoconf-3280000.tar.gz
-      dest: '{{ SQLITE_BUILD_DIR }}'
-      remote_src: yes
+      chdir: '{{ APR_UTIL_BUILD_DIR }}/apr-util-{{ APR_UTIL_VERSION }}'
 
   - name: << s2i/ubi only >> Configure SQLite
     shell: |
@@ -157,17 +156,6 @@
     make:
       target: install
       chdir: '{{ SQLITE_BUILD_DIR }}/sqlite-autoconf-3280000'
-
-  - name: << s2i/ubi only >> Create LZ4 build directory
-    file:
-      state: directory
-      path: '{{ LZ4_BUILD_DIR }}'
-
-  - name: << s2i/ubi only >> Get LZ4 library
-    git:
-      repo: https://github.com/lz4/lz4.git
-      dest: '{{ LZ4_BUILD_DIR }}'
-      version: '{{ LZ4_VERSION }}'
 
   - name: << s2i/ubi only >> Check for any existing LZ4 binaries/symlinks
     shell: ls /usr/local/bin | grep lz4
@@ -193,17 +181,6 @@
       target: install
       chdir: '{{ LZ4_BUILD_DIR }}'
 
-  - name: << s2i/ubi only >> Create directory for utf8proc
-    file:
-      state: directory
-      path: '{{ UTF8PROC_BUILD_DIR }}'
-
-  - name: << s2i/ubi only >> Get utf8proc
-    git:
-      repo: https://github.com/JuliaStrings/utf8proc.git
-      dest: '{{ UTF8PROC_BUILD_DIR }}'
-      version: '{{ UTF8PROC_VERSION }}'
-
   - name: << s2i/ubi only >> Make utf8proc
     make:
       target: all
@@ -214,60 +191,31 @@
       target: install
       chdir: '{{ UTF8PROC_BUILD_DIR }}'
 
-  - name: << s2i/ubi only >> Create subversion build directory
-    file:
-      state: directory
-      path: '{{ SUBVERSION_BUILD_DIR }}'
-
-  - name: << s2i/ubi only >> Get subversion
-    unarchive:
-      src: https://archive.apache.org/dist/subversion/subversion-1.13.0.tar.gz
-      dest: '{{ SUBVERSION_BUILD_DIR }}'
-      remote_src: yes
-
   - name: << s2i/ubi only >> Configure Subversion
     shell: |
-      cd {{ SUBVERSION_BUILD_DIR }}/subversion-1.12.0
+      cd {{ SUBVERSION_BUILD_DIR }}/subversion-{{ SUBVERSION_VERSION }}
       ./configure
 
   - name: << s2i/ubi only >> Make subversion
     make:
       target: all
-      chdir: '{{ SUBVERSION_BUILD_DIR }}/subversion-1.12.0'
+      chdir: '{{ SUBVERSION_BUILD_DIR }}/subversion-{{ SUBVERSION_VERSION }}'
 
   - name: << s2i/ubi only >> Install subversion
     make:
       target: install
-      chdir: '{{ SUBVERSION_BUILD_DIR }}/subversion-1.12.0'
+      chdir: '{{ SUBVERSION_BUILD_DIR }}/subversion-{{ SUBVERSION_VERSION }}'
 
-  - name: << s2i/ubi only >> Remove APR build folder
+  - name: << s2i/ubi only >> Remove build dirs
     file:
       state: absent
-      path: '{{ APR_BUILD_DIR }}'
-
-  - name: << s2i/ubi only >> Remove apr-utils build folder
-    file:
-      state: absent
-      path: '{{ APR_UTIL_BUILD_DIR }}'
-
-  - name: << s2i/ubi only >> Remove SQLite build folder
-    file:
-      state: absent
-      path: '{{ SQLITE_BUILD_DIR }}'
-
-  - name: << s2i/ubi only >> Remove LZ4 build folder
-    file:
-      state: absent
-      path: '{{ LZ4_BUILD_DIR }}'
-
-  - name: << s2i/ubi only >> Remove utf8proc build folder
-    file:
-      state: absent
-      path: '{{ UTF8PROC_BUILD_DIR }}'
-
-  - name: << s2i/ubi only >> Remove subversion build folder
-    file:
-      state: absent
-      path: '{{ SUBVERSION_BUILD_DIR }}'
+      path: '{{ item }}'
+    with_items:
+      - '{{ APR_BUILD_DIR }}'
+      - '{{ APR_UTIL_BUILD_DIR }}'
+      - '{{ SQLITE_BUILD_DIR }}'
+      - '{{ LZ4_BUILD_DIR }}'
+      - '{{ UTF8PROC_BUILD_DIR }}'
+      - '{{ SUBVERSION_BUILD_DIR }}'
 
   when: s2i_ubi == 'yes'
