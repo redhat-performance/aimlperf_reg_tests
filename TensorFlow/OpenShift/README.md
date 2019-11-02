@@ -104,11 +104,33 @@ oc exec -it tmp-imagenet-pod -- /bin/bash
 
 ...then download/upload your ImageNet data to the mounted volume located at `/tmp/imagenet_ebs`. Delete the pod when you're done, if desired.
 
-## How it Works
+## How to Run the Benchmarks
 
-By default, your OpenShift image will be named `tensorflow-rhel7` for RHEL 7 or `tensorflow-rhel8` for RHEL 8, and will be saved to your exposed OpenShift image registry. (NOTE: You don't need to tell the `run_me.sh` script the link to your registry since the script automatically determines the link for you. However, if you have *multiple* registries for whatever reason, you may want to edit which registry to use. So, edit the `REGISTRY` variable.)
+By default, your OpenShift "base" image will be named `tensorflow-rhel7` for RHEL 7 or `tensorflow-rhel8` for RHEL 8, and will be saved to your exposed OpenShift image registry. (NOTE: You don't need to tell the `run_me.sh` script the link to your registry since the script automatically determines the link for you. However, if you have *multiple* registries for whatever reason, you may want to edit which registry to use. So, edit the `REGISTRY` variable.) Since s2i is used, there will be an additional image created. After the second image has been created, you can run the benchmarks.
 
-You can run `build_imagestream.sh` and `launch_app.sh` multiple times if you want. It is safe to do so, as it cleans up the environment every time you want to start a new build.
+Assuming you have already run `configure` to generate a Makefile, you can do everything at once by running
+
+```
+$ make
+``
+
+To build just the base imagestream,
+
+```
+$ make imagestream
+```
+
+To build just the s2i imagestream,
+
+```
+$ make s2i
+```
+
+To run just the benchmarks,
+
+```
+$ make benchmarks
+```
 
 ## Automatically creating a Node
 
