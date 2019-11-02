@@ -1,0 +1,120 @@
+apiVersion: "v1"
+kind: "Template"
+metadata:
+  annotations:
+    description: "Template to make a standard TensorFlow build image with an FFTW NumPy backend using RHEL 7. This chooses any node."
+    tags: "tensorflow-fftw-s2i-build-cpu-standard"
+  name: "tensorflow-fftw-s2i-build-cpu-standard"
+objects:
+- apiVersion: "v1"
+  kind: "BuildConfig"
+  metadata:
+    name: "tensorflow-fftw-s2i-build-cpu-standard" 
+  spec:
+    runPolicy: "Serial" 
+    triggers: 
+      -
+        type: "ImageChange"
+    strategy: 
+      sourceStrategy:
+        from:
+          kind: "ImageStreamTag"
+          name: "${SOURCE_IMAGESTREAM}:latest"
+        scripts: "image:///usr/libexec/s2i"
+        env:
+          - name: "RHEL_VERSION"
+            value: "${RHEL_VERSION}"
+          - name: "DEVICE"
+            value: "cpu"
+          - name: "NUM_DEVICES"
+            value: "${NUM_CPUS}"
+          - name: "CC"
+            value: "${CC}"
+          - name: "WHICH_SOURCE"
+            value: "${WHICH_SOURCE}"
+          - name: "PYTHON_EXECUTABLE"
+            value: "${PYTHON_EXECUTABLE}"
+          - name: "NCCL"
+            value: "${NCCL_URL}"
+          - name: "CUDNN"
+            value: "${CUDNN_URL}"
+          - name: "AWS_PROFILE"
+            value: "${AWS_PROFILE}"
+          - name: "AWS_REGION"
+            value: "${AWS_REGION}"
+          - name: "AWS_ACCESS_KEY"
+            value: "${AWS_ACCESS_KEY}"
+          - name: "AWS_SECRET_ACCESS_KEY"
+            value: "${AWS_SECRET_ACCESS_KEY}"
+    output: 
+      to:
+        kind: "ImageStreamTag"
+        name: "${OUTPUT_IMAGESTREAM}:latest"
+- apiVersion: "v1"
+  kind: "ImageStream"
+  metadata:
+    name: "${OUTPUT_IMAGESTREAM}"
+    namespace: "openshift-image-registry"
+  spec:
+    dockerImageRepository: "${REGISTRY}/openshift-image-registry"
+parameters:
+- description: "Source ImageStream name"
+  name: "SOURCE_IMAGESTREAM"
+  from: '[A-Z0-9]{10}'
+  value: "tensorflow-fftw-rhel7"
+  required: true
+- description: "Output ImageStream name"
+  name: "OUTPUT_IMAGESTREAM"
+  from: '[A-Z0-9]{10}'
+  value: "tensorflow-s2i-build-rhel7-cpu"
+  required: true
+- description: "Registry route. Use `oc registry info` to get the route after exposing it."
+  name: "REGISTRY"
+  value: "image-registry.openshift-image-registry.svc:5000"
+  required: true
+- description: "AWS instance type"
+  name: "INSTANCE_TYPE"
+  value: "m4.4xlarge"
+- description: "RHEL version to use"
+  name: "RHEL_VERSION"
+  from: '[0-9]{1}'
+  value: "8"
+  required: true
+- description: "Number of CPUs to use (must be an integer)"
+  name: "NUM_CPUS"
+  from: '[0-9]{5}'
+  value: ""
+  required: false
+- description: "Which source? s3 bucket or url"
+  name: "WHICH_SOURCE"
+  value: "url"
+  required: true
+- description: "Path to Python executable"
+  name: "PYTHON_EXECUTABLE"
+  value: "/usr/bin/python3"
+  required: true
+- description: "URL or s3 bucket to download NCCL from"
+  name: "NCCL_URL"
+  required: false
+  value: ""
+- description: "URL or s3 bucket to download cuDNN from"
+  name: "CUDNN_URL"
+  required: false
+  value: ""
+- description: "Path to gcc"
+  name: "CC"
+  value: "/usr/bin/gcc"
+  required: true
+- description: "AWS profile name"
+  name: "AWS_PROFILE"
+  required: false
+- description: "AWS access key"
+  name: "AWS_ACCESS_KEY"
+  required: false
+- description: "AWS secret access key"
+  name: "AWS_SECRET_ACCESS_KEY"
+  required: false
+- description: "AWS region"
+  name: "AWS_REGION"
+  required: false
+

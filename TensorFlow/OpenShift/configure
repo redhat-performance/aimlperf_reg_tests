@@ -1,0 +1,488 @@
+#!/bin/bash
+
+# This script configures the app build
+
+while test $# -gt 0; do
+    case "${1}" in
+	-h|--help)
+            echo "This script configures the OpenShift TensorFlow benchmarking app"
+            echo ""
+            echo "[REQUIRED]"
+            echo "  -v, --rhel-version |  Version of RHEL to use. Choose from: {7, 8}."
+            echo "  -b, --backend      |  NumPy backend to use with TensorFlow. Choose from: {fftw, openblas, none}" 
+            echo "  -s, --pull-secret  |  Pull secret name for pulling images from registry.redhat.io or the OpenShift Image Registry namespace. (You must have already created and loaded the secret into OpenShift.)"
+	    echo "  -d, --num-devices  |  Number of devices (CPU or GPU) to use."
+            echo ""
+            echo "[OPTIONAL]"
+	    echo "  Instance Type Configuration"
+	    echo "  ---------------------------"
+	    echo "  Specify exact instance:"
+            echo "    -t, --instance-type |  Instance type (e.g., m4.4xlarge, m4.large, etc.). Currently cannot be combined with AVX* instructions (this is a TODO)"
+	    echo ""
+	    echo "  Specify instance based on AVX* instructions:"
+            echo "    --use-avx           |  Use AVX instructions"
+	    echo "    --use-avx2          |  Use AVX and AVX2 instructions"
+	    echo "    --use-avx512        |  Use AVX, AVX2, and AVX512 instructions"
+	    echo ""
+	    echo "  GPU Options"
+	    echo "  -----------"
+            echo "  --use-gpu         |  Use the GPU"
+	    echo "  --nccl            |  Optional NCCL URL or s3 bucket path"
+	    echo "  --cudnn           |  Optional cuDNN URL or s3 bucket path"
+	    echo "  --use-nvidia-ebs  |  Use an NVIDIA ebs (that you've created) which hosts NCCL and cuDNN"
+	    echo ""
+	    echo "  ImageStream Configuration"
+	    echo "  -------------------------"
+            echo "  -i, --imagestream   |  Custom ImageStream name (this is what your image will be named). Default: fftw-rhel<rhel-version>"
+	    echo ""
+	    echo "  Source-to-Image ImageStream Configuration"
+	    echo "  ---------------------------------------"
+	    echo "  --s2i-imagestream | Name of the s2i imagestream"
+            echo ""
+	    echo "  CPU Manager Configuration"
+	    echo "  -------------------------"
+	    echo "  --cpu-mgr     |  Use the CPU manager"
+	    echo "  -m, --memory  |  Amount of memory (resources) to allocate"
+	    echo ""
+	    echo "  AWS Configurations"
+	    echo "  ------------------"
+	    echo "  --aws-key, --aws-access-key                |  AWS Access key"
+	    echo "  --aws-secret-key, --aws-secret-access-key  |  AWS Secret Access key"
+	    echo "  --region, --aws-region                     |  AWS region"
+	    echo "  --profile, --aws-profile                   |  AWS Profile"
+	    exit 1
+	    ;;
+        -v|--rhel-version)
+	    shift
+	    if [[ ${1} != "7" ]] && [[ ${1} != "8" ]]; then
+	        echo "ERROR. Invalid version of RHEL. Choose from: {7,8}"
+		exit 1
+	    else
+		RHEL_VERSION=${1}
+	    fi
+	    shift
+	    ;;
+	-b|--backend)
+	    shift
+	    if [[ ${1} != "fftw" ]] && [[ ${1} != "openblas" ]] && [[ ${1} != "none" ]]; then
+	        echo "ERROR. Invalid backend choice. Choose from: {fftw, openblas, none}"
+		exit 1
+	    else
+		BACKEND=${1}
+	    fi
+            shift
+	    ;;
+	-d|--num-devices)
+	    shift
+	    NUM_DEVICES=${1}
+            if [[ ! ${NUM_DEVICES} =~ ^[0-9]+$ ]]; then
+                echo "ERROR. Number of devices is not a number. You entered: ${NUM_DEVICES}"
+                exit 1
+            elif (( NUM_DEVICES <= 0 )); then
+                echo "ERROR. Number of devices must be a positive number. You entered: ${NUM_DEVICES}"
+                exit 1
+            fi
+            shift
+	    ;;
+	-s|--pull-secret)
+	    shift
+	    PULL_SECRET=${1}
+	    shift
+	    ;;
+        -t|--instance-type)
+	    shift
+	    INSTANCE_TYPE=${1}
+	    shift
+	    ;;
+	--use-avx)
+	    AVX="avx"
+	    shift
+	    ;;
+	--use-avx2)
+	    AVX="avx2"
+	    shift
+	    ;;
+	--use-avx512)
+	    AVX="avx512"
+	    shift
+	    ;;
+	-i|--imagestream)
+	    shift
+	    IS_NAME=${1}
+	    shift
+	    ;;
+	-g|--use-gpu)
+	    USE_GPU="true"
+	    shift
+	    ;;
+	--use-cpu-mgr)
+	    USE_CPU_MANAGER="true"
+	    shift
+	    ;;
+        -m|--memory)
+	    shift
+	    CPU_MANAGER_MEMORY=${1}
+	    shift
+	    ;;
+	--aws-key|--aws-access-key)
+	    shift
+	    AWS_ACCESS_KEY=${1}
+	    shift
+	    ;;
+	--aws-secret-key|--aws-secret-access-key)
+	    shift
+	    AWS_SECRET_ACCESS_KEY=${1}
+	    shift
+	    ;;
+        --region|--aws-region)
+	    shift
+	    AWS_REGION=${1}
+	    shift
+	    ;;
+        --profile|--aws-profile)
+	    shift
+	    AWS_PROFILE=${1}
+	    shift
+	    ;;
+	--nccl)
+	    shift
+	    NCCL=${1}
+	    shift
+	    ;;
+	--cudnn)
+	    shift
+	    CUDNN=${1}
+	    shift
+	    ;;
+	--s2i-imagestream)
+	    shift
+	    S2I_IMAGESTREAM=${1}
+	    shift
+	    ;;
+	--use-nvidia-ebs)
+	    USE_NVIDIA_EBS="true"
+	    shift
+	    ;;
+	*)
+	    echo "ERROR. Unrecognized option ${1}"
+	    break
+	    ;;
+    esac	
+done
+
+###########################################
+#           Check user's inputs           #
+###########################################
+# Check AWS vars
+use_aws="false"
+if [[ ! -z ${AWS_ACCESS_KEY} ]] || [[ ! -z ${AWS_SECRET_ACCESS_KEY} ]] || [[ ! -z ${AWS_REGION} ]] || [[ ! -z ${AWS_PROFILE} ]]; then
+    use_aws="true"
+    if [[ -z ${AWS_ACCESS_KEY} ]]; then
+        echo "ERROR. AWS is being used, but no access key was provided. Please us the '--aws-key' or '--aws-access-key' options to pass in an AWS key."
+        exit 1
+    elif [[ -z ${AWS_SECRET_ACCESS_KEY} ]]; then
+        echo "ERROR. AWS is being used, but no secret access key was provided. Please us the '--aws-secret-key' or '--aws-secret-access-key' options to pass in an AWS secret key."
+        exit 1
+    elif [[ -z ${AWS_REGION} ]]; then
+        echo "ERROR. AWS is being used, but no region was provided. Please us the '--region' or '--aws-region' options to pass in an AWS region."
+        exit 1
+    elif [[ -z ${AWS_PROFILE} ]]; then
+        echo "ERROR. AWS is being used, but no profile was provided. Please us the '--profile' or '--aws-profile' options to pass in an AWS region."
+        exit 1
+    fi
+fi
+
+# Check NCCL and cuDNN inputs
+if [[ ! -z ${NCCL} ]] && [[ -z ${CUDNN} ]]; then
+    echo "ERROR. NCCL source was provided, but cuDNN source was not. Please provide a cuDNN source using the '--cudnn' option."
+    exit 1
+elif [[ -z ${NCCL} ]] && [[ ! -z ${CUDNN} ]]; then
+    echo "ERROR. cuDNN source was provided, but NCCL source was not. Please provide a NCCL source using the '--nccl' option."
+    exit 1
+elif [[ -z ${NCCL} ]] && [[ -z ${CUDNN} ]] && [[ ${use_aws} == "true" ]]; then
+    echo "ERROR. AWS is being used, but s3 bucket paths for cuDNN and NCCL were not provided. Please use the '--cudnn' and '--nccl' options to provide bucket paths."
+    exit 1
+fi
+
+# Check if RHEL version was supplied
+if [[ -z ${RHEL_VERSION} ]]; then
+    echo "WARNING. RHEL version was not supplied. Using RHEL 7. If you would like to use RHEL 8, rerun this script using the '-v' or '--rhel-version' argument to supply a RHEL version."
+    RHEL_VERSION=7
+fi
+
+# Check if backend was supplied
+if [[ -z ${BACKEND} ]]; then
+    echo "WARNING. Backend was not supplied. Using FFTW. If you would like to use OpenBLAS or no backend at all, rerun this script using the '-b' or '--backend' argument."
+    BACKEND="fftw"
+fi
+
+# Check if pull secret was supplied
+if [[ -z ${PULL_SECRET} ]]; then
+    echo "WARNING. Pull secret was not suppied. Using 'openshift-image-registry-pull-secret'. If you would like to use a different pull secret name, pass in the '-s' or '--pull-secret' argument."
+    PULL_SECRET="openshift-image-registry-pull-secret"
+fi
+
+# Check if number of devices was supplied
+if [[ -z ${NUM_DEVICES} ]]; then
+    echo "WARNING. Number of devices was not supplied. Setting number of devices equal to 1. If you would like to use more devices (CPUs or GPUs), specify the amount via the '-d' or '--num-devices' option"
+    NUM_DEVICES=1
+fi
+
+# Check the instance type, if passed in
+if [[ ! -z ${INSTANCE_TYPE} ]]; then
+
+    instance_type_label="beta.kubernetes.io/instance-type=${INSTANCE_TYPE}"
+    matching_nodes=$(oc describe node -l $instance_type_label)
+
+    # If the instance type does not exist, throw an error
+    if [[ -z ${matching_nodes} ]]; then
+        echo "ERROR. No nodes found for instance type ${INSTANCE_TYPE}"
+        exit 1
+    fi
+fi
+
+# Set the imagestream target
+if [[ ! -z ${AVX} ]]; then
+    build_image_template_name="tensorflow-${BACKEND}-${AVX}-build-image-rhel${RHEL_VERSION}"
+elif [[ ! -z ${USE_GPU} ]]; then
+    if [[ ${BACKEND} == "none" ]]; then
+        build_image_template_name="tensorflow-pip-build-image-rhel${RHEL_VERSION}-gpu"
+    else
+        build_image_template_name="tensorflow-${BACKEND}-build-image-rhel${RHEL_VERSION}-gpu"
+    fi
+else
+    build_image_template_name="tensorflow-${BACKEND}-build-image-rhel${RHEL_VERSION}"
+fi
+
+# Set device type
+if [[ ! -z ${USE_GPU} ]]; then
+    device="gpu"
+else
+    device="cpu"
+fi
+
+# Initialize image name (if not specified)
+if [[ -z ${IS_NAME} ]]; then
+    if [[ ! -z ${AVX} ]]; then
+        IS_NAME="tensorflow-${BACKEND}-rhel${RHEL_VERSION}-${AVX}"
+    elif [[ ${BACKEND} == "none" ]]; then
+        IS_NAME="tensorflow-official-rhel${RHEL_VERSION}-${device}"
+    else
+        IS_NAME="tensorflow-${BACKEND}-rhel${RHEL_VERSION}-${device}"
+    fi
+fi
+
+# Check if s2i imagestream was supplied
+if [[ -z ${S2I_IMAGESTREAM} ]]; then
+    if [[ ${S2I_IMAGESTREAM} == "none" ]]; then
+        S2I_IMAGESTREAM="s2i-tensorflow-${device}"
+    else
+        S2I_IMAGESTREAM="s2i-tensorflow-${BACKEND}-${device}"
+    fi
+    echo "WARNING. Source-to-Image (s2i) ImageStream name was not provided. Using ${S2I_IMAGESTREAM}. If you would like to choose a custom name, please pass in the '--s2i-imagestream' argument."
+fi
+
+# Set s2i build template name
+if [[ ${BACKEND} == "none" ]]; then
+    s2i_build_template_name="tensorflow-pip-s2i-build-${device}"
+else
+    s2i_build_template_name="tensorflow-${BACKEND}-s2i-build-${device}"
+fi
+
+# Set benchmarks app template name
+if [[ ! -z ${INSTANCE_TYPE} ]]; then
+    benchmarks_app_template_name="tensorflow-nfd-benchmarks"
+elif [[ ! -z ${AVX} ]]; then
+    if [[ ! -z ${USE_CPU_MANAGER} ]]; then
+        benchmarks_app_template_name="tensorflow-nfd-benchmarks-${AVX}-cpu-mgr"
+    else
+        benchmarks_app_template_name="tensorflow-nfd-benchmarks-${AVX}"
+    fi
+else
+    benchmarks_app_template_name="tensorflow-benchmarks"
+fi
+
+###########################################
+#    Save configure options to Makefile   #
+###########################################
+# Set Makefile name
+makefile="./Makefile"
+
+# Remove existing makefile
+rm -f ${makefile}
+
+# Initialize basics
+echo "# TensorFlow build info" >> ${makefile}
+echo "RHEL_VERSION=${RHEL_VERSION}" >> ${makefile}
+echo "BACKEND=${BACKEND}" >> ${makefile}
+echo "" >> ${makefile}
+
+# Initialize image info
+echo "# Secrets" >> ${makefile}
+echo "PULL_SECRET=${PULL_SECRET}" >> ${makefile}
+echo "" >> ${makefile}
+echo "# Base image build info" >> ${makefile}
+echo "IMAGESTREAM_NAME=${IS_NAME}" >> ${makefile}
+echo "BUILD_IMAGE_TEMPLATE=${build_image_template_name}" >> ${makefile}
+echo "" >> ${makefile}
+echo "# Source-to-Image build info" >> ${makefile}
+echo "S2I_IMAGESTREAM_NAME=${S2I_IMAGESTREAM}" >> ${makefile}
+echo "S2I_BUILD_TEMPLATE=${s2i_build_template_name}" >> ${makefile}
+echo "" >>  ${makefile}
+
+# Initialize device info
+echo "# Devices setup" >> ${makefile}
+echo "DEVICE_TYPE=${device}" >> ${makefile}
+if [[ ${device} == "gpu" ]]; then
+    echo "NUM_GPUS=${NUM_DEVICES}" >> ${makefile}
+else
+    echo "NUM_CPUS=${NUM_DEVICES}" >> ${makefile}
+fi
+echo "" >> ${makefile}
+
+# Initialize Python info
+echo "# Python 3.x setup" >> ${makefile}
+if [[ ${RHEL_VERSION} == "7" ]] && [[ ! -z ${USE_GPU} ]]; then
+    echo "PYTHON_EXECUTABLE=/usr/local/bin/python3" >> ${makefile}
+else
+    echo "PYTHON_EXECUTABLE=/usr/bin/python3" >> ${makefile}
+fi
+echo "" >> ${makefile}
+
+# Initialize benchmark info
+echo "# Benchmark setup" >> ${makefile}
+echo "BENCHMARKS_APP_TEMPLATE=${benchmarks_app_template_name}" >> ${makefile}
+echo "" >> ${makefile}
+
+# Initialize AWS info (if AWS is being used)
+if [[ ${use_aws} == "true" ]]; then
+    echo "# AWS setup" >> ${makefile}
+    echo "AWS_ACCESS_KEY=${AWS_ACCESS_KEY}" >> ${makefile}
+    echo "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" >> ${makefile}
+    echo "AWS_REGION=${AWS_REGION}" >> ${makefile}
+    echo "AWS_PROFILE=${AWS_PROFILE}" >> ${makefile}
+    echo "" >> ${makefile}
+fi
+
+# Initialize NCCL and cuDNN setup
+if [[ ! -z ${NCCL} ]] && [[ ! -z ${CUDNN} ]]; then
+    echo "# NCCL and cuDNN setup" >> ${makefile}
+    echo "NCCL=${NCCL}" >> ${makefile}
+    echo "CUDNN=${CUDNN}" >> ${makefile}
+    echo "" >> ${makefile}
+fi
+
+# Set the template params
+build_image_template_param="--template=\$(BUILD_IMAGE_TEMPLATE)"
+s2i_image_template_param="--template=\$(S2I_BUILD_TEMPLATE)"
+benchmarks_template_param="--template=\$(BENCHMARKS_APP_TEMPLATE)"
+
+# Set the TensorFlow params
+rhel_version_param="--param=RHEL_VERSION=\$(RHEL_VERSION)"
+backend_param="--param=BACKEND=\$(BACKEND)"
+tensorflow_install_path_param="--param=TENSORFLOW_INSTALL_PATH=\$(TENSORFLOW_INSTALL_PATH)"
+
+# Set AWS params
+pull_secret_param="--param=PULL_SECRET=\$(PULL_SECRET)"
+instance_type_param="--param=INSTANCE_TYPE=${INSTANCE_TYPE}"
+
+# Set the imagestream params
+imagestream_name_param="--param=IMAGESTREAM_NAME=\$(IMAGESTREAM_NAME)"
+source_imagestream_name_param="--param=SOURCE_IMAGESTREAM=\$(IMAGESTREAM_NAME)"
+output_imagestream_name_param="--param=OUTPUT_IMAGESTREAM=\$(S2I_IMAGESTREAM_NAME)"
+num_cpus_param="--param=NUM_CPUS=\$(NUM_CPUS)"
+num_gpus_param="--param=NUM_GPUS=\$(NUM_GPUS)"
+python_executable_param="--param=PYTHON_EXECUTABLE=\$(PYTHON_EXECUTABLE)"
+
+# Set the benchmark params
+tensorflow_benchmarks_path_param="--param=BENCHMARKS_INSTALL_PATH=\$(BENCHMARKS_INSTALL_PATH)"
+
+# Set the 'all' target
+echo "all: imagestream s2i benchmarks" >> ${makefile}
+echo "" >> ${makefile}
+
+# Set the 'imagestream' target
+echo "imagestream:" >> ${makefile}
+echo -e "\toc project openshift-image-registry" >> ${makefile}
+if [[ ! -z ${INSTANCE_TYPE} ]]; then
+    echo -e "\toc new-app ${build_image_template_param} ${imagestream_name_param} ${pull_secret_param} ${instance_type_param}" >> ${makefile}
+else
+    echo -e "\toc new-app ${build_image_template_param} ${imagestream_name_param} ${pull_secret_param}" >> ${makefile}
+fi
+echo -e "\toc start-build \$(BUILD_IMAGE_TEMPLATE)" >> ${makefile}
+if [[ -z ${AVX} ]]; then
+    echo -e "\tsh scripts/check_imagestream.sh \$(RHEL_VERSION) \$(IMAGESTREAM_NAME) \$(BACKEND) "null" ${USE_GPU}" >> ${makefile}
+else
+    echo -e "\tsh scripts/check_imagestream.sh \$(RHEL_VERSION) \$(IMAGESTREAM_NAME) \$(BACKEND) ${AVX}" >> ${makefile}
+fi
+echo "" >> ${makefile}
+
+# Set the 's2i' target
+echo "s2i:" >> ${makefile}
+echo -e "\toc project openshift-image-registry" >> ${makefile}
+if [[ ! -z ${AVX} ]]; then
+    if [[ ! -z ${USE_CPU_MANAGER} ]]; then
+        echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_cpus_param} --param=MEMORY_SIZE=${CPU_MANAGER_MEMORY} ${python_executable_param}" >> ${makefile}
+    else
+        echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_cpus_param} ${python_executable_param}" >> ${makefile}
+    fi
+elif [[ ${device} == "gpu" ]]; then
+    if [[ ! -z ${USE_NVIDIA_EBS} ]]; then
+        echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_gpus_param} ${python_executable_param} --param=WHICH_SOURCE='ebs'" >> ${makefile}
+    elif [[  ${use_aws} == "true" ]]; then
+        echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_gpus_param} ${python_executable_param} --param=WHICH_SOURCE='s3' --param=AWS_ACCESS_KEY=\$(AWS_ACCESS_KEY) --param=AWS_SECRET_ACCESS_KEY=\$(AWS_SECRET_ACCESS_KEY) --param=AWS_REGION=\$(AWS_REGION) --param=NCCL_URL=\$(NCCL) --param=CUDNN_URL=\$(CUDNN) --param=AWS_PROFILE=\$(AWS_PROFILE)" >> ${makefile}
+    elif [[ ! -z ${NCCL} ]] && [[ ! -z ${CUDNN} ]]; then
+        echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_gpus_param} ${python_executable_param} --param=WHICH_SOURCE='url' --param=NCCL_URL=\$(NCCL) --param=CUDNN_URL=\$(CUDNN)" >> ${makefile}
+    else
+        echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_gpus_param} ${python_executable_param} --param=WHICH_SOURCE='none'" >> ${makefile}
+    fi
+elif [[ ! -z ${USE_CPU_MANAGER} ]]; then
+    echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_cpus_param} --param=MEMORY_SIZE=${CPU_MANAGER_MEMORY} ${python_executable_param}" >> ${makefile}
+else
+    echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_cpus_param} ${python_executable_param}" >> ${makefile}
+fi
+if [[ -z ${AVX} ]]; then
+    echo -e "\tsh scripts/check_imagestream.sh \$(RHEL_VERSION) \$(S2I_IMAGESTREAM_NAME) \$(BACKEND) "null" ${USE_GPU}" >> ${makefile}
+else
+    echo -e "\tsh scripts/check_imagestream.sh \$(RHEL_VERSION) \$(S2I_IMAGESTREAM_NAME) \$(BACKEND) ${AVX}" >> ${makefile}
+fi
+echo "" >> ${makefile}
+
+# Set the 'benchmarks' target
+echo "benchmarks:" >> ${makefile}
+echo -e "\toc project openshift-image-registry" >> ${makefile}
+if [[ ! -z ${USE_CPU_MANAGER} ]]; then
+    echo -e "\toc new-app ${benchmarks_template_param} --param=IMAGESTREAM=\$(S2I_IMAGESTREAM_NAME) --param=DEVICE=cpu --param=MEMORY_SIZE=${CPU_MANAGER_MEMORY} --param=NUM_DEVICES=\$(NUM_CPUS)" >> ${makefile}
+elif [[ ! -z ${USE_GPU} ]]; then
+    echo -e "\toc new-app ${benchmarks_template_param} --param=IMAGESTREAM=\$(S2I_IMAGESTREAM_NAME) --param=DEVICE=gpu --param=NUM_DEVICES=\$(NUM_GPUS)" >> ${makefile}
+else
+    echo -e "\toc new-app ${benchmarks_template_param} --param=IMAGESTREAM=\$(S2I_IMAGESTREAM_NAME) --param=DEVICE=cpu --param=NUM_DEVICES=\$(NUM_CPUS)" >> ${makefile}
+fi
+echo "" >> ${makefile}
+
+# Set 'setup' targets
+echo "setup_operators: setup_gpu setup_nfd setup_ripsaw" >> ${makefile}
+echo "" >> ${makefile}
+echo "setup_gpu:" >> ${makefile}
+echo -e "\tsh ../../helper_scripts/OpenShift/gpu_setup.sh" >> ${makefile}
+echo "" >> ${makefile}
+echo "setup_nfd:" >> ${makefile}
+echo -e "\tsh ../../helper_scripts/OpenShift/nfd_setup.sh" >> ${makefile}
+echo "" >> ${makefile}
+echo "setup_ripsaw:" >> ${makefile}
+echo -e "\tsh ../../helper_scripts/OpenShift/ripsaw_setup.sh" >> ${makefile}
+echo -e "" >> ${makefile}
+
+# Set the 'clean' targets
+echo "clean: clean_imagestream clean_s2i clean_benchmarks" >> ${makefile}
+echo "" >> ${makefile}
+echo "clean_imagestream:" >> ${makefile}
+echo -e "\toc delete is \$(IMAGESTREAM_NAME)" >> ${makefile}
+echo -e "\toc delete bc \$(BUILD_IMAGE_TEMPLATE)" >> ${makefile}
+echo "" >> ${makefile}
+echo "clean_s2i:" >> ${makefile}
+echo -e "\toc delete is \$(S2I_IMAGESTREAM_NAME)" >> ${makefile}
+echo -e "\toc delete bc \$(S2I_BUILD_TEMPLATE)" >> ${makefile}
+echo "" >> ${makefile}
+echo "clean_benchmarks:" >> ${makefile}
+echo -e "\toc delete benchmark \$(BENCHMARKS_TEMPLATE_NAME)" >> ${makefile}

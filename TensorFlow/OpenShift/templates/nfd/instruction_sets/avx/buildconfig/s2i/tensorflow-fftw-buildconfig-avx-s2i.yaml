@@ -1,0 +1,109 @@
+apiVersion: "v1"
+kind: "Template"
+metadata:
+  annotations:
+    description: "Source-to-Image template for building a TensorFlow image with an FFTW NumPy backend using RHEL 7 and AVX instructions"
+    tags: "tensorflow-fftw-s2i-build-avx"
+  name: "tensorflow-fftw-s2i-build-avx"
+objects:
+- apiVersion: "v1"
+  kind: "BuildConfig"
+  metadata:
+    name: "tensorflow-fftw-s2i-build-avx" 
+  spec:
+    runPolicy: "Serial" 
+    triggers: 
+      -
+        type: "ImageChange"
+    strategy: 
+      sourceStrategy:
+        from:
+          kind: "ImageStreamTag"
+          name: "${SOURCE_IMAGESTREAM}:latest"
+        scripts: "image:///usr/libexec/s2i"
+        env:
+          - name: "RHEL_VERSION"
+            value: "${RHEL_VERSION}"
+          - name: "DEVICE"
+            value: "cpu"
+          - name: "NUM_DEVICES"
+            value: "${NUM_CPUS}"
+          - name: "CC"
+            value: "${CC}"
+          - name: "WHICH_SOURCE"
+            value: "none"
+          - name: "PYTHON_EXECUTABLE"
+            value: "${PYTHON_EXECUTABLE}"
+          - name: "NCCL"
+            value: ""
+          - name: "CUDNN"
+            value: ""
+          - name: "AWS_PROFILE"
+            value: ""
+          - name: "AWS_REGION"
+            value: ""
+          - name: "AWS_ACCESS_KEY"
+            value: ""
+          - name: "AWS_SECRET_ACCESS_KEY"
+            value: ""
+    output: 
+      to:
+        kind: "ImageStreamTag"
+        name: "${OUTPUT_IMAGESTREAM}:latest"
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "feature.node.kubernetes.io/cpuid-AVX"
+              operator: "Exists"
+              values:
+              - "true"
+          - matchExpressions:
+            - key: "feature.node.kubernetes.io/cpuid-AVX2"
+              operator: "DoesNotExist"
+              values:
+              - "true"
+- apiVersion: "v1"
+  kind: "ImageStream"
+  metadata:
+    name: "${OUTPUT_IMAGESTREAM}"
+    namespace: "openshift-image-registry"
+  spec:
+    dockerImageRepository: "${REGISTRY}/openshift-image-registry"
+parameters:
+- description: "Source ImageStream name"
+  name: "SOURCE_IMAGESTREAM"
+  from: '[A-Z0-9]{10}'
+  value: "tensorflow-fftw-rhel7"
+  required: true
+- description: "Output ImageStream name"
+  name: "OUTPUT_IMAGESTREAM"
+  from: '[A-Z0-9]{10}'
+  value: "tensorflow-s2i-build-rhel7-avx"
+  required: true
+- description: "Registry route. Use `oc registry info` to get the route after exposing it."
+  name: "REGISTRY"
+  value: "image-registry.openshift-image-registry.svc:5000"
+  required: true
+- description: "AWS instance type"
+  name: "INSTANCE_TYPE"
+  value: "m4.4xlarge"
+- description: "RHEL version to use"
+  name: "RHEL_VERSION"
+  from: '[0-9]{1}'
+  value: "8"
+  required: true
+- description: "Number of CPUs to use (must be an integer)"
+  name: "NUM_CPUS"
+  from: '[0-9]{5}'
+  value: ""
+  required: false
+- description: "Path to Python executable"
+  name: "PYTHON_EXECUTABLE"
+  value: "/usr/bin/python3"
+  required: true
+- description: "Path to gcc"
+  name: "CC"
+  value: "/usr/bin/gcc"
+  required: true

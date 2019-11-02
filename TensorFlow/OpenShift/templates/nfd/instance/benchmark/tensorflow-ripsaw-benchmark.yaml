@@ -1,0 +1,47 @@
+apiVersion: "v1"
+kind: "Template"
+metadata:
+  annotations:
+    description: "Template to run the TensorFlow 'models' benchmarks"
+    tags: "tensorflow-nfd-benchmarks"
+  name: "tensorflow-nfd-benchmarks"
+objects:
+- apiVersion: "ripsaw.cloudbulldozer.io/v1alpha1"
+  kind: "Benchmark"
+  metadata:
+    name: "tensorflow-nfd-benchmarks"
+    namespace: "my-ripsaw"
+  spec:
+    byowl:
+      image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM}"
+      clients: 1
+      commands: |
+        "cd /opt/app-root/src/playbooks/TensorFlow_Models"
+        "ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: \"/opt/app-root/src/tensorflow\", device_type: \"${DEVICE}\", benchmarks_path: \"/opt/app-root/src/benchmarks\", num_devices: \"${NUM_DEVICES}\"}'"
+    nodeSelector:
+      beta.kubernetes.io/instance-type: "${INSTANCE_TYPE}"
+parameters:
+- description: "OpenShift Image Registry"
+  name: "REGISTRY"
+  from: '[A-Z0-9]{10}'
+  value: "image-registry.openshift-image-registry.svc:5000"
+  required: true 
+- description: "OpenShift Namespace"
+  name: "NAMESPACE"
+  from: '[A-Z0-9]{10}'
+  value: "openshift-image-registry"
+  required: true 
+- description: "ImageStream name"
+  name: "IMAGESTREAM"
+  from: '[A-Z0-9]{30}'
+  value: "tensorflow-s2i"
+- description: "Which device to use. Either 'cpu' or 'gpu' (lowercase)"
+  name: "DEVICE"
+  from: '[A-Z]{3}'
+  value: 'cpu'
+  required: true
+- description: "Number of CPUs or GPUs to use (must be an integer)"
+  name: "NUM_DEVICES"
+  from: '[0-9]{5}'
+  value: ""
+  required: true

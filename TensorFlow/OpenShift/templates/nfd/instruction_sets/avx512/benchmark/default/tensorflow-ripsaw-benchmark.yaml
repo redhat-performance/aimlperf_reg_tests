@@ -1,0 +1,59 @@
+apiVersion: "v1"
+kind: "Template"
+metadata:
+  annotations:
+    description: "Template to run the TensorFlow 'models' benchmarks with AVX512 instructions"
+    tags: "tensorflow-nfd-benchmarks-avx512"
+  name: "tensorflow-nfd-benchmarks-avx512"
+objects:
+- apiVersion: "ripsaw.cloudbulldozer.io/v1alpha1"
+  kind: "Benchmark"
+  metadata:
+    name: "tensorflow-nfd-benchmarks-avx512"
+    namespace: "my-ripsaw"
+  spec:
+    byowl:
+      image: "${REGISTRY}/${NAMESPACE}/${IMAGESTREAM}"
+      clients: 1
+      commands: |
+        "cd /opt/app-root/src/playbooks/TensorFlow_Models"
+        "ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: \"/opt/app-root/src/tensorflow\", device_type: \"cpu\", benchmarks_path: \"/opt/app-root/src/benchmarks\", num_devices: \"${NUM_DEVICES}\"}'"
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "feature.node.kubernetes.io/cpuid-AVX512BW"
+              operator: "Exists"
+          - matchExpressions:
+            - key: "feature.node.kubernetes.io/cpuid-AVX512CD"
+              operator: "Exists"
+          - matchExpressions:
+            - key: "feature.node.kubernetes.io/cpuid-AVX512DQ"
+              operator: "Exists"
+          - matchExpressions:
+            - key: "feature.node.kubernetes.io/cpuid-AVX512F"
+              operator: "Exists"
+          - matchExpressions:
+            - key: "feature.node.kubernetes.io/cpuid-AVX512VL"
+              operator: "Exists"
+parameters:
+- description: "OpenShift Image Registry"
+  name: "REGISTRY"
+  from: '[A-Z0-9]{10}'
+  value: "image-registry.openshift-image-registry.svc:5000"
+  required: true 
+- description: "OpenShift Namespace"
+  name: "NAMESPACE"
+  from: '[A-Z0-9]{10}'
+  value: "openshift-image-registry"
+  required: true 
+- description: "ImageStream name"
+  name: "IMAGESTREAM"
+  from: '[A-Z0-9]{30}'
+  value: "tensorflow-fftw-rhel7-avx2"
+- description: "Number of CPUs to use (must be an integer)"
+  name: "NUM_DEVICES"
+  from: '[0-9]{5}'
+  value: ""
+  required: true
