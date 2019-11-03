@@ -67,10 +67,18 @@ if (( ${uid} == 0 )); then
     echo ""
     su default
 else
-    echo "  Adding user ${uid} to /etc/passwd"
+    echo "  Adding user ID ${uid} to /etc/passwd"
     echo ""
     echo "${uid}:x:${uid}:${gid}:1001 uid:${TOPDIR}:/bin/sh" >> /etc/passwd
     echo "${uid}:x:$(id -G | cut -d' ' -f 2)" >> /etc/group
+
+    echo "  Adding username ${USERNAME} to /etc/subuid"
+    echo ""
+    echo "${USERNAME}:100000:65536" >> /etc/subuid
+
+    echo "  Adding username ${USERNAME} to /etc/subgid"
+    echo "" 
+    echo "${USERNAME}:100000:65536" >> /etc/subgid
 fi
 
 # Configure git

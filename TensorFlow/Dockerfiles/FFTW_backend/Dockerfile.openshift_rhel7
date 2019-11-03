@@ -10,6 +10,9 @@ ENV ANSIBLE_GIT_VERSION=v2.8.3
 # RHEL version (for building FFTW)
 ENV RHEL_VERSION=7
 
+# Python version
+ENV PYTHON_VERSION=3.6.9
+
 # Set up labels
 LABEL io.openshift.s2i.scripts-url="image:///usr/libexec/s2i"
 LABEL io.openshift.expose-services="8080:http"
@@ -20,47 +23,50 @@ COPY TensorFlow/.s2i_fftw/bin/ /usr/libexec/s2i
 # Put on port 8080
 EXPOSE 8080
 
-# Install Ansible
-COPY helper_scripts/Ansible/install_ansible_from_source.sh ${HOME}
-RUN sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION} && \
-    rm install_ansible_from_source.sh
+# Set playbook paths
+ENV FFTW_PREREQS_PLAYBOOK=${TOPDIR}/playbooks/fftw_package_installation
+ENV TF_PREREQS_PLAYBOOK=${TOPDIR}/playbooks/tensorflow_package_installation
+ENV FFTW_INSTALLATION=${TOPDIR}/playbooks/FFTW_installation
+ENV TENSORFLOW_INSTALLATION=${TOPDIR}/playbooks/TensorFlow_installation
+ENV TENSORFLOW_MODELS=${TOPDIR}/playbooks/TensorFlow_Models
 
-# Install FFTW prerequisites via Ansible
-ENV FFTW_PREREQS_PLAYBOOK=${HOME}/fftw_package_installation
-RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK}
+# Set scripts path
+ENV SCRIPTS=${TOPDIR}/scripts
+
+# Create folders for playbooks and folder for playbooks cache
+RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
+    mkdir -p ${TF_PREREQS_PLAYBOOK} && \
+    mkdir -p ${FFTW_INSTALLATION} && \
+    mkdir -p ${TENSORFLOW_INSTALLATION} && \
+    mkdir -p ${TENSORFLOW_MODELS} && \
+    mkdir -p ${SCRIPTS} && \
+    mkdir -p ${TOPDIR}/.cache
+
+# Copy
+COPY helper_scripts/Python/install_python_from_source.sh ${SCRIPTS}
 COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
-RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml && \
-    cd .. && \
-    rm -rf ${FFTW_PREREQS_PLAYBOOK}
-
-# Install TensorFlow prerequisites via Ansible
-ENV TF_PREREQS_PLAYBOOK=${HOME}/tensorflow_package_installation
-RUN mkdir -p ${TF_PREREQS_PLAYBOOK}
 COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
-RUN cd ${TF_PREREQS_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml --extra-vars="{use_s2i_ubi: 'yes'}" && \
-    cd .. && \
-    rm -rf ${TF_PREREQS_PLAYBOOK}
-
-# Copy FFTW installation playbook and create dir for installation
-ENV FFTW_INSTALLATION=${HOME}/playbooks/FFTW_installation
-RUN mkdir -p ${FFTW_INSTALLATION}
 COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
-
-# Copy TensorFlow installation playbook and create dirs for installation
-ENV TENSORFLOW_INSTALLATION=${HOME}/playbooks/TensorFlow_installation
-RUN mkdir -p ${TENSORFLOW_INSTALLATION} ${HOME}/.cache
 COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
+COPY TensorFlow/playbooks/TensorFlow_Models ${TENSORFLOW_MODELS}
+COPY helper_scripts/Python/install_python_from_source.sh
+COPY helper_scripts/Ansible/install_ansible_from_source.sh
 
-# Create a folder for the benchmark tests and copy the tests to the new folder
-ENV TENSORFLOW_BENCHMARKS=${HOME}/playbooks/TensorFlow_benchmarks
-RUN mkdir -p ${TENSORFLOW_BENCHMARKS}
-COPY TensorFlow/playbooks/TensorFlow_benchmarks ${TENSORFLOW_BENCHMARKS}
+# Install Python version ${PYTHON_VERSION} from source and Ansible version ${ANSIBLE_VERSION} from source
+RUN cd ${SCRIPTS} && \
+    sh install_python_from_source.sh ${PYTHON_VERSION}
+    sh install_ansible_from_source.sh ${ANSIBLE_GIT_VERSION}
+
+# Install FFTW + TensorFlow prerequisites via Ansible and pip3
+RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
+    PYTHONPATH=/usr/lib/python2.7 ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', use_ubi: 'yes', update_yum: 'no', ansible_python_interpreter: '/usr/bin/python2.7'}" && \
+    cd ${TF_PREREQS_PLAYBOOK} && \
+    PYTHONPATH=/usr/lib/python2.7 ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', use_s2i_ubi: 'yes', ansible_python_interpreter: '/usr/bin/python2.7'}"
 
 # Give user permissions to modify the 'macros' file + other files to run tests
 RUN chmod 777 /usr/libexec/s2i/run && \
     chmod g=u /etc/passwd /etc/group && \
+    chmod g=u /etc/subuid /etc/subgid && \
     mkdir -p /opt/app-root/src/.ansible/tmp && \
     chmod 777 /opt/app-root/src/.ansible/tmp && \
     chmod 777 /opt/app-root/src/.ansible && \
@@ -72,7 +78,7 @@ RUN chmod 777 /usr/libexec/s2i/run && \
 RUN echo "remote_tmp = ${HOME}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
     echo "remote_tmp = ${HOME}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg
 
-# This default user is created in the openshift/base-centos7 image
+# User for OpenShift RHEL 7 s2i
 USER 1001
 
 WORKDIR ${HOME}
