@@ -32,12 +32,12 @@ $ make setup_operators
 
 The SRO is used for installing NVIDIA drivers to your cluster, the NFD operator is used for discovering node features, and Ripsaw is for running the benchmarks.
 
-If you have installed one or more of these operators, you can run one or more of these commands:
+If you have installed one or more of these operators already, you can run one or more of these commands to install specific operators:
 
 ```
-$ make setup_gpu
-$ make setup_nfd
-$ make setup_ripsaw
+$ make setup_gpu     #sets up SRO
+$ make setup_nfd     #sets up the NFD operator
+$ make setup_ripsaw  #sets up the Ripsaw operator
 ```
 
 Once you've installed the necessary operators, you should follow the next two subsections for creating 'base images' using registry.redhat.io images. (Note: these sections only apply if you are using RHEL 7 CUDA builds or non-CUDA RHEL 8 builds.)
