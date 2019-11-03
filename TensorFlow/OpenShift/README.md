@@ -20,15 +20,11 @@ For help on using `configure`, run:
 $ ./configure --help
 ```
 
-If you plan to use any registry.redhat.io images, follow step #2 below. Otherwise, skip to step #3.
+If you use the `--instance-type`/`-t` flag when configuring the Makefile and specify an instance that does not exist yet (which is perfectly okay!), you will need to setup an instance before executing the `make` commands. Information on how to setup an instance using `MachineSet` will be described later on, but do not worry about that yet. For now, follow the instructions in the next subsection, which describes how to install the necessary cluster operators for running the benchmarks.
 
-### 2. Using registry.redhat.io Images (REQUIRED FOR CUDA RHEL 7 BUILDS + NON-CUDA RHEL 8 BUILDS)
+### 2. Installing Necessary Cluster Operators
 
-Follow the instructions in the `setup` folder in this directory. In essence, you will need to run a create two files under **../../secrets**, then run a `make` command.
-
-### 3. Installing Necessary Cluster Operators
-
-After you've run `configure`, you should setup and install three necessary operators to your cluster: Special Resource Operator (SRO), Node Feature Discovery (NFD) Operator, and Ripsaw. To do so, run
+After you've run `configure`, you should setup and install three necessary operators to your cluster: Special Resource Operator (SRO), Node Feature Discovery (NFD) Operator, and Ripsaw. If you haven't installed *any* of these operators, run
 
 ```
 $ make setup_operators
@@ -36,9 +32,23 @@ $ make setup_operators
 
 The SRO is used for installing NVIDIA drivers to your cluster, the NFD operator is used for discovering node features, and Ripsaw is for running the benchmarks.
 
+If you have installed one or more of these operators, you can run one or more of these commands:
+
+```
+$ make setup_gpu
+$ make setup_nfd
+$ make setup_ripsaw
+```
+
+Once you've installed the necessary operators, you should follow the next two subsections for creating 'base images' using registry.redhat.io images. (Note: these sections only apply if you are using RHEL 7 CUDA builds or non-CUDA RHEL 8 builds.)
+
+### 3. Using registry.redhat.io Images (REQUIRED FOR CUDA RHEL 7 BUILDS + NON-CUDA RHEL 8 BUILDS)
+
+Follow the instructions in the `setup` folder in this directory. In essence, you will need to run a create two files under **../../secrets**, then run a `make` command.
+
 ### 4. Building and Using a CUDA "Base Image" from this Repository
 
-To prepare for a CUDA build using a "base image," make sure to build one of the Docker images under `../Dockerfiles/custom/rhel7/cuda` or `../Dockerfiles/custom/rhel8/cuda`. Follow the instructions in the **setup** folder in this directory to do so. Such base images have cuDNN and NCCL pre-installed, which means you can skip the next subsection "Setting up an EBS Volume."
+To prepare for a CUDA build using a "base image," make sure to build one of the Docker images under `../Dockerfiles/custom/rhel7/cuda` or `../Dockerfiles/custom/rhel8/cuda`. Follow the instructions in the **setup** folder in this directory to do so. Such base images have cuDNN and NCCL pre-installed, which means you can skip the next subsection "Setting up an EBS Volume." Otherwise, for images that do *not* have cuDNN and NCCL pre-installed, you will need to setup an EBS volume that contains such packages by following the instructions below.
 
 ### 5. Setting up an EBS Volume (for Non Custom Base Images)
 
@@ -106,33 +116,11 @@ oc exec -it tmp-imagenet-pod -- /bin/bash
 
 ## How to Run the Benchmarks
 
-By default, your OpenShift "base" image will be named `tensorflow-rhel7` for RHEL 7 or `tensorflow-rhel8` for RHEL 8, and will be saved to your exposed OpenShift image registry. (NOTE: You don't need to tell the `run_me.sh` script the link to your registry since the script automatically determines the link for you. However, if you have *multiple* registries for whatever reason, you may want to edit which registry to use. So, edit the `REGISTRY` variable.) Since s2i is used, there will be an additional image created. After the second image has been created, you can run the benchmarks.
+### Optional Prerequisites
 
-Assuming you have already run `configure` to generate a Makefile, you can do everything at once by running
+Assuming you have already run `configure` to generate a Makefile, your next steps depend on whether or not you have requested (via `configure`) to use a specific instance type or an instance with specific attributes. If you do want to use a specific instance or specific type of instance, follow the next subsection. Otherwise, you may skip said subsection and move on to **Advanced CPU Options** if you wish to use CPU Manager. You can skip that section too, though, if you are using GPUs or do not want to use CPU Manager.
 
-```
-$ make
-``
-
-To build just the base imagestream,
-
-```
-$ make imagestream
-```
-
-To build just the s2i imagestream,
-
-```
-$ make s2i
-```
-
-To run just the benchmarks,
-
-```
-$ make benchmarks
-```
-
-## Automatically creating a Node
+#### Automatically creating a Node
 
 If you wish to create a MachineSet and run the pod on a node with a specific instance type, use `../../helper_scripts/OpenShift/create_machineset.sh` to create a YAML file. Or you can create your own YAML file. The script is provided as a convenience.
 
@@ -145,8 +133,7 @@ $ oc create -f <YAML_filename>
 If you would like information on how to use the script,
 
 ```
-$ cd ../../helper_scripts/OpenShift
-$ sh create_machineset.sh -h
+$ sh ../../create_machineset.sh -h
 ```
 
 To get your AMI ID and cluster ID, either log into your [AWS console](https://aws.amazon.com/console/) and find your cluster, **or** 
@@ -187,9 +174,11 @@ $ aws ec2 describe-instances --filters "Name=iam-instance-profile.id,Values=<ins
                     "ImageId": "ami-<hash>", 
 ```
 
-## Advanced CPU Options (CPU Manager)
+#### Advanced CPU Options (CPU Manager)
 
-### Installing and Enabling CPU Manager
+CPU Manager info: https://docs.openshift.com/container-platform/4.1/scalability_and_performance/using-cpu-manager.html
+
+##### Installing and Enabling CPU Manager
 
 First, install and enable CPU Manager to your cluster. To do so,
 
@@ -203,7 +192,7 @@ or
 $ sh ../../helper_scripts/OpenShift/enable_cpumanager.sh -n <node_name> -k /path/to/cpumanager-kubeletconfig.yaml -i <instance_type>
 ```
 
-### Uninstalling and Disabling CPU Manager
+##### Uninstalling and Disabling CPU Manager
 
 To uninstall,
 
@@ -216,3 +205,36 @@ or
 ```
 $ sh ../../helper_scripts/OpenShift/disable_cpumanager.sh -n <node_name> -k /path/to/cpumanager-kubeletconfig.yaml -i <instance_type>
 ```
+
+### Basics
+
+Now you're ready to build the necessary images to run the benchmarks. You can do everything at once by running:
+
+```
+$ make
+``
+
+This command will build a "base" imagestream that is used by a Source-to-Image (s2i) strategy that generates an image from the scripts under `../.s2i_fftw` or `../.s2i_openblas`. Once the s2i image has been built, the benchmarks are executed using [Ripsaw](https://github.com/cloud-bulldozer/ripsaw).
+
+To build just the base imagestream,
+
+```
+$ make imagestream
+```
+
+To build just the s2i imagestream,
+
+```
+$ make s2i
+```
+
+To run just the benchmarks,
+
+```
+$ make benchmarks
+```
+
+As the build commands execute, they will call scripts from the `scripts` folder in this directory. These scripts let you know the status of the build by checking every 10 seconds to see if the build is pending, has succeeded, or has failed. **Do not exit out of these scripts.**  Once the scripts complete, the next `make` command will execute. Or if you are building everything step by step (e.g., `make imagestream`, `make s2i`, etc.), either wait until the referenced script finishes executing before calling your next `make` command, or wait until the build has completed by checking `oc status`.
+
+Note that if you *must* prematurely stop `make imagestream` or `make s2i`, you must run `make clean_imagestream` (if you prematurely stopped `make imagestream`) or `make clean_s2i` (if you prematurely stopped `make s2i`) before running them again. Also, note that even if you *do* run the "clean" commands, your next `make imagestream` or `make s2i` command will likely fail, with an error saying "Image build has STOPPED." This is expected with OpenShift 4.x. To rectify this behavior, simply rerun the `make clean_imagestream` or `make clean_s2i` command (depending on which command failed), followed by `make imagestream` or `make s2i`.
+
