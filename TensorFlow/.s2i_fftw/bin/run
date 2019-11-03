@@ -1,3 +1,12 @@
 #!/bin/bash
 
-echo "--> Application ready to go."
+if [[ -x /usr/bin/nvidia-smi ]]; then
+    num_devices=$(lscpu | grep -v 'NUMA' | grep -v "On-line" | grep 'CPU(s)' | rev | cut -d' ' -f 1 | rev)
+    device="cpu"
+else
+    num_devices=$(nvidia-smi --query-gpu=count --format=csv,noheader)
+    device="gpu"
+fi
+
+cd /opt/app-root/src/playbooks/TensorFlow_Models
+ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: "/opt/app-root/src/tensorflow", device_type: "${device}", benchmarks_path: "/opt/app-root/src/benchmarks", num_devices: "${num_devices}"}'
