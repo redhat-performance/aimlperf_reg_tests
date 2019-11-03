@@ -212,7 +212,7 @@ Now you're ready to build the necessary images to run the benchmarks. You can do
 
 ```
 $ make
-``
+```
 
 This command will build a "base" imagestream that is used by a Source-to-Image (s2i) strategy that generates an image from the scripts under `../.s2i_fftw` or `../.s2i_openblas`. Once the s2i image has been built, the benchmarks are executed using [Ripsaw](https://github.com/cloud-bulldozer/ripsaw).
 
