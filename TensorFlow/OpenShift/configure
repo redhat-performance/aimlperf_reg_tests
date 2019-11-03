@@ -454,11 +454,11 @@ echo "" >> ${makefile}
 echo "benchmarks:" >> ${makefile}
 echo -e "\toc project openshift-image-registry" >> ${makefile}
 if [[ ! -z ${USE_CPU_MANAGER} ]]; then
-    echo -e "\toc new-app ${benchmarks_template_param} --param=IMAGESTREAM=\$(S2I_IMAGESTREAM_NAME) --param=DEVICE=cpu --param=MEMORY_SIZE=${CPU_MANAGER_MEMORY} --param=NUM_DEVICES=\$(NUM_CPUS)" >> ${makefile}
+    echo -e "\toc new-app ${benchmarks_template_param} --param=IMAGESTREAM=\$(S2I_IMAGESTREAM_NAME) --param=DEVICE=\$(DEVICE_TYPE) --param=MEMORY_SIZE=${CPU_MANAGER_MEMORY} --param=NUM_DEVICES=\$(NUM_CPUS)" >> ${makefile}
 elif [[ ! -z ${USE_GPU} ]]; then
-    echo -e "\toc new-app ${benchmarks_template_param} --param=IMAGESTREAM=\$(S2I_IMAGESTREAM_NAME) --param=DEVICE=gpu --param=NUM_DEVICES=\$(NUM_GPUS)" >> ${makefile}
+    echo -e "\toc new-app ${benchmarks_template_param} --param=IMAGESTREAM=\$(S2I_IMAGESTREAM_NAME) --param=DEVICE=\$(DEVICE_TYPE) --param=NUM_DEVICES=\$(NUM_GPUS)" >> ${makefile}
 else
-    echo -e "\toc new-app ${benchmarks_template_param} --param=IMAGESTREAM=\$(S2I_IMAGESTREAM_NAME) --param=DEVICE=cpu --param=NUM_DEVICES=\$(NUM_CPUS)" >> ${makefile}
+    echo -e "\toc new-app ${benchmarks_template_param} --param=IMAGESTREAM=\$(S2I_IMAGESTREAM_NAME) --param=DEVICE=\$(DEVICE_TYPE) --param=NUM_DEVICES=\$(NUM_CPUS)" >> ${makefile}
 fi
 echo "" >> ${makefile}
 
