@@ -61,8 +61,8 @@ COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
 COPY TensorFlow/playbooks/TensorFlow_Models ${TENSORFLOW_MODELS}
 COPY TensorFlow/playbooks/nccl_installation ${NCCL_INSTALLATION}
 COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
-COPY helper_scripts/Python/install_python_from_source.sh
-COPY helper_scripts/Ansible/install_ansible_from_source.sh
+COPY helper_scripts/Python/install_python_from_source.sh ${SCRIPTS}
+COPY helper_scripts/Ansible/install_ansible_from_source.sh ${SCRIPTS}
 
 # Put on port 8080
 EXPOSE 8080

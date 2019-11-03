@@ -49,8 +49,8 @@ COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
 COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
 COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
 COPY TensorFlow/playbooks/TensorFlow_Models ${TENSORFLOW_MODELS}
-COPY helper_scripts/Python/install_python_from_source.sh
-COPY helper_scripts/Ansible/install_ansible_from_source.sh
+COPY helper_scripts/Python/install_python_from_source.sh ${SCRIPTS}
+COPY helper_scripts/Ansible/install_ansible_from_source.sh ${SCRIPTS}
 
 # Install Python version ${PYTHON_VERSION} from source and Ansible version ${ANSIBLE_VERSION} from source
 RUN cd ${SCRIPTS} && \
