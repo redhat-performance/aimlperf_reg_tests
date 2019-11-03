@@ -20,7 +20,9 @@ For help on using `configure`, run:
 $ ./configure --help
 ```
 
-If you use the `--instance-type`/`-t` flag when configuring the Makefile and specify an instance that does not exist yet (which is perfectly okay!), you will need to setup an instance before executing the `make` commands. Information on how to setup an instance using `MachineSet` will be described later on, but do not worry about that yet. For now, follow the instructions in the next subsection, which describes how to install the necessary cluster operators for running the benchmarks.
+If you made a mistake somewhere in configuring, just rerun `configure`. Every time you run `configure`, it overwrites the existing Makefile with new information, so it is safe to rerun it.
+
+**HEADS UP:** If you use the `--instance-type`/`-t` flag when configuring the Makefile and specify an instance that does not exist yet (which is perfectly okay!), you will need to setup an instance before executing the `make` commands. Information on how to setup an instance using `MachineSet` will be described later on, but do not worry about that yet. For now, follow the instructions in the next subsection, which describes how to install the necessary cluster operators for running the benchmarks.
 
 ### 2. Installing Necessary Cluster Operators
 
@@ -208,6 +210,8 @@ $ sh ../../helper_scripts/OpenShift/disable_cpumanager.sh -n <node_name> -k /pat
 
 ### Basics
 
+#### Running the Benchmarks
+
 Now you're ready to build the necessary images to run the benchmarks. You can do everything at once by running:
 
 ```
@@ -234,7 +238,20 @@ To run just the benchmarks,
 $ make benchmarks
 ```
 
-As the build commands execute, they will call scripts from the `scripts` folder in this directory. These scripts let you know the status of the build by checking every 10 seconds to see if the build is pending, has succeeded, or has failed. **Do not exit out of these scripts.**  Once the scripts complete, the next `make` command will execute. Or if you are building everything step by step (e.g., `make imagestream`, `make s2i`, etc.), either wait until the referenced script finishes executing before calling your next `make` command, or wait until the build has completed by checking `oc status`.
+As the build commands execute, they will call scripts from the `scripts` folder in this directory. These scripts let you know the status of the build by checking every 10 seconds to see if the build is pending, has succeeded, or has failed. **Do not exit out of these scripts.**  Once the scripts complete, the next `make` target will automatically execute. Or if you are building everything step by step (e.g., `make imagestream`, `make s2i`, etc.), either wait until the referenced script finishes executing before calling your next `make` command, or wait until the build has completed by checking `oc status`.
 
 Note that if you *must* prematurely stop `make imagestream` or `make s2i`, you must run `make clean_imagestream` (if you prematurely stopped `make imagestream`) or `make clean_s2i` (if you prematurely stopped `make s2i`) before running them again. Also, note that even if you *do* run the "clean" commands, your next `make imagestream` or `make s2i` command will likely fail, with an error saying "Image build has STOPPED." This is expected with OpenShift 4.x. To rectify this behavior, simply rerun the `make clean_imagestream` or `make clean_s2i` command (depending on which command failed), followed by `make imagestream` or `make s2i`.
 
+#### "Cleaning" the Benchmarks
+
+The `clean` target in the Makefile deletes: (1.) the base ImageStream object, (2.) the s2i ImageStream object, and (3.) the Ripsaw Benchmark object. Thus, all you need to do is run `make clean` if you wish to delete everything. However, if you wish to delete only *specific* resources,
+
+```
+$ make clean_imagestream  #Deletes the base image stream
+$ make clean_s2i          #Deletes the s2i generated image stream
+$ make clean_benchmarks   #Deletes the benchmark object
+```
+
+#### Running Benchmarks on a Different Podman/Docker/CRI-O Image
+
+To run the benchmarks on a different image, you will need to rerun `configure` before running your `make` command(s).
