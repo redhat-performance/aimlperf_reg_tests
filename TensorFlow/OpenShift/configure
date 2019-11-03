@@ -351,7 +351,7 @@ echo "" >> ${makefile}
 
 # Initialize benchmark info
 echo "# Benchmark setup" >> ${makefile}
-echo "BENCHMARKS_APP_TEMPLATE=${benchmarks_app_template_name}" >> ${makefile}
+echo "BENCHMARKS_TEMPLATE=${benchmarks_template_name}" >> ${makefile}
 echo "" >> ${makefile}
 
 # Initialize AWS info (if AWS is being used)
@@ -375,7 +375,7 @@ fi
 # Set the template params
 build_image_template_param="--template=\$(BUILD_IMAGE_TEMPLATE)"
 s2i_image_template_param="--template=\$(S2I_BUILD_TEMPLATE)"
-benchmarks_template_param="--template=\$(BENCHMARKS_APP_TEMPLATE)"
+benchmarks_template_param="--template=\$(BENCHMARKS_TEMPLATE)"
 
 # Set the TensorFlow params
 rhel_version_param="--param=RHEL_VERSION=\$(RHEL_VERSION)"
@@ -487,4 +487,4 @@ echo -e "\toc delete is \$(S2I_IMAGESTREAM_NAME)" >> ${makefile}
 echo -e "\toc delete bc \$(S2I_BUILD_TEMPLATE)" >> ${makefile}
 echo "" >> ${makefile}
 echo "clean_benchmarks:" >> ${makefile}
-echo -e "\toc delete benchmark \$(BENCHMARKS_TEMPLATE_NAME)" >> ${makefile}
+echo -e "\toc delete benchmark \$(BENCHMARKS_TEMPLATE)" >> ${makefile}

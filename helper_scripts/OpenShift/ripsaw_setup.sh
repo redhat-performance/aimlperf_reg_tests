@@ -31,7 +31,7 @@ if [[ -z ${do_not_have_oc} ]]; then
 fi
 
 # Check for kubeconfig
-if [[ ! -d ${KUBECONFIG} ]]; then
+if [[ ! -f ${KUBECONFIG} ]]; then
     echo "<< ERROR >> Invalid KUBECONFIG."
     exit 1
 fi
