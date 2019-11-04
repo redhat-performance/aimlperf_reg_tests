@@ -92,17 +92,14 @@ RUN chmod -R 777 /usr/libexec/s2i && \
     chmod g=u /etc/passwd /etc/group && \
     chmod g=u /etc/subuid /etc/subgid && \
     mkdir -p ${TOPDIR}/.ansible/tmp && \
-    chmod -R 777 ${TOPDIR}/.ansible && \
-    mkdir -p ${TOPDIR}/.cache && \
-    chmod -R 777 ${TOPDIR}/.cache && \
-    chmod 777 ${TOPDIR} && \
-    touch ${TOPDIR}/.gitconfig && \
-    chmod 777 ${TOPDIR}/.gitconfig && \
-    mkdir -p ${TOPDIR}/.cache/bazel && \
-    chmod -R 777 ${TOPDIR}/.cache/bazel && \
-    chmod -R 777 /usr/local/cuda && \
     mkdir -p ${TOPDIR}/.aws && \
-    chmod 777 ${TOPDIR}/.aws
+    mkdir -p ${TOPDIR}/.cache/bazel && \
+    touch ${TOPDIR}/.gitconfig && \
+    chmod -R 777 ${TOPDIR}/.ansible && \
+    chmod -R 777 ${TOPDIR}/.aws && \
+    chmod -R 777 ${TOPDIR}/.cache && \
+    chmod -R 777 /usr/local/cuda && \
+    chmod 777 ${TOPDIR}/.gitconfig
 
 # Set Ansible remote tmp
 RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
