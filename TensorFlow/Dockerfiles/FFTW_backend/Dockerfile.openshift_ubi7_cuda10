@@ -70,11 +70,6 @@ COPY TensorFlow/playbooks/tensorrt_installation ${TENSORRT_INSTALLATION}
 COPY helper_scripts/Python/install_python_from_source.sh ${SCRIPTS}
 COPY helper_scripts/Ansible/install_ansible_from_source.sh ${SCRIPTS}
 
-# Add user
-RUN useradd ${USER} && \
-    chown ${USER}:${USER} ${APPDIR} && \
-    addgroup ${USER} ${USER}
-
 # Create symlink for NumPy so that it can find endian.h
 RUN yum -y install glibc glibc-devel && \
     ln -s /usr/include/endian.h /usr/include/sys/endian.h
