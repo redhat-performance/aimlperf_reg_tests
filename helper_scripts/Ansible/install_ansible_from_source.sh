@@ -1,13 +1,13 @@
 #!/bin/bash
 
 ANSIBLE_GIT_VERSION=$1
-RELEASE=$(cat /etc/redhat-release | cut -d' ' -f 6)
+RELEASE=$(cat /etc/redhat-release)
 RHEL_VERSION=
 
 # Get RHEL version from kernel version
-if [[ ${RELEASE} == "7."* ]]; then
+if [[ ${RELEASE} == *"7."* ]]; then
     RHEL_VERSION=7
-elif [[ ${RELEASE} == "8."* ]]; then
+elif [[ ${RELEASE} == *"8."* ]]; then
     RHEL_VERSION=8
 else
     echo "ERROR. Unrecognized RHEL version '${RELEASE}'. Exiting now."
