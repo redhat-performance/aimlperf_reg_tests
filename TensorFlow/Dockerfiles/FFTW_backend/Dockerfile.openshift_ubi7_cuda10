@@ -27,21 +27,24 @@ EXPOSE 8080
 ENV YUM_TIMEOUT=300
 RUN sed -i "/[main]/a timeout=${YUM_TIMEOUT}" /etc/yum.conf
 
-# Set top directory
-ENV TOPDIR=${HOME}
+# Set app directory
+ENV APPDIR="/benchmark_app"
+
+# Set user
+ENV USER=1001
 
 # Set playbook paths
-ENV FFTW_PREREQS_PLAYBOOK=${TOPDIR}/playbooks/fftw_package_installation
-ENV TF_PREREQS_PLAYBOOK=${TOPDIR}/playbooks/tensorflow_package_installation
-ENV FFTW_INSTALLATION=${TOPDIR}/playbooks/FFTW_installation
-ENV TENSORFLOW_INSTALLATION=${TOPDIR}/playbooks/TensorFlow_installation
-ENV TENSORFLOW_MODELS=${TOPDIR}/playbooks/TensorFlow_Models
-ENV NCCL_INSTALLATION=${TOPDIR}/playbooks/nccl_installation
-ENV CUDNN_INSTALLATION=${TOPDIR}/playbooks/cudnn_installation
-ENV TENSORRT_INSTALLATION=${TOPDIR}/playbooks/tensorrt_installation
+ENV FFTW_PREREQS_PLAYBOOK=${APPDIR}/playbooks/fftw_package_installation
+ENV TF_PREREQS_PLAYBOOK=${APPDIR}/playbooks/tensorflow_package_installation
+ENV FFTW_INSTALLATION=${APPDIR}/playbooks/FFTW_installation
+ENV TENSORFLOW_INSTALLATION=${APPDIR}/playbooks/TensorFlow_installation
+ENV TENSORFLOW_MODELS=${APPDIR}/playbooks/TensorFlow_Models
+ENV NCCL_INSTALLATION=${APPDIR}/playbooks/nccl_installation
+ENV CUDNN_INSTALLATION=${APPDIR}/playbooks/cudnn_installation
+ENV TENSORRT_INSTALLATION={$APPDIR}/playbooks/tensorrt_installation
 
 # Set scripts path
-ENV SCRIPTS=${TOPDIR}/scripts
+ENV SCRIPTS=${APPDIR}/scripts
 
 # Create folders for playbooks and folder for playbooks cache
 RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
@@ -53,7 +56,7 @@ RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
     mkdir -p ${CUDNN_INSTALLATION} && \
     mkdir -p ${TENSORRT_INSTALLATION} && \
     mkdir -p ${SCRIPTS} && \
-    mkdir -p ${TOPDIR}/.cache
+    mkdir -p ${APPDIR}/.cache
 
 # Copy playbooks and scripts
 COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
@@ -67,8 +70,10 @@ COPY TensorFlow/playbooks/tensorrt_installation ${TENSORRT_INSTALLATION}
 COPY helper_scripts/Python/install_python_from_source.sh ${SCRIPTS}
 COPY helper_scripts/Ansible/install_ansible_from_source.sh ${SCRIPTS}
 
-# Put on port 8080
-EXPOSE 8080
+# Add user
+RUN useradd ${USER} && \
+    chown ${USER}:${USER} ${APPDIR} && \
+    addgroup ${USER} ${USER}
 
 # Create symlink for NumPy so that it can find endian.h
 RUN yum -y install glibc glibc-devel && \
@@ -91,26 +96,23 @@ RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
 RUN chmod -R 777 /usr/libexec/s2i && \
     chmod g=u /etc/passwd /etc/group && \
     chmod g=u /etc/subuid /etc/subgid && \
-    mkdir -p ${TOPDIR}/.ansible/tmp && \
-    mkdir -p ${TOPDIR}/.aws && \
-    mkdir -p ${TOPDIR}/.cache/bazel && \
-    touch ${TOPDIR}/.gitconfig && \
-    chmod -R 777 ${TOPDIR}/.ansible && \
-    chmod -R 777 ${TOPDIR}/.aws && \
-    chmod -R 777 ${TOPDIR}/.cache && \
+    mkdir -p ${APPDIR}/.ansible/tmp && \
+    mkdir -p ${APPDIR}/.aws && \
+    mkdir -p ${APPDIR}/.cache/bazel && \
+    touch ${APPDIR}/.gitconfig && \
     chmod -R 777 /usr/local/cuda && \
-    chmod 777 ${TOPDIR}/.gitconfig
+    chmod -R 777 ${APPDIR}
 
 # Set Ansible remote tmp
-RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
-    echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg && \
-    echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${TENSORFLOW_MODELS}/ansible.cfg
+RUN echo "remote_tmp = ${APPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
+    echo "remote_tmp = ${APPDIR}/.ansible/tmp" >> ${TENSORFLOW_INSTALLATION}/ansible.cfg && \
+    echo "remote_tmp = ${APPDIR}/.ansible/tmp" >> ${TENSORFLOW_MODELS}/ansible.cfg
 
 # Set work directory
-WORKDIR ${TOPDIR}
+WORKDIR ${APPDIR}
 
 # Set user to '1001'
-USER 1001
+USER ${USER}
 
 # Set CMD
 CMD ["/usr/libexec/s2i/run"]

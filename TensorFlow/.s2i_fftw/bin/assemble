@@ -47,20 +47,27 @@ else
     exit 1
 fi
 
-# Check if ${HOME} exists. If it does not, then set it to /home. (Yes, this is a hack... for CUDA images.)
+# Check the current directory
 echo ""
-echo "Checking home directory:"
-echo "  HOME: ${HOME}"
+echo "Checking current directory:"
+CURR_DIR=`pwd`
+echo "  Directory: ${CURR_DIR}"
 echo ""
-if [[ ! -d ${HOME} ]]; then
+if [[ ! -d ${CURR_DIR} ]]; then
     TOPDIR=/opt/app-root/src
-elif [[ ${HOME} == '/' ]]; then
+elif [[ ${TOPDIR} == '/' ]]; then
     TOPDIR=/home
 else
-    TOPDIR=${HOME}
+    TOPDIR=${CURR_DIR}
 fi
-echo "Setting top dir based on 'HOME':"
+echo "Setting top dir based on current directory:"
 echo "  TOPDIR: ${TOPDIR}"
+echo ""
+
+# Look for the app sources
+echo ""
+echo "Looking for app sources:"
+ls .
 echo ""
 
 # Add user to /etc/passwd if necessary
