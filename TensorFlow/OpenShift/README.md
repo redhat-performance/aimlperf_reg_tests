@@ -44,15 +44,31 @@ $ make setup_ripsaw  #sets up the Ripsaw operator
 
 Once you've installed the necessary operators, you should follow the next two subsections for creating 'base images' using registry.redhat.io images. (Note: these sections only apply if you are using RHEL 7 CUDA builds or non-CUDA RHEL 8 builds.)
 
-### 3. Using registry.redhat.io Images (REQUIRED FOR CUDA RHEL 7 BUILDS + NON-CUDA RHEL 8 BUILDS)
+### 3. Setting up BuildConfig and Benchmark Templates
+
+To build any ImageStream or Benchmark object in this repository, you will need to load the BuildConfig and Benchmark templates into OpenShift. You can do so via:
+
+```bash
+$ make -C setup/templates
+```
+
+If you wish to make changes to the templates or simply undeploy all of them,
+
+```bash
+$ make -C setup/templates uneploy
+```
+
+This will perform an `oc delete -f <filename>` command on each template, allowing you to update your templates and -- if you wish -- redeploy them by running the `make -C setup/templates` command.
+
+### 4. Using registry.redhat.io Images (REQUIRED FOR CUDA RHEL 7 BUILDS + NON-CUDA RHEL 8 BUILDS)
 
 Follow the instructions in the `setup` folder in this directory. In essence, you will need to run a create two files under **../../secrets**, then run a `make` command.
 
-### 4. Building and Using a CUDA "Base Image" from this Repository
+### 5. Building and Using a CUDA "Base Image" from this Repository
 
 To prepare for a CUDA build using a "base image," make sure to build one of the Docker images under `../Dockerfiles/custom/rhel7/cuda` or `../Dockerfiles/custom/rhel8/cuda`. Follow the instructions in the **setup** folder in this directory to do so. Such base images have cuDNN and NCCL pre-installed, which means you can skip the next subsection "Setting up an EBS Volume." Otherwise, for images that do *not* have cuDNN and NCCL pre-installed, you will need to setup an EBS volume that contains such packages by following the instructions below.
 
-### 5. Setting up an EBS Volume (for Non Custom Base Images)
+### 6. Setting up an EBS Volume (for Non Custom Base Images)
 
 To prepare for CUDA builds in images which do *not* have cuDNN and NCCL preinstalled, you will first need to create an EBS volume, like so:
 
