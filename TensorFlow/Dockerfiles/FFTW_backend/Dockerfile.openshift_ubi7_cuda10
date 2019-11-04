@@ -51,6 +51,7 @@ RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
     mkdir -p ${TENSORFLOW_MODELS} && \
     mkdir -p ${NCCL_INSTALLATION} && \
     mkdir -p ${CUDNN_INSTALLATION} && \
+    mkdir -p ${TENSORRT_INSTALLATION} && \
     mkdir -p ${SCRIPTS} && \
     mkdir -p ${TOPDIR}/.cache
 
@@ -75,7 +76,7 @@ RUN yum -y install glibc glibc-devel && \
 
 # Install Python version ${PYTHON_VERSION} from source and Ansible version ${ANSIBLE_VERSION} from source
 RUN cd ${SCRIPTS} && \
-    sh install_python_from_source.sh ${PYTHON_VERSION}
+    sh install_python_from_source.sh ${PYTHON_VERSION} && \
     sh install_ansible_from_source.sh ${ANSIBLE_VERSION}
 
 # Install FFTW + TensorFlow prerequisites via Ansible and pip3
