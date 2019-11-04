@@ -55,7 +55,8 @@ RUN yum-config-manager --disablerepo rhel7-Latest && \
 # Create 3rd party packages directory
 ENV THIRD_PARTY_PKGS_DIR=${HOME}/3rd_party_pkgs
 RUN mkdir -p ${THIRD_PARTY_PKGS_DIR}/cudnn && \
-    mkdir -p ${THIRD_PARTY_PKGS_DIR}/nccl
+    mkdir -p ${THIRD_PARTY_PKGS_DIR}/nccl && \
+    mkdir -p ${THIRD_PARTY_PKGS_DIR}/tensorrt
 
 # Pull in cuDNN
 COPY gpu_packages/cudnn-cuda-10.0.tgz ${THIRD_PARTY_PKGS_DIR}/cudnn/cudnn.tgz
@@ -70,3 +71,9 @@ COPY gpu_packages/nccl-cuda-10.0.txz ${THIRD_PARTY_PKGS_DIR}/nccl/nccl.txz
 RUN cd ${THIRD_PARTY_PKGS_DIR}/nccl && \
     tar xJf nccl.txz --strip-components=1 && \
     rm -rf nccl.txz
+
+# Pull in TensorRT
+COPY gpu_packages/tensorrt-cuda-10.0.tar.gz ${THIRD_PARTY_PKGS_DIR}/tensorrt/tensorrt.tar.gz
+RUN cd ${THIRD_PARTY_PKGS_DIR)/tensorrt && \
+    tar xvf tensorrt.tar.gz --strip-components=1 && \
+    rm -rf tensorrt.tar.gz
