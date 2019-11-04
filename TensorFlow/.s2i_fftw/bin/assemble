@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copy application source
+cp -Rf /tmp/src/. ./
+
 # Check device input
 if [[ ${DEVICE} != "cpu" ]] && [[ ${DEVICE} != "gpu" ]]; then
     echo "ERROR. Unrecognized device '${DEVICE}'"
