@@ -49,7 +49,7 @@ pip3 install -r requirements.txt
 
 # Set Python executable for RHEL 7
 if [[ ${RHEL_VERSION} == 7 ]]; then
-    sed -i "s/PYTHON=python/PYTHON=python3/g" Makefile && \
+    sed -i "s/PYTHON=python/PYTHON=python3/g" Makefile
 fi
 
 # Setup Ansible
