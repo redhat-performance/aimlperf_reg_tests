@@ -4,7 +4,7 @@ CONFIG = $(KUBECONFIG)
 all: secrets cuda_rhel7
 
 secrets:
-	$(MAKE) -f Makefile.secrets
+	$(MAKE) KUBECONFIG=$(CONFIG) -f Makefile.secrets
 
 cuda_rhel7:
 	$(MAKE) KUBECONFIG=$(CONFIG) -f Makefile.cuda_rhel7

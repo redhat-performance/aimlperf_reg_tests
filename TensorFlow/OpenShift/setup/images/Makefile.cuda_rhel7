@@ -1,6 +1,6 @@
 IMAGE_BUILDER=$(shell if [[ ! -z `which podman` ]]; then echo `which podman`; elif [[ ! -z `which docker` ]]; then echo `which docker`; else echo " "; fi)
-REDHAT_IO_REGISTRY_SECRET_FILE=../../../secrets/redhat_io_registry.yaml
-REDHAT_IO_PULL_TOKEN=$(shell cat ../../../secrets/redhat_io_registry_password)
+REDHAT_IO_REGISTRY_SECRET_FILE=../../../../secrets/redhat_io_registry.yaml
+REDHAT_IO_PULL_TOKEN=$(shell cat ../../../../secrets/redhat_io_registry_password)
 REDHAT_IO_PULL_SECRET_NAME=$(shell while IFS=" " read -r t || [ -n "$$t" ]; do \
 			if [[ "$$t" == *"name:"* ]]; then echo $$t | cut -d ' ' -f 2 && break; fi; \
 done < "$(REDHAT_IO_REGISTRY_SECRET_FILE)")
