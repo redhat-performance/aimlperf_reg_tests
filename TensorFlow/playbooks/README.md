@@ -1,6 +1,6 @@
 # TensorFlow Playbooks
 
-This folder contains three playbooks for building, installing, and running TensorFlow:
+This folder contains eight playbooks for building, installing, and running TensorFlow:
 
   1. `cuda_optional_installation`
   2. `cudnn_installation`
@@ -9,9 +9,9 @@ This folder contains three playbooks for building, installing, and running Tenso
   5. `TensorFlow_installation`
   6. `TensorFlow_benchmarks`
   7. `TensorFlow_Models`
+  8. `tensorrt_installation`
 
-The first playbook installs CUDA devel packages for building TensorFlow on the GPU. It requires super user. The second playbook installs cuDNN to /usr/local/cuda (or wherever you've installed CUDA to). The third playbook installs NCCL. The fourth package installs the necessary requirements for building TensorFlow (e.g., required packages, etc.). The fifth package installs TensorFlow itself, but it does not use super user. Instead, it installs the package locally to `${HOME}/.local/lib/python3.6/site-packages`. And finally, the last two playbooks download the benchmarks and runs them. However, note that `TensorFlow_benchmarks`
-only works for TensorFlow 1.x. Use `TensorFlow_Models` for TensorFlow 2.0.0 and up.
+The first playbook installs CUDA devel packages for building TensorFlow on the GPU. It requires super user. The second playbook installs cuDNN to /usr/local/cuda (or wherever you've installed CUDA to). The third playbook installs NCCL. The fourth package installs the necessary requirements for building TensorFlow (e.g., required packages, etc.). The fifth package installs TensorFlow itself, but it does not use super user. Instead, it installs the package locally to `${HOME}/.local/lib/python3.6/site-packages`. The sixth and seventh playbooks download the benchmarks and runs them. (However, note that `TensorFlow_benchmarks`only works for TensorFlow 1.x. Use `TensorFlow_Models` for TensorFlow 2.0.0 and up.) And finally, the last playbook installs TensorRT to `install_dir`, whatever you define that to be.
 
 ## CUDA Optional Installation
 
@@ -55,6 +55,15 @@ $ ansible-playbook -i hosts play.yaml --extra-vars="{ ... }"
 
 Set the extra vars based on what you see in `play.yaml`.
 
+## TensorRT Installation
+
+To install TensorRT,
+
+```
+$ cd tensorrt_installation
+$ ansible-playbook -i hosts play.yaml --extra-vars="{ ... }"
+```
+
 ## Package Installation
 
 To install required packages, first make sure you have write permissions to `/usr/local/lib` and `/usr/lib64`. Once you're ready, you can install the required packages on a RHEL 7 machine via:
@@ -87,7 +96,7 @@ Note that if you do NOT have an NVIDIA-capable GPU, but you put `use_gpu: 'yes'`
 
 ## TensorFlow Installation
 
-To install TensorFlow on a RHEL 7 machine,
+To install TensorFlow on a RHEL 7 machine (after you've optionally installed CUDA packages for a GPU-enabled machine),
 
 ```
 $ cd TensorFlow_installation

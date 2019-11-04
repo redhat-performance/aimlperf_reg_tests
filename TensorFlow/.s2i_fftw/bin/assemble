@@ -191,6 +191,52 @@ if [[ ${DEVICE} == "gpu" ]]; then
 fi
 
 ##########################################
+#     INSTALL TENSORRT IF USING GPUS     #
+##########################################
+if [[ ${DEVICE} == "gpu" ]] && [[ ${RHEL_VERSION} == "7" ]]; then
+
+    # Print out info
+    echo "TensorRT installation params:"
+    echo "  RHEL version:      ${RHEL_VERSION}"
+    if [[ ${WHICH_SOURCE} == "url" ]] || [[ ${WHICH_SOURCE} == "URL" ]]; then
+        echo "  TensorRT installer:   ${TENSORRT}"
+        echo ""
+    elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]] || [[ ${WHICH_SOURCE} == "none" ]] || [[ ${WHICH_SOURCE} == "NONE" ]]; then
+        echo ""
+    else
+        echo "TensorRT installation params:"
+        echo "  RHEL version:          ${RHEL_VERSION}"
+        echo "  TensorRT s3 bucket:    ${TENSORRT}"
+        echo "  AWS access key:        [private]"
+        echo "  AWS secret access key: [private]"
+        echo "  AWS region:            ${AWS_REGION}"
+        echo "  AWS profile:           ${AWS_PROFILE}"
+        echo ""
+    fi
+
+    # Change to appropriate directory (if installing cuDNN)
+    if [[ ${WHICH_SOURCE} != "none" ]] && [[ ${WHICH_SOURCE} != "NONE" ]]; then
+        cd ${TOPDIR}/playbooks/tensorrt_installation
+    fi
+
+    # Build and install cuDNN
+    if [[ ${WHICH_SOURCE} == "url" ]] || [[ ${WHICH_SOURCE} == "URL" ]]; then
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', install_dir: '${TENSORRT_INSTALL_DIR}', tensorrt: '${TENSORRT}', cuda_install_path: '${CUDA_INSTALL_PATH}', use_ebs: 'no', use_awscli: 'no', use_url: 'yes',  gpu_check: 'no'}"
+    elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]]; then
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', install_dir: '${TENSORRT_INSTALL_DIR}', cuda_install_path: '${CUDA_INSTALL_PATH}', use_ebs: 'yes', use_awscli: 'no',  use_url: 'no', gpu_check: 'no'}"
+    elif [[ ${WHICH_SOURCE} == "s3" ]] || [[ ${WHICH_SOURCE} == "S3" ]]; then
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', install_dir: '${TENSORRT_INSTALL_DIR}', use_ebs: 'no', use_url: 'no', use_awscli: 'yes', bucket: '${TENSORRT}', aws_profile: '${AWS_PROFILE}', add_aws_credentials: 'yes', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
+    fi
+
+    # Print out success message
+    if [[ ${WHICH_SOURCE} != "none" ]] && [[ ${WHICH_SOURCE} != "NONE" ]]; then
+        echo ""
+        echo "<< SUCCESS >> TensorRT installed!"
+        echo ""
+    fi
+fi
+
+##########################################
 #         BUILD AND INSTALL FFTW         #
 ##########################################
 # Set install and build dirs

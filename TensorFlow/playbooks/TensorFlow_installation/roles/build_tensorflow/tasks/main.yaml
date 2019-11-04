@@ -140,22 +140,28 @@
     NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
   register: tensorflow_configure_log_cpu
-  when: USE_CPU == 'yes' and USE_GPU == 'no'
+  when: DEVICE == 'cpu'
 
-# Command taken from: https://georgesterpu.github.io/compile_tensorflow.html
-- name: If using the GPU, find CUDA version
-  shell: /usr/local/cuda/bin/nvcc --version | sed -n 's/^.*release \(.*\),.*/\1/p'
-  register: cuda_version
-  when: USE_CPU == 'no' and USE_GPU == 'yes'
+block:
+  # Command taken from: https://georgesterpu.github.io/compile_tensorflow.html
+  - name: If using the GPU, find CUDA version
+    shell: /usr/local/cuda/bin/nvcc --version | sed -n 's/^.*release \(.*\),.*/\1/p'
+    register: cuda_version
 
-# Command taken from: https://georgesterpu.github.io/compile_tensorflow.html
-- name: If using the GPU, find cuDNN version
-  shell: sed -n 's/^#define CUDNN_MAJOR\s*\(.*\).*/\1/p' /usr/local/cuda/include/cudnn.h
-  register: cudnn_version
-  when: USE_CPU == 'no' and USE_GPU == 'yes'
+  # Command taken from: https://georgesterpu.github.io/compile_tensorflow.html
+  - name: If using the GPU, find cuDNN version
+    shell: sed -n 's/^#define CUDNN_MAJOR\s*\(.*\).*/\1/p' /usr/local/cuda/include/cudnn.h
+    register: cudnn_version
+when: DEVICE == 'gpu'
+
+# Get TensorRT version
+- name: If using the GPU, find the TensorRT version
+  shell: pip3 show tensorrt | grep "Version:" | cut -d ' ' -f 2
+  register: tensorrt_version
+  when: DEVICE == 'gpu' and USE_TENSORRT == 'yes'
 
 # Now configure TensorFlow for the GPU
-- name: Configure TensorFlow for the GPU
+- name: Configure TensorFlow for the GPU w/o TensorRT
   shell: |
     cd {{ TENSORFLOW_BUILD_DIR }} 
     ./configure
@@ -183,7 +189,40 @@
     NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
   register: tensorflow_configure_log_gpu
-  when: USE_CPU == 'no' and USE_GPU == 'yes'
+  when: DEVICE == 'gpu' and USE_TENSORRT == 'no'
+
+# Now configure TensorFlow for the GPU
+- name: Configure TensorFlow for the GPU w/ TensorRT
+  shell: |
+    cd {{ TENSORFLOW_BUILD_DIR }} 
+    ./configure
+  environment:
+    GCC_HOST_COMPILER_PATH: '{{ CC }}'
+    CC_OPT_FLAGS: '-march=native'
+    CUDA_TOOLKIT_PATH: '/usr/local/cuda'
+    CUDNN_INSTALL_PATH: '/usr/local/cuda'
+    NCCL_INSTALL_PATH: '{{ NCCL_INSTALL_PATH }}'
+    TENSORRT_INSTALL_PATH: '{{ TENSORRT_INSTALL_PATH }}'
+    TF_CUDA_VERSION: '{{ cuda_version.stdout }}'
+    TF_CUDNN_VERSION: '{{ cudnn_version.stdout }}'
+    TF_TENSORRT_VERSION: '{{ tensorrt_version.stdout }}'
+    TF_DOWNLOAD_CLANG: '0'
+    TF_ENABLE_XLA: '0'
+    TF_NEED_COMPUTECPP: '0'
+    TF_NEED_CUDA: '1'
+    TF_NEED_MPI: '0'
+    TF_NEED_OPENCL: '0'
+    TF_NEED_OPENCL_SYCL: '0'
+    TF_NEED_ROCM: '0'
+    TF_NEED_TENSORRT: '1'
+    TF_PYTHON_CONFIG_REPO: '@org_tensorflow//third_party/toolchains/cpus/py'
+    TF_SET_ANDROID_WORKSPACE: '0'
+    PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
+    PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
+    NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
+    LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
+  register: tensorflow_configure_log_gpu
+  when: DEVICE == 'gpu' and USE_TENSORRT == 'yes'
 
 # Save CPU configure log (if we're using the CPU)
 - local_action: template src=tensorflow_configure_log_cpu.j2 dest={{ TENSORFLOW_BUILD_DIR }}/configure.log

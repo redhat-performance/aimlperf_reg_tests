@@ -1,0 +1,41 @@
+---
+
+# Configure AWS so the s3 bucket file can be downloaded
+- name: Configure AWS CLI for {{ s3_profile }}
+  shell: |
+    aws configure set aws_access_key_id '{{ s3_access_key }}' --profile '{{ s3_profile }}'
+    aws configure set aws_secret_access_key '{{ s3_secret_access_key }}' --profile '{{ s3_profile }}'
+    aws configure set region '{{ s3_region }}' --profile '{{ s3_profile }}'
+  when: s3_add_credentials == 'yes'
+
+# Download the tarball from the s3 bucket
+- name: Download s3 bucket TensorRT tarball
+  shell: "AWS_DEFAULT_PROFILE={{ s3_profile }} aws s3 cp {{ s3_bucket }} {{ tensorrt_download_dir }}"
+
+# Find the tarball name
+- name: Get tarball name
+  shell: ls -p '{{ tensorrt_download_dir }}'
+  register: ls_tensorrt_download_dir_output
+
+# Print out the tarball name that was found
+- debug:
+    msg: 'Found {{ ls_tensorrt_download_dir_output.stdout }}'
+
+# Untar the tarball so that we can extract its contents to the {{ cuda_path }} folder
+- name: Untar the TensorRT tarball
+  shell: |
+    cd '{{ tensorrt_download_dir }}'
+    tar xvf '{{ ls_tensorrt_download_dir_output.stdout }}' --strip-components 1
+
+# We no longer need the tarball, so get rid of it
+- name: Remove the tarball itself, but keep the folder
+  shell: |
+    cd '{{ tensorrt_download_dir }}'
+    rm -f '{{ ls_tensorrt_download_dir_output.stdout }}'
+
+# Optionally, remove the AWS credentials that we added
+- name: Optional --> delete aws '{{ aws_profile }}' credentials.
+  replace:
+    path: ~/.aws/credentials
+    regexp: '\[{{ aws_profile }}\]\naws_access_key={{ aws_access_key }}\naws_secret_access_key={{ aws_secret_access_key}}'
+  when: delete_aws_credentials == 'yes'

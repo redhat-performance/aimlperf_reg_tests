@@ -1,0 +1,69 @@
+---
+
+# If we're going to use the AWS cli tool, then execute the 'get_tensorrt_from_s3_with_awscli'
+# role. If we're going to get TensorRT from a URL, then execute 'get_tensorrt_from_url'.
+# Finally, if we're going to get TensorRT from an EBS (Elastic Block Storage), then run the
+# 'get_tensorrt_from_ebs' role.
+- include_role:
+    name: get_tensorrt_from_s3_with_awscli
+  when: use_awscli == 'yes' and use_http == 'no' and use_ebs == 'no'
+
+- include_role:
+    name: get_tensorrt_from_url
+  when: use_awscli == 'no' and use_http == 'yes' and use_ebs == 'no'
+
+- include_role:
+    name: get_tensorrt_from_ebs
+  when: use_awscli == 'no' and use_http == 'no' and use_ebs == 'yes'
+
+# Next step is to install the Python TensorRT wheel file, but first, we must get the wheel file name
+- name: Get TensorRT wheel file name
+  file:
+    paths: '{{ tensorrt_download_dir }}/python'
+    patterns: '*36*.whl'
+  register: tensorrt_wheel_file
+
+# Now install TensorRT wheel file
+- name: Install Python TensorRT wheel file
+  pip:
+    name: '{{ item.path }}'
+    executable: pip3
+    extra_args: '--target={{ tensorrt_install_dir }}'
+  with_items: '{{ tensorrt_wheel_file.files }}'
+
+# Now we need to install UFF, but again, we must get the UFF wheel file
+- name: Get UFF wheel file name
+  file:
+    paths: '{{ tensorrt_download_dir }}/uff'
+    patterns: '*36*.whl'
+  register: uff_wheel_file
+
+# Install the UFF wheel file
+- name: Install UFF wheel file
+  pip:
+    name: '{{ item.path }}'
+    executable: pip3
+    extra_args: '--target={{ tensorrt_install_dir }}'
+  with_items: '{{ uff_wheel_file.files }}'
+
+# Do the same for graphsurgeon
+- name: Get graphsurgeon wheel file name
+  file:
+    paths: '{{ tensorrt_download_dir }}/graphsurgeon'
+    patterns: '*36*.whl'
+  register: graphsurgeon_wheel_file
+
+# Now install
+- name: Install graphsurgeon wheel file
+  pip:
+    name: '{{ item.path }}'
+    executable: pip3
+    extra_args: '--target={{ tensorrt_install_dir }}'
+  with_items: '{{ graphsurgeon_wheel_file.files }}'
+
+# Finally, do some clean up: Remove the temporary download dir because we don't need
+# it anymore
+- name: Cleanup --> Remove temp dir {{ tensorrt_download_dir }}
+  file:
+    state: absent
+    path: '{{ tensorrt_download_dir }}'

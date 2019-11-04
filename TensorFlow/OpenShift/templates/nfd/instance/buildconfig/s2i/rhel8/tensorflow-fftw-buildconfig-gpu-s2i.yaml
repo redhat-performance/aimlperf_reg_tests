@@ -38,6 +38,8 @@ objects:
             value: "${NCCL_URL}"
           - name: "CUDNN"
             value: "${CUDNN_URL}"
+          - name: "TENSORRT"
+            value: "${TENSORRT_URL}"
           - name: "AWS_PROFILE"
             value: "${AWS_PROFILE}"
           - name: "AWS_REGION"
@@ -101,6 +103,10 @@ parameters:
   value: ""
 - description: "URL or s3 bucket to download cuDNN from"
   name: "CUDNN_URL"
+  required: false
+  value: ""
+- description: "URL or s3 bucket to download TensorRT from"
+  name: "TENSORRT_URL"
   required: false
   value: ""
 - description: "Path to gcc"

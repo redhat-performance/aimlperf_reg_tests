@@ -1,0 +1,5 @@
+---
+
+# Move TensorRT from ebs to '{{ tensorrt_download_dir }}'
+- name: Copy TensorRT from EBS to {{ tensorrt_download_dir }}.
+  shell: 'cp -R {{ tensorrt_ebs_dir }}/TensorRT/* {{ tensorrt_download_dir }}'

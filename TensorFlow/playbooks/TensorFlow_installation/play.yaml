@@ -23,12 +23,17 @@
     USE_OPENBLAS: '{{ use_openblas | default("no") }}'
 
     # Use CPU or GPU?
-    USE_CPU: '{{ use_cpu | default("yes") }}'
-    USE_GPU: '{{ use_gpu | default("no") }}'
+    DEVICE: '{{ devuce | default("cpu") }}'
 
     # Paths to CUDA/NVIDIA libraries
     NCCL_INSTALL_PATH: '{{ nccl_install_path | default("/home/nccl") }}'
     CUDNN_INSTALL_PATH: '{{ cudnn_install_path | default("/home/cuDNN") }}'
+    TENSORRT_INSTALL_PATH: '{{ tensorrt_install_path | default("/home/TensorRT") }}'
+
+    # << GPU only >> Select which CUDA/NVIDIA libraries to use
+    USE_NCCL: '{{ use_nccl | default("yes") }}'
+    USE_CUDNN: '{{ use_cudnn | default("yes") }}'
+    USE_TENSORRT: '{{ use_tensorrt | default("no") }}'
 
     # For NumPy site config, we must point to where the BLAS shared object
     # libraries and include folders are installed

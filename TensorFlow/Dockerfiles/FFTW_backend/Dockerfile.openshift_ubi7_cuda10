@@ -38,6 +38,7 @@ ENV TENSORFLOW_INSTALLATION=${TOPDIR}/playbooks/TensorFlow_installation
 ENV TENSORFLOW_MODELS=${TOPDIR}/playbooks/TensorFlow_Models
 ENV NCCL_INSTALLATION=${TOPDIR}/playbooks/nccl_installation
 ENV CUDNN_INSTALLATION=${TOPDIR}/playbooks/cudnn_installation
+ENV TENSORRT_INSTALLATION=${TOPDIR}/playbooks/tensorrt_installation
 
 # Set scripts path
 ENV SCRIPTS=${TOPDIR}/scripts
@@ -61,6 +62,7 @@ COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
 COPY TensorFlow/playbooks/TensorFlow_Models ${TENSORFLOW_MODELS}
 COPY TensorFlow/playbooks/nccl_installation ${NCCL_INSTALLATION}
 COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
+COPY TensorFlow/playbooks/tensorrt_installation ${TENSORRT_INSTALLATION}
 COPY helper_scripts/Python/install_python_from_source.sh ${SCRIPTS}
 COPY helper_scripts/Ansible/install_ansible_from_source.sh ${SCRIPTS}
 
@@ -96,7 +98,10 @@ RUN chmod 777 -R /usr/libexec/s2i && \
     touch ${TOPDIR}/.gitconfig && \
     chmod 777 ${TOPDIR}/.gitconfig && \
     mkdir -p ${TOPDIR}/.cache/bazel && \
-    chmod -R 777 ${TOPDIR}/.cache/bazel
+    chmod -R 777 ${TOPDIR}/.cache/bazel && \
+    chmod -R 777 /usr/local/cuda && \
+    mkdir -p ${TOPDIR}/.aws && \
+    chmod 777 ${TOPDIR}/.aws
 
 # Set Ansible remote tmp
 RUN echo "remote_tmp = ${TOPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \

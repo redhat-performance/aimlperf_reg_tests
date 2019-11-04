@@ -1,0 +1,32 @@
+---
+
+# First step is to check if CUDA is installed... because there's no sense in installing
+# cuDNN if there is no CUDA!
+- name: Check if CUDA is installed
+  shell: 'ls {{ cuda_path }}'
+  register: ls_cuda_path_output
+  ignore_errors: yes
+
+- block:
+  - name: 'End play if user does not have CUDA installed'
+    debug:
+      msg: 'No CUDA installation found under {{ cuda_path }}'
+
+  - meta: end_play
+  when: ls_cuda_path_output.stdout == ""
+
+# If the play did not end, then CUDA was found. Let the user know this.
+- debug:
+    msg: 'CUDA installation found. Using {{ cuda_path }}'
+
+# Prep for downloading TensorRT by removing the download folder if it exists
+- name: Remove downloaded TensorRT download folder if it exists
+  file:
+    state: absent
+    path: '{{ tensorrt_download_dir }}'
+
+# Make TensorRT download folder
+- name: Recreate (or create) TensorRT download folder
+  file:
+    state: directory
+    path: '{{ tensorrt_download_dir }}'

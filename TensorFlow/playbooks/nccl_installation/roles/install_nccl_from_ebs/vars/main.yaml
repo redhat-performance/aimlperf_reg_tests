@@ -1,2 +1,2 @@
 ---
-ebs_dir: '/tmp/nvidia_ebs'
+ebs_dir: '/mnt/nvidia_ebs'

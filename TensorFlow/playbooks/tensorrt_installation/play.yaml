@@ -1,0 +1,56 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  ################################################################################################
+  # Use these vars to run the playbook. Do not edit them here; modify them from the command line #
+  ################################################################################################
+  vars:
+
+    # Add variable to define whether to use RHEL 7 or 8
+    rhel_version: '{{ rhel_ver | default("7") }}'
+
+    # This is the path to the CUDA installation you want to use
+    cuda_path: '{{ cuda_install_path | default("/usr/local/cuda") }}'
+
+    # This is where TensorRT will be installed to
+    tensorrt_install_dir: '{{ install_dir | default(/home/TensorRT) }}'
+
+    # This is the URL where Ansible will download TensorRT
+    tensorrt_url: '{{ tensorrt | default("") }}'
+
+    # Check GPU
+    gpu_check: '{{ gpu_check | default("yes") }}'
+
+    # Use EBS volume to get TensorRT?
+    use_ebs: '{{ use_ebs_volume | default("yes") }}'
+
+    # Use URL to get TensorRT?
+    use_http: '{{ use_url | default("yes") }}'
+
+    # Use s3 bucket to download TensorRT?
+    use_s3_awscli: '{{ use_awscli | default("no") }}'
+
+    # AWS s3 *REQUIRED* params
+    s3_profile: '{{ aws_profile | default("null") }}'
+    s3_bucket: '{{ bucket | default("null") }}'
+    
+    # AWS s3 optional params
+    s3_add_credentials: '{{ add_aws_credentials | default("no") }}'
+    s3_delete_credentials: '{{ delete_aws_credentials_after_installation | default("no") }}'
+    s3_access_key: '{{ aws_access_key | default("null") }}'
+    s3_secret_access_key: '{{ aws_secret_access_key | default("null") }}'
+    s3_region: '{{ aws_region | default ("us-east-1") }}'
+
+  ################################################################################################
+  #        The following roles will be executed and will call other roles in the process         #
+  ################################################################################################
+  roles:
+
+    # Check for NVIDIA (CUDA-capable) GPU
+    - role: check_gpu
+      when: gpu_check == 'yes'
+
+    # Install TensorRT. (This will call other roles; don't worry!)
+    - role: install

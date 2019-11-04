@@ -1,2 +1,2 @@
 ---
-cudnn_ebs_dir: /tmp/nvidia_ebs
+cudnn_ebs_dir: /mnt/nvidia_ebs

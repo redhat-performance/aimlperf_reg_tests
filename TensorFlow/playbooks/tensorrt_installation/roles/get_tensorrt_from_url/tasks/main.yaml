@@ -1,0 +1,8 @@
+---
+# Download TensorRT from the given URL
+- name: Download TensorRT
+  unarchive:
+    src: '{{ tensorrt_url }}'
+    remote_src: yes
+    dest: '{{ tensorrt_download_dir }}'
+  extra_opts: [--strip-components=1]
