@@ -55,7 +55,7 @@ $ make -C setup/templates
 If you wish to make changes to the templates or simply undeploy all of them,
 
 ```bash
-$ make -C setup/templates uneploy
+$ make -C setup/templates undeploy
 ```
 
 This will perform an `oc delete -f <filename>` command on each template, allowing you to update your templates and -- if you wish -- redeploy them by running the `make -C setup/templates` command.
