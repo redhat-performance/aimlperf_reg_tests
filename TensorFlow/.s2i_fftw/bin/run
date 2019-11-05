@@ -8,5 +8,5 @@ else
     device="gpu"
 fi
 
-cd /opt/app-root/src/playbooks/TensorFlow_Models
-ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: "/opt/app-root/src/tensorflow", device_type: "${device}", benchmarks_path: "/opt/app-root/src/benchmarks", num_devices: "${num_devices}"}'
+cd /home/benchmark_app/playbooks/TensorFlow_Models
+ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: "/home/tensorflow", device_type: "${device}", benchmarks_path: "/home/benchmarks", num_devices: "${num_devices}"}'
