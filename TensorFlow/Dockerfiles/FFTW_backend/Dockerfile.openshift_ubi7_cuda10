@@ -101,7 +101,7 @@ RUN chmod -R 777 /usr/libexec/s2i && \
     mkdir -p ${APPDIR}/../.cache/bazel && \
     touch ${APPDIR}/.gitconfig && \
     chmod -R 777 /usr/local/cuda && \
-    chmod -R 777 ${APPDIR}
+    chmod -R 777 ${HOME}
 
 # Set Ansible remote tmp
 RUN echo "remote_tmp = ${APPDIR}/.ansible/tmp" >> ${FFTW_INSTALLATION}/ansible.cfg && \
