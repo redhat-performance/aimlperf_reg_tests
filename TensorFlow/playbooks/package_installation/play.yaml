@@ -2,7 +2,7 @@
 
 - hosts: localhost
   connection: local
-  become: yes
+  become_user: root
 
   vars:
     rhel_ver: '{{ rhel_version | default("7") }}'
