@@ -96,9 +96,9 @@ RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
 RUN chmod -R 777 /usr/libexec/s2i && \
     chmod g=u /etc/passwd /etc/group && \
     chmod g=u /etc/subuid /etc/subgid && \
-    mkdir -p ${APPDIR}/.ansible/tmp && \
-    mkdir -p ${APPDIR}/.aws && \
-    mkdir -p ${APPDIR}/.cache/bazel && \
+    mkdir -p ${APPDIR}/../.ansible/tmp && \
+    mkdir -p ${APPDIR}/../.aws && \
+    mkdir -p ${APPDIR}/../.cache/bazel && \
     touch ${APPDIR}/.gitconfig && \
     chmod -R 777 /usr/local/cuda && \
     chmod -R 777 ${APPDIR}
