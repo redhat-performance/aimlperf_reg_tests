@@ -37,19 +37,20 @@ ENV HOME=/home
 ENV USER=1001
 
 # Set playbook paths
-ENV FFTW_PREREQS_PLAYBOOK=${APPDIR}/playbooks/fftw_package_installation
-ENV TF_PREREQS_PLAYBOOK=${APPDIR}/playbooks/tensorflow_package_installation
-ENV FFTW_INSTALLATION=${APPDIR}/playbooks/FFTW_installation
-ENV TENSORFLOW_INSTALLATION=${APPDIR}/playbooks/TensorFlow_installation
-ENV TENSORFLOW_MODELS=${APPDIR}/playbooks/TensorFlow_Models
-ENV NCCL_INSTALLATION=${APPDIR}/playbooks/nccl_installation
-ENV CUDNN_INSTALLATION=${APPDIR}/playbooks/cudnn_installation
-ENV TENSORRT_INSTALLATION={$APPDIR}/playbooks/tensorrt_installation
+ENV PLAYBOOKS_DIR=${APPDIR}/playbooks
+ENV FFTW_PREREQS_PLAYBOOK=${PLAYBOOKS_DIR}/fftw_package_installation
+ENV TF_PREREQS_PLAYBOOK=${PLAYBOOKS_DIR}/tensorflow_package_installation
+ENV FFTW_INSTALLATION=${PLAYBOOKS_DIR}/FFTW_installation
+ENV TENSORFLOW_INSTALLATION=${PLAYBOOKS_DIR}/TensorFlow_installation
+ENV TENSORFLOW_MODELS=${PLAYBOOKS_DIR}/TensorFlow_Models
+ENV NCCL_INSTALLATION=${PLAYBOOKS_DIR}/nccl_installation
+ENV CUDNN_INSTALLATION=${PLAYBOOKS_DIR}/cudnn_installation
+ENV TENSORRT_INSTALLATION=${PLAYBOOKS_DIR}/tensorrt_installation
 
 # Set scripts path
-ENV SCRIPTS=${APPDIR}/scripts
+ENV SCRIPTS_DIR=${APPDIR}/scripts
 
-# Create folders for playbooks and folder for playbooks cache
+# Create folders for playbooks and folder for playbooks cache, then allow execute permissions
 RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
     mkdir -p ${TF_PREREQS_PLAYBOOK} && \
     mkdir -p ${FFTW_INSTALLATION} && \
@@ -58,8 +59,9 @@ RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
     mkdir -p ${NCCL_INSTALLATION} && \
     mkdir -p ${CUDNN_INSTALLATION} && \
     mkdir -p ${TENSORRT_INSTALLATION} && \
-    mkdir -p ${SCRIPTS} && \
-    mkdir -p ${APPDIR}/.cache
+    mkdir -p ${SCRIPTS_DIR} && \
+    mkdir -p ${APPDIR}/.cache && \
+    chmod -R +x ${PLAYBOOKS_DIR}
 
 # Copy playbooks and scripts
 COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
@@ -70,15 +72,15 @@ COPY TensorFlow/playbooks/TensorFlow_Models ${TENSORFLOW_MODELS}
 COPY TensorFlow/playbooks/nccl_installation ${NCCL_INSTALLATION}
 COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
 COPY TensorFlow/playbooks/tensorrt_installation ${TENSORRT_INSTALLATION}
-COPY helper_scripts/Python/install_python_from_source.sh ${SCRIPTS}
-COPY helper_scripts/Ansible/install_ansible_from_source.sh ${SCRIPTS}
+COPY helper_scripts/Python/install_python_from_source.sh ${SCRIPTS_DIR}
+COPY helper_scripts/Ansible/install_ansible_from_source.sh ${SCRIPTS_DIR}
 
 # Create symlink for NumPy so that it can find endian.h
 RUN yum -y install glibc glibc-devel && \
     ln -s /usr/include/endian.h /usr/include/sys/endian.h
 
 # Install Python version ${PYTHON_VERSION} from source and Ansible version ${ANSIBLE_VERSION} from source
-RUN cd ${SCRIPTS} && \
+RUN cd ${SCRIPTS_DIR} && \
     sh install_python_from_source.sh ${PYTHON_VERSION} && \
     sh install_ansible_from_source.sh ${ANSIBLE_VERSION}
 
