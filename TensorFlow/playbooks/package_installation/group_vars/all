@@ -1,5 +1,4 @@
 CBLAS_BUILD_DIR: "{{ lookup('env', 'HOME') }}/CBLAS"
-CBLAS_DOWNLOAD_LOCATION: '{{ lookup('env', 'HOME') }}'
 CBLAS_INSTALL_DIR: /usr/lib64
 LAPACK_BUILD_DIR: /tmp/Reference-LAPACK
 LAPACK_VERSION: 'v3.8.0'

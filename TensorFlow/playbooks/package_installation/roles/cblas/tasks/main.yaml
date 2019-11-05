@@ -10,8 +10,9 @@
 - name: Download CBLAS sources rather than using libatlas
   unarchive:
     src: http://www.netlib.org/blas/blast-forum/cblas.tgz
-    dest: '{{ CBLAS_DOWNLOAD_LOCATION }}'
+    dest: '{{ CBLAS_BUILD_DIR }}'
     remote_src: yes
+    extra_opts: [--strip-components=1]
 
 # Modify our Makefile such that we build a CBLAS shared object library
 - name: Change line in CBLAS' Makefile.LINUX to point to where libblas.a is
