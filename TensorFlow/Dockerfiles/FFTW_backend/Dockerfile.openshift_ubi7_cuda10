@@ -27,11 +27,11 @@ EXPOSE 8080
 ENV YUM_TIMEOUT=300
 RUN sed -i "/[main]/a timeout=${YUM_TIMEOUT}" /etc/yum.conf
 
-# Set app directory
-ENV APPDIR="/benchmark_app"
-
 # Set home dir
 ENV HOME=/home
+
+# Set app directory
+ENV APPDIR="${HOME}/benchmark_app"
 
 # Set user
 ENV USER=1001
