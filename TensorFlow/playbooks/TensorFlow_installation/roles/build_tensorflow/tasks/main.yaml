@@ -142,7 +142,7 @@
   register: tensorflow_configure_log_cpu
   when: DEVICE == 'cpu'
 
-block:
+- block:
   # Command taken from: https://georgesterpu.github.io/compile_tensorflow.html
   - name: If using the GPU, find CUDA version
     shell: /usr/local/cuda/bin/nvcc --version | sed -n 's/^.*release \(.*\),.*/\1/p'
@@ -152,10 +152,10 @@ block:
   - name: If using the GPU, find cuDNN version
     shell: sed -n 's/^#define CUDNN_MAJOR\s*\(.*\).*/\1/p' /usr/local/cuda/include/cudnn.h
     register: cudnn_version
-when: DEVICE == 'gpu'
+  when: DEVICE == 'gpu'
 
 # Get TensorRT version
-- name: If using the GPU, find the TensorRT version
+- name: If using the GPU and using TensorRT, find the TensorRT version
   shell: pip3 show tensorrt | grep "Version:" | cut -d ' ' -f 2
   register: tensorrt_version
   when: DEVICE == 'gpu' and USE_TENSORRT == 'yes'
