@@ -226,11 +226,11 @@
 
 # Save CPU configure log (if we're using the CPU)
 - local_action: template src=tensorflow_configure_log_cpu.j2 dest={{ TENSORFLOW_BUILD_DIR }}/configure.log
-  when: USE_CPU == 'yes' and USE_GPU == 'no'
+  when: DEVICE == 'cpu'
 
 # Save GPU configure log (if we're using the GPU)
 - local_action: template src=tensorflow_configure_log_gpu.j2 dest={{ TENSORFLOW_BUILD_DIR }}/configure.log
-  when: USE_CPU == 'no' and USE_GPU == 'yes'
+  when: DEVICE == 'gpu'
 
 # Print out where the configure logs have been saved to
 - debug:

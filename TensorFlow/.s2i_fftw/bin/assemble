@@ -311,7 +311,7 @@ else
     else
 	PATH_TO_PYTHON_SITE_PKGS="/usr/lib64/python3.6/site-packages"
     fi
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', use_gpu: 'yes', use_cpu: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', pythonpath: '${PATH_TO_PYTHON_SITE_PKGS}', ansible_python_interpreter: '${PYTHON_EXECUTABLE}', python_executable: '${PYTHON_EXECUTABLE}', use_s2i: 'yes'}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '${CC}', gcc_libs: '${GCC_LIBS}', blas_library_dirs: '${FFTW_INSTALL_DIR}/lib', blas_include_dirs: '${FFTW_INSTALL_DIR}/include', tf_install_dir: '${TENSORFLOW_INSTALL_DIR}', device: 'gpu', nccl_install_path: '${NCCL_INSTALL_PATH}', pythonpath: '${PATH_TO_PYTHON_SITE_PKGS}', ansible_python_interpreter: '${PYTHON_EXECUTABLE}', python_executable: '${PYTHON_EXECUTABLE}', use_s2i: 'yes'}"
 fi
 
 # Print out success message

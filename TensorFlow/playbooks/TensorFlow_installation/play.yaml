@@ -23,7 +23,7 @@
     USE_OPENBLAS: '{{ use_openblas | default("no") }}'
 
     # Use CPU or GPU?
-    DEVICE: '{{ devuce | default("cpu") }}'
+    DEVICE: '{{ device | default("cpu") }}'
 
     # Paths to CUDA/NVIDIA libraries
     NCCL_INSTALL_PATH: '{{ nccl_install_path | default("/home/nccl") }}'
