@@ -30,6 +30,9 @@ RUN sed -i "/[main]/a timeout=${YUM_TIMEOUT}" /etc/yum.conf
 # Set app directory
 ENV APPDIR="/benchmark_app"
 
+# Set home dir
+ENV HOME=/home
+
 # Set user
 ENV USER=1001
 
