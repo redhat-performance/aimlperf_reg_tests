@@ -20,7 +20,9 @@ For help on using `configure`, run:
 $ ./configure --help
 ```
 
-If you made a mistake somewhere in configuring, just rerun `configure`. Every time you run `configure`, it overwrites the existing Makefile with new information, so it is safe to rerun it.
+If you plan on using GPUs and you want to use your AWS s3 bucket to download proprietary NVIDIA packages (that you have uploaded yourself), you must pass in the `--use-aws` flag and create OpenShift secrets for your AWS credentials. Instructions on how to create such secrets will be provided later on.
+
+Note that if you made a mistake somewhere in configuring, just rerun `configure`. Every time you run `configure`, it overwrites the existing Makefile with new information, so it is safe to rerun it.
 
 **HEADS UP:** If you use the `--instance-type`/`-t` flag when configuring the Makefile and specify an instance that does not exist yet (which is perfectly okay!), you will need to setup that instance before executing the `make` commands. Information on how to setup an instance using `MachineSet` will be described later on, but do not worry about that yet. For now, follow the instructions in the next subsection, which describes how to install the necessary cluster operators for running the benchmarks.
 
@@ -60,15 +62,31 @@ $ make -C setup/templates undeploy
 
 This will perform an `oc delete -f <filename>` command on each template, allowing you to update your templates and -- if you wish -- redeploy them by running the `make -C setup/templates` command.
 
-### 4. Using registry.redhat.io Images (REQUIRED FOR CUDA RHEL 7 BUILDS + NON-CUDA RHEL 8 BUILDS)
+### 4. Setting up AWS Credentials
 
-Follow the instructions in the `setup` folder in this directory. In essence, you will need to run a create two files under **../../secrets**, then run a `make` command.
+To setup your AWS credentials, make sure you've first configured AWS on your own machine. This step is important because the ~/.aws/config and ~/.aws/credentials files are read by a Makefile.
 
-### 5. Building and Using a CUDA "Base Image" from this Repository
+Once you are ready, simply run
+
+```
+$ make -C setup/aws_credentials PROFILE="your-desired-configured-profile-name"
+```
+
+making sure to replace "your-desired-configured-profile-name" with whichever profile name you have saved in your ~/.aws/config and ~/.aws/credentials
+
+Note that you *may* need sudo access to run this command. In essence, the Makefile sets `$(HOME_DIR)` equal to `${HOME}`. Thus, if your AWS config and credentials files are not in `${HOME}`, you should run as root.
+
+### 5. Using registry.redhat.io Images (REQUIRED FOR NON-CUDA RHEL 8 BUILDS AND *SOME* CUDA RHEL 7 BUILDS)
+
+For non-CUDA RHEL 8 builds, follow the instructions in the `setup` folder in this directory. In essence, you will need to run a create two files under **../../secrets**, then run a `make` command.
+
+If you wish to use the complete set of CUDA packages with your TensorFlow (e.g., CUDA toolkit-devel, TensorRT, etc.), you will need to use one of the custom Dockerfiles described in the next section.
+
+### 6. Building and Using a CUDA "Base Image" from this Repository
 
 To prepare for a CUDA build using a "base image," make sure to build one of the Docker images under `../Dockerfiles/custom/rhel7/cuda` or `../Dockerfiles/custom/rhel8/cuda`. Follow the instructions in the **setup** folder in this directory to do so. Such base images have cuDNN and NCCL pre-installed, which means you can skip the next subsection "Setting up an EBS Volume." Otherwise, for images that do *not* have cuDNN and NCCL pre-installed, you will need to setup an EBS volume that contains such packages by following the instructions below.
 
-### 6. Setting up an EBS Volume (for Non Custom Base Images)
+### 7. Setting up an EBS Volume (for Non Custom Base Images)
 
 To prepare for CUDA builds in images which do *not* have cuDNN and NCCL preinstalled, you will first need to create an EBS volume, like so:
 
