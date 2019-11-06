@@ -69,10 +69,6 @@ echo "Looking for app sources:"
 ls .
 echo ""
 
-# Looking for CUDA
-echo "Looking for CUDA:"
-ls /usr/local/cuda
-
 # Add user to /etc/passwd if necessary
 echo "Checking user permissions:"
 uid=$(id -u)
@@ -97,10 +93,16 @@ echo ""
 
 # If we're using s3 buckets, decode the secrets
 if [[ ${DEVICE} == "gpu" ]] && [[ ${WHICH_SOURCE} == "s3" ]]; then
-    decoded_aws_access_key=$(echo ${AWS_ACCESS_KEY} | base64 --decode)
-    decoded_aws_secret_access_key=$(echo ${AWS_SECRET_ACCESS_KEY} | base64 --decode)
-    decoded_aws_region=$(echo ${AWS_REGION} | base64 --decode)
-    decoded_aws_profile=$(echo ${AWS_PROFILE} | base64 --decode)
+    echo "Decoding AWS credentials:"
+    decoded_aws_access_key=$(echo "${AWS_ACCESS_KEY}" | base64 --decode)
+    echo "  Access key decoded"
+    decoded_aws_secret_access_key=$(echo "${AWS_SECRET_ACCESS_KEY}" | base64 --decode)
+    echo "  Secret access key decoded"
+    decoded_aws_region=$(echo "${AWS_REGION}" | base64 --decode)
+    echo "  Region decoded"
+    decoded_aws_profile=$(echo "${AWS_PROFILE}" | base64 --decode)
+    echo "  Profile decoded"
+    echo ""
 fi
 
 ##########################################
