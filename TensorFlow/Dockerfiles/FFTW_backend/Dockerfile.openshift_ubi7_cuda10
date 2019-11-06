@@ -99,6 +99,8 @@ RUN chmod -R 777 /usr/libexec/s2i && \
     chmod g=u /etc/subuid /etc/subgid && \
     mkdir -p ${HOME}/.ansible/tmp && \
     mkdir -p ${HOME}/.aws && \
+    touch -p ${HOME}/.aws/credentials && \
+    touch -p ${HOME}/.aws/config && \
     mkdir -p ${HOME}/.cache/bazel && \
     touch ${APPDIR}/.gitconfig && \
     chmod -R 777 /usr/local/cuda && \
