@@ -98,9 +98,9 @@ if [[ ${DEVICE} == "gpu" ]] && [[ ${WHICH_SOURCE} == "s3" ]]; then
     echo "  Access key decoded"
     decoded_aws_secret_access_key=$(echo "${AWS_SECRET_ACCESS_KEY}" | base64 --decode)
     echo "  Secret access key decoded"
-    decoded_aws_region=$(echo "${AWS_REGION}" | base64 --decode)
+    decoded_aws_region=${AWS_REGION}
     echo "  Region decoded"
-    decoded_aws_profile=$(echo "${AWS_PROFILE}" | base64 --decode)
+    decoded_aws_profile=${AWS_PROFILE}
     echo "  Profile decoded"
     echo ""
 fi
