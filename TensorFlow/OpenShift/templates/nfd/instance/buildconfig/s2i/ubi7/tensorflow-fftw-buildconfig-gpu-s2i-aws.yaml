@@ -3,13 +3,13 @@ kind: "Template"
 metadata:
   annotations:
     description: "Template to make a TensorFlow build image with an FFTW NumPy backend using RHEL 7"
-    tags: "tensorflow-fftw-s2i-build-gpu-ubi"
-  name: "tensorflow-fftw-s2i-build-gpu-ubi"
+    tags: "tensorflow-fftw-s2i-build-gpu-ubi-aws"
+  name: "tensorflow-fftw-s2i-build-gpu-ubi-aws"
 objects:
 - apiVersion: "v1"
   kind: "BuildConfig"
   metadata:
-    name: "tensorflow-fftw-s2i-build-gpu-ubi" 
+    name: "tensorflow-fftw-s2i-build-gpu-ubi-aws" 
   spec:
     runPolicy: "Serial" 
     triggers: 
