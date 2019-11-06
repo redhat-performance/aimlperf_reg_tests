@@ -30,12 +30,13 @@
     use_s3: '{{ use_aws | default("no") }}'
     
     # AWS s3 params. All are REQUIRED when using s3.
+    s3_add_credentials: '{{ add_aws_credentials | default("no") }}'
     s3_access_key: '{{ aws_access_key | default("null") }}'
     s3_secret_access_key: '{{ aws_secret_access_key | default("null") }}'
     s3_region: '{{ aws_region | default ("us-east-1") }}'
     s3_profile: '{{ aws_profile | default("null") }}'
     s3_bucket: '{{ bucket | default("null") }}'
-    delete_aws_credentials: '{{ delete_aws_credentials_after_installation | default("no") }}'
+    delete_s3_entry: '{{ delete_aws_credentials_after_installation | default("no") }}'
 
     # CUDA version
     cuda_version: '{{ cuda_ver | default("10.1") }}'

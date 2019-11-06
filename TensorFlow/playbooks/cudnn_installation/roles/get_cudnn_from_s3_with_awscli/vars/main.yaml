@@ -1,3 +1,2 @@
 ---
-nccl_download_dir: '/tmp/nccl'
 home_dir: '{{ lookup("env", "HOME") }}'

@@ -1,11 +1,22 @@
 ---
 
 # Configure AWS so the s3 bucket file can be downloaded
-- name: Configure AWS CLI for {{ s3_profile }}
-  shell: |
-    aws configure set aws_access_key_id '{{ s3_access_key }}' --profile '{{ s3_profile }}'
-    aws configure set aws_secret_access_key '{{ s3_secret_access_key }}' --profile '{{ s3_profile }}'
-    aws configure set region '{{ s3_region }}' --profile '{{ s3_profile }}'
+- name: Configure AWS CLI for {{ s3_profile }} by setting {{ topdir }}/.aws/credentials
+  blockinfile:
+    path: '{{ home_dir }}/.aws/credentials'
+    block: |
+      [{{ s3_profile }}]
+      aws_access_key_id = {{ s3_access_key }}
+      aws_secret_access_key = {{ s3_secret_access_key }}
+  when: s3_add_credentials == 'yes'
+
+- name: Configure AWS CLI for {{ s3_profile }} by setting {{ topdir }}/.aws/config
+  blockinfile:
+    path: '{{ home_dir }}/.aws/config'
+    block: |
+      [profile {{ s3_profile }}]
+      region = {{ s3_region }}
+      output = text
   when: s3_add_credentials == 'yes'
 
 # Download the tarball from the s3 bucket
@@ -34,8 +45,14 @@
     rm -f '{{ ls_cudnn_download_dir_output.stdout }}'
 
 # Optionally, remove the AWS credentials that we added
-- name: Optional --> delete aws '{{ aws_profile }}' credentials.
+- name: Optional --> delete AWS '{{ s3_profile }}' entry in {{ home_dir }}/.aws/credentials
   replace:
     path: ~/.aws/credentials
-    regexp: '\[{{ aws_profile }}\]\naws_access_key={{ aws_access_key }}\naws_secret_access_key={{ aws_secret_access_key}}'
-  when: delete_aws_credentials == 'yes'
+    regexp: '\[{{ s3_profile }}\]\naws_access_key = {{ s3_access_key }}\naws_secret_access_key = {{ s3_secret_access_key}}'
+  when: delete_aws_entry == 'yes'
+
+- name: Optional --> delete AWS '{{ s3_profile }}' entry in {{ home_dir }}/.aws/config
+  replace:
+    path: ~/.aws/config
+    regexp: '\[profile {{ s3_profile }}\]\nregion = {{ s3_region }}\noutput = text'
+  when: delete_aws_entry == 'yes'

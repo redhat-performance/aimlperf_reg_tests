@@ -38,10 +38,10 @@
     
     # AWS s3 optional params
     s3_add_credentials: '{{ add_aws_credentials | default("no") }}'
-    s3_delete_credentials: '{{ delete_aws_credentials_after_installation | default("no") }}'
     s3_access_key: '{{ aws_access_key | default("null") }}'
     s3_secret_access_key: '{{ aws_secret_access_key | default("null") }}'
     s3_region: '{{ aws_region | default ("us-east-1") }}'
+    delete_s3_entry: '{{ delete_aws_credentials_after_installation | default("no") }}'
 
   ################################################################################################
   #        The following roles will be executed and will call other roles in the process         #
