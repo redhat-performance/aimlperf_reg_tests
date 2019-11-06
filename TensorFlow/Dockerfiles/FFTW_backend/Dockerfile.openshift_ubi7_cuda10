@@ -102,9 +102,7 @@ RUN chmod -R 777 /usr/libexec/s2i && \
     mkdir -p ${HOME}/.cache/bazel && \
     touch ${APPDIR}/.gitconfig && \
     chmod -R 777 /usr/local/cuda && \
-    chmod -R 777 ${HOME}/.ansible && \
-    chmod -R 777 ${HOME}/.aws && \
-    chmod -R 777 ${HOME}/.cache && \
+    chmod -R 777 ${HOME} && \
     pip3 install awscli && \
     rm -rf /var/cache/yum/*
 
