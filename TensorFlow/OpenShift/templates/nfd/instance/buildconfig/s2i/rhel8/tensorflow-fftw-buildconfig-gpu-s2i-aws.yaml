@@ -54,12 +54,12 @@ objects:
             valueFrom:
               secretKeyRef:
                 name: "aws-credentials"
-                key: "aws_access_key"
+                key: "access_key"
           - name: "AWS_SECRET_ACCESS_KEY"
             valueFrom:
               secretKeyRef:
                 name: "aws-credentials"
-                key: "aws_secret_access_key"
+                key: "secret_access_key"
     output: 
       to:
         kind: "ImageStreamTag"
