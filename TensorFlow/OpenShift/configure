@@ -262,7 +262,7 @@ if [[ ${BACKEND} == "none" ]]; then
     s2i_build_template_name="tensorflow-pip-s2i-build-${device}"
 else
     if [[ ! -z ${USE_AWS} ]]; then
-        s2i_build_template_name="tensorflow-${BACKEND}-s2i-build-${device}-aws"
+        s2i_build_template_name="tensorflow-${BACKEND}-s2i-build-${device}-ubi-aws"
     else
         s2i_build_template_name="tensorflow-${BACKEND}-s2i-build-${device}"
     fi
@@ -401,11 +401,11 @@ if [[ ! -z ${AVX} ]]; then
 elif [[ ${device} == "gpu" ]]; then
     if [[ ! -z ${USE_NVIDIA_EBS} ]]; then
         echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_gpus_param} ${python_executable_param} ${instance_type_param} --param=WHICH_SOURCE='ebs'" >> ${makefile}
-    elif [[  ${use_aws} == "true" ]]; then
+    elif [[  ${USE_AWS} == "true" ]]; then
 	if [[ ! -z ${TENSORRT} ]]; then
-	    echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_gpus_param} ${python_executable_param} ${instance_type_param} --param=NCCL_URL=\$(NCCL) --param=CUDNN_URL=\$(CUDNN) --param=TENSORRT_URL=\$(TENSORRT)" >> ${makefile}
+	    echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_gpus_param} ${python_executable_param} ${instance_type_param} --param=NCCL=\$(NCCL) --param=CUDNN=\$(CUDNN) --param=TENSORRT=\$(TENSORRT)" >> ${makefile}
 	else
-	    echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_gpus_param} ${python_executable_param} ${instance_type_param} --param=NCCL_URL=\$(NCCL) --param=CUDNN_URL=\$(CUDNN)" >> ${makefile}
+	    echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_gpus_param} ${python_executable_param} ${instance_type_param} --param=NCCL=\$(NCCL) --param=CUDNN=\$(CUDNN)" >> ${makefile}
         fi
     else
         echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_gpus_param} ${python_executable_param} ${instance_type_param} --param=WHICH_SOURCE='none'" >> ${makefile}
