@@ -2,13 +2,28 @@
 
 This folder contains files for setting up various things in OpenShift related to the TensorFlow parent folder.
 
-Currently, there are three folders:
+Currently, there are four folders:
 
-  1. `images`
-  2. `templates`
-  3. `volumes`
+  1. `aws_secrets`
+  2. `images`
+  3. `templates`
+  4. `volumes`
 
-The `images` folder contains files for setting up OpenShift to pull images from registry.redhat.io. The `templates` folder loads all the OpenShift templates. Finally, the `volumes` folder contains files for setting up OpenShift to create an EBS for storing NVIDIA related files, such as the cuDNN and NCCL tarballs, such that they can be used for building TensorFlow.
+The `aws_secrets` folder contains files for loading AWS secrets into OpenShift. Next, the `images` folder contains files for setting up OpenShift to pull images from registry.redhat.io. The `templates` folder loads all the OpenShift templates. Finally, the `volumes` folder contains files for setting up OpenShift to create an EBS for storing NVIDIA related files, such as the cuDNN and NCCL tarballs, such that they can be used for building TensorFlow.
+
+## AWS Secrets
+
+To add your AWS secrets,
+
+```
+$ make PROFILE=<profile_name>
+```
+
+e.g.,
+
+```
+$ make PROFILE="my_profile"
+```
 
 ## Images
 

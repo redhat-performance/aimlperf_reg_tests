@@ -41,20 +41,25 @@ objects:
           - name: "TENSORRT"
             value: "${TENSORRT}"
           - name: "AWS_PROFILE"
-            value: ""
+            valueFrom:
+              secretKeyRef:
+                name: "aws-config"
+                key: "aws_profile"
           - name: "AWS_REGION"
-            value: ""
+            valueFrom:
+              secretKeyRef:
+                name: "aws-config"
+                key: "aws_region"
           - name: "AWS_ACCESS_KEY"
-            value: ""
+            valueFrom:
+              secretKeyRef:
+                name: "aws-credentials"
+                key: "aws_access_key"
           - name: "AWS_SECRET_ACCESS_KEY"
-            value: ""
-        volumeMounts:
-        - mountPath: "/mnt/nvidia_ebs"
-          name: "nvidia-packages-pv"
-    volumes:
-    - name: "nvidia-packages-pv"
-      persistentVolumeClaim:
-        claimName: "nvidia-packages-pvc"
+            valueFrom:
+              secretKeyRef:
+                name: "aws-credentials"
+                key: "aws_secret_access_key"
     output: 
       to:
         kind: "ImageStreamTag"
@@ -112,6 +117,18 @@ parameters:
   required: false
 - description: "s3 bucket or url to cuDNN"
   name: "CUDNN"
+  required: false
+- description: "AWS profile name"
+  name: "AWS_PROFILE"
+  required: false
+- description: "Region of the AWS profile"
+  name: "AWS_REGION"
+  required: false
+- description: "AWS access key"
+  name: "AWS_ACCESS_KEY"
+  required: false
+- description: "AWS secret access key"
+  name: "AWS_SECRET_ACCESS_KEY"
   required: false
 - description: "Which source for NCCL, cuDNN and/or TensorRT?"
   name: "WHICH_SOURCE"

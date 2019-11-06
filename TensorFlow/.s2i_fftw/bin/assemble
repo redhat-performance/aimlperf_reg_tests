@@ -65,10 +65,13 @@ echo "  TOPDIR: ${TOPDIR}"
 echo ""
 
 # Look for the app sources
-echo ""
 echo "Looking for app sources:"
 ls .
 echo ""
+
+# Looking for CUDA
+echo "Looking for CUDA:"
+ls /usr/local/cuda
 
 # Add user to /etc/passwd if necessary
 echo "Checking user permissions:"
@@ -91,6 +94,14 @@ git config --global user.name user
 git config --global user.email user@openshift-s2i
 echo "  git configured --> user = 'user', email = 'user@openshift-s2i'"
 echo ""
+
+# If we're using s3 buckets, decode the secrets
+if [[ ${DEVICE} == "gpu" ]] && [[ ${WHICH_SOURCE} == "s3" ]]; then
+    decoded_aws_access_key=$(echo ${AWS_ACCESS_KEY} | base64 --decode)
+    decoded_aws_secret_access_key=$(echo ${AWS_SECRET_ACCESS_KEY} | base64 --decode)
+    decoded_aws_region=$(echo ${AWS_REGION} | base64 --decode)
+    decoded_aws_profile=$(echo ${AWS_PROFILE} | base64 --decode)
+fi
 
 ##########################################
 #       INSTALL NCCL IF USING GPUS       #
@@ -119,8 +130,8 @@ if [[ ${DEVICE} == "gpu" ]]; then
         echo "  NCCL s3 bucket:        ${NCCL}"
         echo "  AWS access key:        [private]"
         echo "  AWS secret access key: [private]"
-        echo "  AWS region:            ${AWS_REGION}"
-        echo "  AWS profile:           ${AWS_PROFILE}"
+	echo "  AWS region (encoded):  ${AWS_REGION}"
+	echo "  AWS profile (encoded): ${AWS_PROFILE}"
         echo ""
     fi
 
@@ -135,7 +146,7 @@ if [[ ${DEVICE} == "gpu" ]]; then
     elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]]; then
         ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_url: 'no', use_ebs: 'yes', use_awscli: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
     elif [[ ${WHICH_SOURCE} == "s3" ]] || [[ ${WHICH_SOURCE} == "S3" ]]; then
-        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_url: 'no', use_ebs: 'yes', use_awscli: 'yes', nccl_install_path: '${NCCL_INSTALL_PATH}', use_aws: 'yes', bucket: '${NCCL}', aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_url: 'no', use_ebs: 'yes', use_awscli: 'yes', nccl_install_path: '${NCCL_INSTALL_PATH}', use_aws: 'yes', bucket: '${NCCL}', add_aws_credentials: 'yes',  aws_profile: '${decoded_aws_profile}', aws_region: '${decoded_aws_region}', aws_access_key: '${decoded_aws_access_key}', aws_secret_access_key: '${decoded_aws_secret_access_key}', delete_aws_credentials_after_installation: 'no', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
     fi
 
     # Print out success message
@@ -167,8 +178,8 @@ if [[ ${DEVICE} == "gpu" ]]; then
         echo "  cuDNN s3 bucket:       ${CUDNN}"
         echo "  AWS access key:        [private]"
         echo "  AWS secret access key: [private]"
-        echo "  AWS region:            ${AWS_REGION}"
-        echo "  AWS profile:           ${AWS_PROFILE}"
+	echo "  AWS region (encoded):  ${AWS_REGION}"
+	echo "  AWS profile (encoded): ${AWS_PROFILE}"
         echo ""
     fi
 
@@ -183,7 +194,7 @@ if [[ ${DEVICE} == "gpu" ]]; then
     elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]]; then
         ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', cudnn: '${CUDNN}', cuda_install_path: '${CUDA_INSTALL_PATH}', use_ebs: 'yes', use_awscli: 'no',  use_url: 'no', gpu_check: 'no'}"
     elif [[ ${WHICH_SOURCE} == "s3" ]] || [[ ${WHICH_SOURCE} == "S3" ]]; then
-        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_ebs: 'no', use_url: 'no', use_awscli: 'yes', bucket: '${CUDNN}', aws_profile: '${AWS_PROFILE}', add_aws_credentials: 'yes', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_ebs: 'no', use_url: 'no', use_awscli: 'yes', bucket: '${CUDNN}', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
     fi
 
     # Print out success message
@@ -213,8 +224,8 @@ if [[ ${DEVICE} == "gpu" ]] && [[ ${RHEL_VERSION} == "7" ]]; then
         echo "  TensorRT s3 bucket:    ${TENSORRT}"
         echo "  AWS access key:        [private]"
         echo "  AWS secret access key: [private]"
-        echo "  AWS region:            ${AWS_REGION}"
-        echo "  AWS profile:           ${AWS_PROFILE}"
+	echo "  AWS region (encoded):  ${AWS_REGION}"
+	echo "  AWS profile (encoded): ${AWS_PROFILE}"
         echo ""
     fi
 
@@ -229,7 +240,7 @@ if [[ ${DEVICE} == "gpu" ]] && [[ ${RHEL_VERSION} == "7" ]]; then
     elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]]; then
         ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', install_dir: '${TENSORRT_INSTALL_DIR}', cuda_install_path: '${CUDA_INSTALL_PATH}', use_ebs: 'yes', use_awscli: 'no',  use_url: 'no', gpu_check: 'no'}"
     elif [[ ${WHICH_SOURCE} == "s3" ]] || [[ ${WHICH_SOURCE} == "S3" ]]; then
-        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', install_dir: '${TENSORRT_INSTALL_DIR}', use_ebs: 'no', use_url: 'no', use_awscli: 'yes', bucket: '${TENSORRT}', aws_profile: '${AWS_PROFILE}', add_aws_credentials: 'yes', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', install_dir: '${TENSORRT_INSTALL_DIR}', use_ebs: 'no', use_url: 'no', use_awscli: 'yes', bucket: '${TENSORRT}', add_aws_credentials: 'no',  aws_profile: '${decoded_aws_profile}', aws_region: '${decoded_aws_region}', aws_access_key: '${decoded_aws_access_key}', aws_secret_access_key: '${decoded_aws_secret_access_key}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
     fi
 
     # Print out success message
