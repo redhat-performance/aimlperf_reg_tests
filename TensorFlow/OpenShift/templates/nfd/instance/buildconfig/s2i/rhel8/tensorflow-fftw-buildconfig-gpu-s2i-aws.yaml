@@ -44,12 +44,12 @@ objects:
             valueFrom:
               secretKeyRef:
                 name: "aws-config"
-                key: "aws_profile"
+                key: "profile"
           - name: "AWS_REGION"
             valueFrom:
               secretKeyRef:
                 name: "aws-config"
-                key: "aws_region"
+                key: "region"
           - name: "AWS_ACCESS_KEY"
             valueFrom:
               secretKeyRef:

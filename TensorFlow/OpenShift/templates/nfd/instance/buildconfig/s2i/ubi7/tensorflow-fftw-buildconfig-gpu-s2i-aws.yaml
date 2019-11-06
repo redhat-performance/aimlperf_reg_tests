@@ -44,12 +44,12 @@ objects:
             valueFrom:
               secretKeyRef:
                 name: "aws-config"
-                key: "aws_profile"
+                key: "profile"
           - name: "AWS_REGION"
             valueFrom:
               secretKeyRef:
                 name: "aws-config"
-                key: "aws_region"
+                key: "region"
           - name: "AWS_ACCESS_KEY"
             valueFrom:
               secretKeyRef:
@@ -117,18 +117,6 @@ parameters:
   required: false
 - description: "s3 bucket or url to cuDNN"
   name: "CUDNN"
-  required: false
-- description: "AWS profile name"
-  name: "AWS_PROFILE"
-  required: false
-- description: "Region of the AWS profile"
-  name: "AWS_REGION"
-  required: false
-- description: "AWS access key"
-  name: "AWS_ACCESS_KEY"
-  required: false
-- description: "AWS secret access key"
-  name: "AWS_SECRET_ACCESS_KEY"
   required: false
 - description: "Which source for NCCL, cuDNN and/or TensorRT?"
   name: "WHICH_SOURCE"
