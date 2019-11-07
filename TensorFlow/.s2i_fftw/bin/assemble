@@ -94,9 +94,9 @@ echo ""
 # If we're using s3 buckets, decode the secrets
 if [[ ${DEVICE} == "gpu" ]] && [[ ${WHICH_SOURCE} == "s3" ]]; then
     echo "Decoding AWS credentials:"
-    decoded_aws_access_key=$(echo "${AWS_ACCESS_KEY}" | base64 --decode)
+    decoded_aws_access_key=${AWS_ACCESS_KEY}
     echo "  Access key decoded"
-    decoded_aws_secret_access_key=$(echo "${AWS_SECRET_ACCESS_KEY}" | base64 --decode)
+    decoded_aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
     echo "  Secret access key decoded"
     decoded_aws_region=${AWS_REGION}
     echo "  Region decoded"
@@ -148,7 +148,7 @@ if [[ ${DEVICE} == "gpu" ]]; then
     elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]]; then
         ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_url: 'no', use_ebs: 'yes', use_aws: 'no', nccl_install_path: '${NCCL_INSTALL_PATH}', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
     elif [[ ${WHICH_SOURCE} == "s3" ]] || [[ ${WHICH_SOURCE} == "S3" ]]; then
-        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_url: 'no', use_ebs: 'yes', use_aws: 'yes', nccl_install_path: '${NCCL_INSTALL_PATH}', bucket: '${NCCL}', add_aws_credentials: 'yes',  aws_profile: '${decoded_aws_profile}', aws_region: '${decoded_aws_region}', aws_access_key: '${decoded_aws_access_key}', aws_secret_access_key: '${decoded_aws_secret_access_key}', delete_aws_credentials_after_installation: 'no', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
+        ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: '${RHEL_VERSION}', use_url: 'no', use_ebs: 'no', use_aws: 'yes', nccl_install_path: '${NCCL_INSTALL_PATH}', bucket: '${NCCL}', add_aws_credentials: 'yes',  aws_profile: '${decoded_aws_profile}', aws_region: '${decoded_aws_region}', aws_access_key: '${decoded_aws_access_key}', aws_secret_access_key: '${decoded_aws_secret_access_key}', delete_aws_credentials_after_installation: 'no', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}"
     fi
 
     # Print out success message
