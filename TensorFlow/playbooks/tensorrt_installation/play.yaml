@@ -15,7 +15,7 @@
     cuda_path: '{{ cuda_install_path | default("/usr/local/cuda") }}'
 
     # This is where TensorRT will be installed to
-    tensorrt_install_dir: '{{ install_dir | default(/home/TensorRT) }}'
+    tensorrt_install_dir: '{{ install_dir | default("/home/TensorRT") }}'
 
     # This is the URL where Ansible will download TensorRT
     tensorrt_url: '{{ tensorrt | default("") }}'
