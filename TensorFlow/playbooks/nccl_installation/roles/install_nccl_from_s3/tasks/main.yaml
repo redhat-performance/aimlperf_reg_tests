@@ -62,7 +62,7 @@
     path: '{{ nccl_agnostic_install_path }}'
 
 - name: Move /tmp/nccl contents to {{ nccl_agnostic_install_path }}
-  shell:  mv '{{ nccl_download_dir }}/*' '{{ nccl_agnostic_install_path }}'
+  shell:  'mv {{ nccl_download_dir }}/* {{ nccl_agnostic_install_path }}'
 
 - name: Delete NCCL download dir because we don't need it anymore
   file:
