@@ -79,6 +79,26 @@ COPY helper_scripts/Ansible/install_ansible_from_source.sh ${SCRIPTS_DIR}
 RUN yum -y install glibc glibc-devel && \
     ln -s /usr/include/endian.h /usr/include/sys/endian.h
 
+# Install CUDA packages
+ENV CUDA_PACKAGE_VERSION=10
+RUN yum clean all && \
+    yum -y install cuda-cudart-${CUDA_PACKAGE_VERSION} \
+                   cuda-compat-${CUDA_PACKAGE_VERSION} \
+                   cuda-core-${CUDA_PACKAGE_VERSION} \
+                   cuda-cudart-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-cufft-${CUDA_PACKAGE_VERSION} \
+                   cuda-cufft-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-cupti-${CUDA_PACKAGE_VERSION} \
+                   cuda-curand-${CUDA_PACKAGE_VERSION} \
+                   cuda-curand-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-cusolver-${CUDA_PACKAGE_VERSION} \
+                   cuda-cusolver-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-cusparse-${CUDA_PACKAGE_VERSION} \
+                   cuda-cusparse-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-misc-headers-${CUDA_PACKAGE_VERSION} \
+                   libcublas-devel && \
+    rm -rf /var/cache/dnf/*
+
 # Install Python version ${PYTHON_VERSION} from source and Ansible version ${ANSIBLE_VERSION} from source
 RUN cd ${SCRIPTS_DIR} && \
     sh install_python_from_source.sh ${PYTHON_VERSION} && \
