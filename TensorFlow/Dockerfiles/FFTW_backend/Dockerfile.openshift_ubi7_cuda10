@@ -80,7 +80,7 @@ RUN yum -y install glibc glibc-devel && \
     ln -s /usr/include/endian.h /usr/include/sys/endian.h
 
 # Install CUDA packages
-ENV CUDA_PACKAGE_VERSION=10
+ENV CUDA_PACKAGE_VERSION=10-0
 RUN yum clean all && \
     yum -y install cuda-cudart-${CUDA_PACKAGE_VERSION} \
                    cuda-compat-${CUDA_PACKAGE_VERSION} \
