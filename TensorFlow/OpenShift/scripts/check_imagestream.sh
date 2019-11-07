@@ -113,9 +113,9 @@ if [[ ! -z $build_failed_status ]]; then
     echo "[DEBUG - ${min_count}:${final_sec}]     >> Check if you've forked this repository and modified your OpenShift image under ../Dockerfiles/${dockerfile_folder}/Dockerfile.openshift_rhel${RHEL_VERSION}${dockerfile_suffix}"
     echo "[DEBUG - ${min_count}:${final_sec}]     >> If you're using the GPU, check if you've modified and made a mistake in your base image (../Dockerfiles/custom/rhel${RHEL_VERSION}/cuda/Dockerfile.rhel${RHEL_VERSION}_cuda${cuda_version})."
 elif [[ ! -z $build_stopped_status ]]; then
-    echo "[FATAL] - ${min_count}:${final_sec}] Image build STOPPED, so build job will not run. This happens when the previous build was interruped (e.g., CTRL+C or CTRL+Z was pressed). Please rerun this script as it usually solves that error."
+	echo "[FATAL] - ${min_count}:${final_sec}] Image build STOPPED, so build job will not run. This happens when the previous build was interruped (e.g., CTRL+C or CTRL+Z was pressed, or a BuildConfig/ImageStream exists that shouldn't exist yet). If the image build is a Source-to-Image one (rather than a base image build), run 'make clean_s2i && make s2i' to restart the Source-to-Image process. Otherwise, run 'make clean && make' to restart the whole process."
 else
-    echo "[INFO] - ${min_count}:${final_sec}] Image '${IS_NAME}' was built successfully! Please reference this image name when running 'launch_s2i_build.py'"
+    echo "[INFO] - ${min_count}:${final_sec}] Image '${IS_NAME}' was built successfully!"
 fi
 
 rm statuses.txt
