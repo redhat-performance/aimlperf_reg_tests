@@ -18,7 +18,7 @@
 
 # Next step is to install the Python TensorRT wheel file, but first, we must get the wheel file name
 - name: Get TensorRT wheel file name
-  file:
+  find:
     paths: '{{ tensorrt_download_dir }}/python'
     patterns: '*36*.whl'
   register: tensorrt_wheel_file
@@ -33,7 +33,7 @@
 
 # Now we need to install UFF, but again, we must get the UFF wheel file
 - name: Get UFF wheel file name
-  file:
+  find:
     paths: '{{ tensorrt_download_dir }}/uff'
     patterns: '*36*.whl'
   register: uff_wheel_file
@@ -48,7 +48,7 @@
 
 # Do the same for graphsurgeon
 - name: Get graphsurgeon wheel file name
-  file:
+  find:
     paths: '{{ tensorrt_download_dir }}/graphsurgeon'
     patterns: '*36*.whl'
   register: graphsurgeon_wheel_file
