@@ -169,6 +169,10 @@ fi
 ##########################################
 if [[ ${DEVICE} == "gpu" ]] && [[ ${RHEL_VERSION} == "7" ]]; then
 
+
+    # Set TensorRT install dir
+    TENSORRT_INSTALL_DIR="${TOPDIR}/TensorRT"
+
     # Print out info
     echo "TensorRT installation params:"
     echo "  RHEL version:      ${RHEL_VERSION}"

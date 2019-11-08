@@ -23,6 +23,31 @@
     patterns: '*36*.whl'
   register: tensorrt_wheel_file
 
+# Do the same with the the UFF wheel file
+- name: Get UFF wheel file name
+  find:
+    paths: '{{ tensorrt_download_dir }}/uff'
+    patterns: '*36*.whl'
+  register: uff_wheel_file
+
+# Do the same for graphsurgeon as well
+- name: Get graphsurgeon wheel file name
+  find:
+    paths: '{{ tensorrt_download_dir }}/graphsurgeon'
+    patterns: '*36*.whl'
+  register: graphsurgeon_wheel_file
+
+# Print out wheel files
+- debug:
+    msg: 'Found {{ item.path }}'
+  with_items: '{{ tensorrt_wheel_file.files }}'
+- debug:
+    msg: 'Found {{ item.path }}'
+  with_items: '{{ uff.files }}'
+- debug:
+    msg: 'Found {{ item.path }}'
+  with_items: '{{ graphsurgeon.files }}'
+
 # Now install TensorRT wheel file
 - name: Install Python TensorRT wheel file
   pip:
@@ -31,13 +56,6 @@
     extra_args: '--target={{ tensorrt_install_dir }}'
   with_items: '{{ tensorrt_wheel_file.files }}'
 
-# Now we need to install UFF, but again, we must get the UFF wheel file
-- name: Get UFF wheel file name
-  find:
-    paths: '{{ tensorrt_download_dir }}/uff'
-    patterns: '*36*.whl'
-  register: uff_wheel_file
-
 # Install the UFF wheel file
 - name: Install UFF wheel file
   pip:
@@ -45,13 +63,6 @@
     executable: pip3
     extra_args: '--target={{ tensorrt_install_dir }}'
   with_items: '{{ uff_wheel_file.files }}'
-
-# Do the same for graphsurgeon
-- name: Get graphsurgeon wheel file name
-  find:
-    paths: '{{ tensorrt_download_dir }}/graphsurgeon'
-    patterns: '*36*.whl'
-  register: graphsurgeon_wheel_file
 
 # Now install
 - name: Install graphsurgeon wheel file
