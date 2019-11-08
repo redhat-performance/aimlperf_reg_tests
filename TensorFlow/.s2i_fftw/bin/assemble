@@ -288,13 +288,6 @@ if [[ ${DEVICE} == "gpu" ]]; then
         exit 1
     fi
     echo "  Found ${cudnn_h}"
-
-    cublas_v2_h=$(ls /usr/local/cuda/include | grep cublas_v2.h)
-    if [[ -z ${cublas_v2_h} ]]; then
-        echo "  ERROR. Could not find cublas_v2.h"
-        exit 1
-    fi
-    echo "  Found ${cublas_v2_h}"
     
 fi
 
