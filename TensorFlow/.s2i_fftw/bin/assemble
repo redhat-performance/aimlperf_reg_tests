@@ -69,6 +69,11 @@ echo "Looking for app sources:"
 ls .
 echo ""
 
+# Check for CUDA
+echo "Looking for CUDA:"
+ls /usr/local | grep cuda
+echo ""
+
 # Add user to /etc/passwd if necessary
 echo "Checking user permissions:"
 uid=$(id -u)
@@ -252,6 +257,43 @@ if [[ ${DEVICE} == "gpu" ]]; then
         echo ""
     fi
 fi
+
+##########################################
+#       CHECK CUDA RELATED HEADERS       #
+##########################################
+if [[ ${DEVICE} == "gpu" ]]; then
+
+    echo "Checking for CUDA headers:"
+    cuda_h=$(ls /usr/local/cuda/include | grep cuda.h)
+    if [[ -z ${cuda_h} ]]; then
+        echo "  ERROR. Could not find cuda.h"
+        exit 1
+    fi
+    echo "  Found ${cuda_h}"
+
+    nccl_h=$(ls ${NCCL_INSTALL_PATH}/include | grep nccl.h)
+    if [[ -z ${nccl_h} ]]; then
+        echo "  ERROR. Could not find nccl.h"
+        exit 1
+    fi
+    echo "  Found ${nccl_h}"
+
+    cudnn_h=$(ls /usr/local/cuda/include | grep cudnn.h)
+    if [[ -z ${cudnn_h} ]]; then
+        echo "  ERROR. Could not find cudnn.h"
+        exit 1
+    fi
+    echo "  Found ${cudnn_h}"
+
+    cublas_v2_h=$(ls /usr/local/cuda/include | grep cublas_v2.h)
+    if [[ -z ${cublas_v2_h} ]]; then
+        echo "  ERROR. Could not find cublas_v2.h"
+        exit 1
+    fi
+    echo "  Found ${cublas_v2_h}"
+    
+fi
+
 
 ##########################################
 #         BUILD AND INSTALL FFTW         #
