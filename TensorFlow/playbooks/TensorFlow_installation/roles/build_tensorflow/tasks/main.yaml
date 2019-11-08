@@ -197,7 +197,7 @@
   environment:
     GCC_HOST_COMPILER_PATH: '{{ CC }}'
     CC_OPT_FLAGS: '-march=native'
-    TF_CUDA_PATHS: '/usr/local/cuda:{{ NCCL_INSTALL_PATH }}'
+    TF_CUDA_PATHS: '/usr/local/cuda,{{ NCCL_INSTALL_PATH }}'
     TF_DOWNLOAD_CLANG: '0'
     TF_ENABLE_XLA: '0'
     TF_NEED_COMPUTECPP: '0'
@@ -224,7 +224,7 @@
   environment:
     GCC_HOST_COMPILER_PATH: '{{ CC }}'
     CC_OPT_FLAGS: '-march=native'
-    TF_CUDA_PATHS: '/usr/local/cuda:{{ NCCL_INSTALL_PATH }}:{{ TENSORRT_INSTALL_PATH }}'
+    TF_CUDA_PATHS: '/usr/local/cuda,{{ NCCL_INSTALL_PATH }},{{ TENSORRT_INSTALL_PATH }}'
     TF_TENSORRT_VERSION: '{{ tensorrt_version.stdout }}'
     TF_DOWNLOAD_CLANG: '0'
     TF_ENABLE_XLA: '0'
