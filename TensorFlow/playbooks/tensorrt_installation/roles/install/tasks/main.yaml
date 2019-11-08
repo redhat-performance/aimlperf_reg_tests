@@ -27,14 +27,14 @@
 - name: Get UFF wheel file name
   find:
     paths: '{{ tensorrt_download_dir }}/uff'
-    patterns: '*36*.whl'
+    patterns: '*.whl'
   register: uff_wheel_file
 
 # Do the same for graphsurgeon as well
 - name: Get graphsurgeon wheel file name
   find:
     paths: '{{ tensorrt_download_dir }}/graphsurgeon'
-    patterns: '*36*.whl'
+    patterns: '*.whl'
   register: graphsurgeon_wheel_file
 
 # Print out wheel files
