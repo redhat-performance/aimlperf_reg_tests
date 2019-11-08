@@ -85,6 +85,7 @@ RUN yum clean all && \
     yum -y install cuda-cudart-${CUDA_PACKAGE_VERSION} \
                    cuda-compat-${CUDA_PACKAGE_VERSION} \
                    cuda-core-${CUDA_PACKAGE_VERSION} \
+                   cuda-cublas-${CUDA_PACKAGE_VERSION} \
                    cuda-cudart-dev-${CUDA_PACKAGE_VERSION} \
                    cuda-cufft-${CUDA_PACKAGE_VERSION} \
                    cuda-cufft-dev-${CUDA_PACKAGE_VERSION} \
