@@ -152,12 +152,41 @@
   - name: If using the GPU, find cuDNN version
     shell: sed -n 's/^#define CUDNN_MAJOR\s*\(.*\).*/\1/p' /usr/local/cuda/include/cudnn.h
     register: cudnn_version
+
+  # Grab the NCCL major version
+  - name: If using the GPU, find NCCL major version
+    shell: sed -n 's/^#define NCCL_MAJOR\s*\(.*\).*/\1/p' '{{ NCCL_INSTALL_PATH }}/include/nccl.h'
+    register: nccl_major_version
+
+  # Grab NCCL minor version
+  - name: If using the GPU, find NCCL minor version
+    shell: sed -n 's/^#define NCCL_MINOR\s*\(.*\).*/\1/p' '{{ NCCL_INSTALL_PATH }}/include/nccl.h'
+    register: nccl_minor_version
+
+  # Grab NCCL patch
+  - name: If using the GPU, find NCCL patch
+    shell: sed -n 's/^#define NCCL_PATCH\s*\(.*\).*/\1/p' '{{ NCCL_INSTALL_PATH }}/include/nccl.h'
+    register: nccl_patch
+
+  # Print out versions
+  - debug:
+      msg: 'CUDA version: {{ cuda_version.stdout }}'
+  - debug:
+      msg: 'cuDNN version: {{ cudnn_version.stdout }}'
+  - debug:
+      msg: 'NCCL version: {{ nccl_major_version.stdout }}.{ nccl_minor_version.stdout }}.{{ nccl_patch.stdout }}'
+
   when: DEVICE == 'gpu'
 
 # Get TensorRT version
-- name: If using the GPU and using TensorRT, find the TensorRT version
-  shell: pip3 show tensorrt | grep "Version:" | cut -d ' ' -f 2
-  register: tensorrt_version
+- block:
+  - name: If using the GPU and using TensorRT, find the TensorRT version
+    shell: pip3 show tensorrt | grep "Version:" | cut -d ' ' -f 2
+    register: tensorrt_version
+
+  - debug:
+      msg: 'TensorRT version: {{ tensorrt_version.stdout }}'
+
   when: DEVICE == 'gpu' and USE_TENSORRT == 'yes'
 
 # Now configure TensorFlow for the GPU
@@ -168,13 +197,12 @@
   environment:
     GCC_HOST_COMPILER_PATH: '{{ CC }}'
     CC_OPT_FLAGS: '-march=native'
-    CUDA_TOOLKIT_PATH: '/usr/local/cuda'
-    CUDNN_INSTALL_PATH: '/usr/local/cuda'
-    NCCL_INSTALL_PATH: '{{ NCCL_INSTALL_PATH }}'
+    TF_CUDA_PATHS: '/usr/local/cuda:{{ NCCL_INSTALL_PATH }}'
     TF_CUDA_VERSION: '{{ cuda_version.stdout }}'
     TF_CUDNN_VERSION: '{{ cudnn_version.stdout }}'
     TF_DOWNLOAD_CLANG: '0'
     TF_ENABLE_XLA: '0'
+    TF_NCCL_VERSION: '{{ nccl_major_version.stdout }}.{ nccl_minor_version.stdout }}.{{ nccl_patch.stdout }}'
     TF_NEED_COMPUTECPP: '0'
     TF_NEED_CUDA: '1'
     TF_NEED_MPI: '0'
@@ -199,15 +227,13 @@
   environment:
     GCC_HOST_COMPILER_PATH: '{{ CC }}'
     CC_OPT_FLAGS: '-march=native'
-    CUDA_TOOLKIT_PATH: '/usr/local/cuda'
-    CUDNN_INSTALL_PATH: '/usr/local/cuda'
-    NCCL_INSTALL_PATH: '{{ NCCL_INSTALL_PATH }}'
-    TENSORRT_INSTALL_PATH: '{{ TENSORRT_INSTALL_PATH }}'
+    TF_CUDA_PATHS: '/usr/local/cuda:{{ NCCL_INSTALL_PATH }}:{{ TENSORRT_INSTALL_PATH }}'
     TF_CUDA_VERSION: '{{ cuda_version.stdout }}'
     TF_CUDNN_VERSION: '{{ cudnn_version.stdout }}'
     TF_TENSORRT_VERSION: '{{ tensorrt_version.stdout }}'
     TF_DOWNLOAD_CLANG: '0'
     TF_ENABLE_XLA: '0'
+    TF_NCCL_VERSION: '{{ nccl_major_version.stdout }}.{ nccl_minor_version.stdout }}.{{ nccl_patch.stdout }}'
     TF_NEED_COMPUTECPP: '0'
     TF_NEED_CUDA: '1'
     TF_NEED_MPI: '0'
