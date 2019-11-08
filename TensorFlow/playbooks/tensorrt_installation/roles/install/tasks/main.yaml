@@ -43,10 +43,10 @@
   with_items: '{{ tensorrt_wheel_file.files }}'
 - debug:
     msg: 'Found {{ item.path }}'
-  with_items: '{{ uff.files }}'
+  with_items: '{{ uff_wheel_file.files }}'
 - debug:
     msg: 'Found {{ item.path }}'
-  with_items: '{{ graphsurgeon.files }}'
+  with_items: '{{ graphsurgeon_wheel_file.files }}'
 
 # Now install TensorRT wheel file
 - name: Install Python TensorRT wheel file
