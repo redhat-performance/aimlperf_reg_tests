@@ -174,7 +174,7 @@
   - debug:
       msg: 'cuDNN version: {{ cudnn_version.stdout }}'
   - debug:
-      msg: 'NCCL version: {{ nccl_major_version.stdout }}.{ nccl_minor_version.stdout }}.{{ nccl_patch.stdout }}'
+      msg: 'NCCL version: {{ nccl_major_version.stdout }}.{{ nccl_minor_version.stdout }}.{{ nccl_patch.stdout }}'
 
   when: DEVICE == 'gpu'
 
