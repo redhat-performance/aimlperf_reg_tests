@@ -144,8 +144,12 @@
 
 - block:
   # Command taken from: https://georgesterpu.github.io/compile_tensorflow.html
-  - name: If using the GPU, find CUDA version
+  - name: If using the GPU, find the exact CUDA version
     shell: /usr/local/cuda/bin/nvcc --version | sed -n 's/^.*release \(.*\),.*/\1/p'
+    register: cuda_version_exact
+
+  - name: If using the GPU, determine CUDA version (e.g., if CUDA version is 10.0, then we set CUDA version to 10). This does not support CUDA 9 and below.
+    shell: if [[ '{{ cuda_version_exact.stdout }}' == '10.0' ]]; then echo '10'; else echo '{{ cuda_version_exact.stdout }}'; fi
     register: cuda_version
 
   # Command taken from: https://georgesterpu.github.io/compile_tensorflow.html
