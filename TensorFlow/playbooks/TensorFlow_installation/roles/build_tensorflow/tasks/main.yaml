@@ -146,10 +146,6 @@
   # Command taken from: https://georgesterpu.github.io/compile_tensorflow.html
   - name: If using the GPU, find the exact CUDA version
     shell: /usr/local/cuda/bin/nvcc --version | sed -n 's/^.*release \(.*\),.*/\1/p'
-    register: cuda_version_exact
-
-  - name: If using the GPU, determine CUDA version (e.g., if CUDA version is 10.0, then we set CUDA version to 10). This does not support CUDA 9 and below.
-    shell: if [[ '{{ cuda_version_exact.stdout }}' == '10.0' ]]; then echo '10'; else echo '{{ cuda_version_exact.stdout }}'; fi
     register: cuda_version
 
   # Command taken from: https://georgesterpu.github.io/compile_tensorflow.html
@@ -202,11 +198,8 @@
     GCC_HOST_COMPILER_PATH: '{{ CC }}'
     CC_OPT_FLAGS: '-march=native'
     TF_CUDA_PATHS: '/usr/local/cuda:{{ NCCL_INSTALL_PATH }}'
-    TF_CUDA_VERSION: '{{ cuda_version.stdout }}'
-    TF_CUDNN_VERSION: '{{ cudnn_version.stdout }}'
     TF_DOWNLOAD_CLANG: '0'
     TF_ENABLE_XLA: '0'
-    TF_NCCL_VERSION: '{{ nccl_major_version.stdout }}.{{ nccl_minor_version.stdout }}.{{ nccl_patch.stdout }}'
     TF_NEED_COMPUTECPP: '0'
     TF_NEED_CUDA: '1'
     TF_NEED_MPI: '0'
@@ -232,12 +225,9 @@
     GCC_HOST_COMPILER_PATH: '{{ CC }}'
     CC_OPT_FLAGS: '-march=native'
     TF_CUDA_PATHS: '/usr/local/cuda:{{ NCCL_INSTALL_PATH }}:{{ TENSORRT_INSTALL_PATH }}'
-    TF_CUDA_VERSION: '{{ cuda_version.stdout }}'
-    TF_CUDNN_VERSION: '{{ cudnn_version.stdout }}'
     TF_TENSORRT_VERSION: '{{ tensorrt_version.stdout }}'
     TF_DOWNLOAD_CLANG: '0'
     TF_ENABLE_XLA: '0'
-    TF_NCCL_VERSION: '{{ nccl_major_version.stdout }}.{{ nccl_minor_version.stdout }}.{{ nccl_patch.stdout }}'
     TF_NEED_COMPUTECPP: '0'
     TF_NEED_CUDA: '1'
     TF_NEED_MPI: '0'
