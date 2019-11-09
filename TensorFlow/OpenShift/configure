@@ -383,9 +383,9 @@ else
 fi
 echo -e "\toc start-build \$(BUILD_IMAGE_TEMPLATE)" >> ${makefile}
 if [[ -z ${AVX} ]]; then
-    echo -e "\tsh scripts/check_imagestream.sh \$(RHEL_VERSION) \$(IMAGESTREAM_NAME) \$(BACKEND) "null" ${USE_GPU}" >> ${makefile}
+    echo -e "\tsh scripts/check_imagestream.sh \$(RHEL_VERSION) \$(IMAGESTREAM_NAME) \$(BACKEND) \$(BUILD_IMAGE_TEMPLATE) "null" ${USE_GPU}" >> ${makefile}
 else
-    echo -e "\tsh scripts/check_imagestream.sh \$(RHEL_VERSION) \$(IMAGESTREAM_NAME) \$(BACKEND) ${AVX}" >> ${makefile}
+    echo -e "\tsh scripts/check_imagestream.sh \$(RHEL_VERSION) \$(IMAGESTREAM_NAME) \$(BACKEND) \$(BUILD_IMAGE_TEMPLATE) ${AVX}" >> ${makefile}
 fi
 echo "" >> ${makefile}
 
@@ -418,9 +418,9 @@ else
     echo -e "\toc new-app ${s2i_image_template_param} ${source_imagestream_name_param} ${output_imagestream_name_param} ${rhel_version_param} ${num_cpus_param} ${python_executable_param}" >> ${makefile}
 fi
 if [[ -z ${AVX} ]]; then
-    echo -e "\tsh scripts/check_imagestream.sh \$(RHEL_VERSION) \$(S2I_IMAGESTREAM_NAME) \$(BACKEND) "null" ${USE_GPU}" >> ${makefile}
+    echo -e "\tsh scripts/check_imagestream.sh \$(RHEL_VERSION) \$(S2I_IMAGESTREAM_NAME) \$(BACKEND) \$(S2I_BUILD_TEMPLATE) "null" ${USE_GPU}" >> ${makefile}
 else
-    echo -e "\tsh scripts/check_imagestream.sh \$(RHEL_VERSION) \$(S2I_IMAGESTREAM_NAME) \$(BACKEND) ${AVX}" >> ${makefile}
+    echo -e "\tsh scripts/check_imagestream.sh \$(RHEL_VERSION) \$(S2I_IMAGESTREAM_NAME) \$(BACKEND) \$(S2I_BUILD_TEMPLATE) ${AVX}" >> ${makefile}
 fi
 echo "" >> ${makefile}
 

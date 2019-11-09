@@ -3,8 +3,35 @@
 RHEL_VERSION=$1
 IS_NAME=$2
 BACKEND=$3
-AVX=$4
-USE_GPU=$5
+BUILDCONFIG_NAME=$4
+AVX=$5
+USE_GPU=$6
+
+# Get status of the build
+found_bc_name="False"
+build_num=-1
+latest_build_status="null"
+num_builds=0
+oc status > statuses.txt
+while IFS=" " read -r t || [ -n "$t" ]; do
+    if [[ "$t" == "bc/${BUILDCONFIG_NAME}"* ]]; then
+        found_bc_name="True"
+	echo "HERE"
+    elif [[ $found_bc_name == "True" ]]; then
+        if [[ "$t" == *"build #"* ]]; then
+            build_id=$(echo $t | cut -d' ' -f 2 | cut -d'#' -f 2)
+            if (( build_id > build_num )); then
+                build_num=$build_id
+                latest_build_status=$(echo $t | cut -d' ' -f 3)
+		num_builds=$((num_builds+1))
+     	    fi
+	fi
+    fi
+done < "statuses.txt"
+
+echo ${BUILDCONFIG_NAME}
+echo $num_builds
+echo $latest_build_status
 
 # Check the image build
 build_succeeded_status=""
@@ -52,16 +79,16 @@ while [[ -z $build_succeeded_status ]] && [[ -z $build_failed_status ]] && [[ -z
     fi
 
     # Get status of the build
-    oc status > statuses.txt 
-    oc_build_status=$(grep -i -A 1 "  -> istag/${IS_NAME}:latest" statuses.txt)
-    build_succeeded_status=$(echo $oc_build_status | grep build | grep succeeded)
-    build_completed_status=$(echo $oc_build_status | grep build | grep completed)
-    build_failed_status=$(echo $oc_build_status | grep build | grep failed)
-    build_stopped_status=$(echo $oc_build_status | grep build | grep stopped)
-    build_pending_status=$(echo $oc_build_status | grep build | grep pending)
+    latest_build_status=$(oc status | grep -A $((num_builds+1)) "bc/${BUILDCONFIG_NAME}")
+    build_succeeded_status=$(echo $latest_build_status | grep succeeded)
+    build_completed_status=$(echo $latest_build_status | grep completed)
+    build_failed_status=$(echo $latest_build_status | grep failed)
+    build_stopped_status=$(echo $latest_build_status | grep stopped)
+    build_pending_status=$(echo $latest_build_status | grep pending)
+    build_running_status=$(echo $latest_build_status | grep running)
 
     # Figure out when build is finally running
-    if [[ -z ${build_pending_status} ]] && [[ -z ${build_started} ]]; then
+    if [[ ! -z ${build_running_status} ]] && [[ -z ${build_started} ]]; then
         build_started="true"
     fi
 
@@ -75,7 +102,7 @@ while [[ -z $build_succeeded_status ]] && [[ -z $build_failed_status ]] && [[ -z
     fi
 
     # Wait 10 seconds before checking again
-    if [[ -z $build_succeeded_status ]] && [[ -z $build_completed_status ]]; then
+    if [[ ${build_running_status} ]]; then
         sleep 10
     fi
 
