@@ -139,7 +139,6 @@
     PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
     NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
-  register: tensorflow_configure_log_cpu
   when: DEVICE == 'cpu'
 
 - block:
@@ -213,7 +212,6 @@
     PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
     NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
-  register: tensorflow_configure_log_gpu
   when: DEVICE == 'gpu' and USE_TENSORRT == 'no'
 
 # Now configure TensorFlow for the GPU
@@ -240,16 +238,7 @@
     PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
     NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
-  register: tensorflow_configure_log_gpu
   when: DEVICE == 'gpu' and USE_TENSORRT == 'yes'
-
-# Save CPU configure log (if we're using the CPU)
-- local_action: template src=tensorflow_configure_log_cpu.j2 dest={{ TENSORFLOW_BUILD_DIR }}/configure.log
-  when: DEVICE == 'cpu'
-
-# Save GPU configure log (if we're using the GPU)
-- local_action: template src=tensorflow_configure_log_gpu.j2 dest={{ TENSORFLOW_BUILD_DIR }}/configure.log
-  when: DEVICE == 'gpu'
 
 # Print out where the configure logs have been saved to
 - debug:
