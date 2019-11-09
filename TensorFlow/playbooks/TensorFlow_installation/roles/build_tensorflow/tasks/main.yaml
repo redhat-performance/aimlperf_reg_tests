@@ -275,6 +275,7 @@
   environment:
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
     TMP: '/tmp'
+    TF_CUDA_PATHS: '/usr/local/cuda,/usr/include,{{ NCCL_INSTALL_PATH }},{{ TENSORRT_INSTALL_PATH }}'
 
 - debug:
     msg: "TensorFlow build logs saved to {{ TENSORFLOW_BUILD_DIR }}/build.log"
