@@ -225,7 +225,6 @@
     GCC_HOST_COMPILER_PATH: '{{ CC }}'
     CC_OPT_FLAGS: '-march=native'
     TF_CUDA_PATHS: '/usr/local/cuda,/usr/include,{{ NCCL_INSTALL_PATH }},{{ TENSORRT_INSTALL_PATH }}'
-    TF_TENSORRT_VERSION: '{{ tensorrt_version.stdout }}'
     TF_DOWNLOAD_CLANG: '0'
     TF_ENABLE_XLA: '0'
     TF_NEED_COMPUTECPP: '0'
@@ -275,7 +274,7 @@
   shell: |
     cd {{ TENSORFLOW_BUILD_DIR }}
     bazel build --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} -k //tensorflow/tools/pip_package:build_pip_package
-  when: USE_CPU == 'yes' and USE_GPU == 'no'
+  when: DEVICE == 'cpu'
   environment:
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
 
@@ -283,7 +282,7 @@
   shell: |
     cd {{ TENSORFLOW_BUILD_DIR }}
     bazel build --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=cuda -k //tensorflow/tools/pip_package:build_pip_package
-  when: USE_CPU == 'no' and USE_GPU == 'yes'
+  when: DEVICE == 'gpu'
   environment:
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
     TMP: '/tmp'
