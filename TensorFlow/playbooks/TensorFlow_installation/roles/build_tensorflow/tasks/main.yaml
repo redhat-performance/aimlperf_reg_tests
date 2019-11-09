@@ -278,7 +278,6 @@
   when: USE_CPU == 'yes' and USE_GPU == 'no'
   environment:
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
-  register: tensorflow_cpu_build_log
 
 - name: Build TensorFlow for the GPU
   shell: |
@@ -288,7 +287,6 @@
   environment:
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
     TMP: '/tmp'
-  register: tensorflow_gpu_build_log
 
 - debug:
     msg: "TensorFlow build logs saved to {{ TENSORFLOW_BUILD_DIR }}/build.log"
