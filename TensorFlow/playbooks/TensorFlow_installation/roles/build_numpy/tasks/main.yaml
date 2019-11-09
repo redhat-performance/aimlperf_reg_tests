@@ -16,7 +16,7 @@
     echo '' >> {{ NUMPY_SITE_CFG }}
     echo '[atlas]' >> {{ NUMPY_SITE_CFG }}
     echo 'atlas_libs = lapack, blas, cblas, tatlas' >> {{ NUMPY_SITE_CFG }}
-  when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no' and RHEL_VERSION == '7' and UBI == 'no' and S2I == 'no'
+  when: BLAS_BACKEND == 'fftw' and RHEL_VERSION == '7' and UBI == 'no' and S2I == 'no'
 
 - name: Set NumPy site config file for RHEL 8 and ubi7 -- use FFTW if specified
   shell: |
@@ -29,7 +29,7 @@
     echo '' >> {{ NUMPY_SITE_CFG }}
     echo '[atlas]' >> {{ NUMPY_SITE_CFG }}
     echo 'atlas_libs = lapack, blas, cblas, tatlas' >> {{ NUMPY_SITE_CFG }}
-  when: (USE_FFTW == 'yes' and USE_OPENBLAS == 'no' and RHEL_VERSION == '8') or (USE_FFTW == 'yes' and USE_OPENBLAS == 'no' and RHEL_VERSION == '7' and UBI == 'yes') or (USE_FFTW == 'yes' and USE_OPENBLAS == 'no' and RHEL_VERSION == '7' and S2I == 'yes')
+  when: (BLAS_BACKEND == 'fftw' and RHEL_VERSION == '8') or (BLAS_BACKEND == 'fftw' and RHEL_VERSION == '7' and UBI == 'yes') or (BLAS_BACKEND == 'fftw' and RHEL_VERSION == '7' and S2I == 'yes')
 
 - name: Some versions of NumPy do not work well with later versions of Cython, so we need to add the -3 flag
   lineinfile:
@@ -44,11 +44,11 @@
   environment:
     LD_LIBRARY_PATH: '/usr/lib:/usr/lib64:/usr/lib64/atlas:/usr/local/lib:{{ GCC_LIBS }}'
     PYTHONPATH: '{{ PYTHONPATH }}:{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages'
-  when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no'
+  when: BLAS_BACKEND == 'fftw'
   register: numpy_fftw_log
 
 - local_action: template src=fftw_numpy_log.j2 dest={{ NUMPY_BUILD_DIR }}/build.log
-  when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no'
+  when: BLAS_BACKEND == 'fftw'
 
 - name: Set NumPy site config file -- use OpenBLAS if specified
   shell: |
@@ -57,7 +57,7 @@
     echo 'library_dirs = {{ BLAS_LIB_DIRS }}' >> {{ NUMPY_SITE_CFG }}
     echo 'include_dirs = {{ BLAS_INCLUDE_DIRS }}' >> {{ NUMPY_SITE_CFG }}
     echo 'runtime_library_dirs = {{ BLAS_LIB_DIRS }}' >> {{ NUMPY_SITE_CFG }}
-  when: USE_FFTW == 'no' and USE_OPENBLAS == 'yes'
+  when: BLAS_BACKEND == 'openblas'
 
 - name: Configure and build NumPy -- use OpenBLAS if specified
   shell: |
@@ -66,11 +66,11 @@
   environment:
     LD_LIBRARY_PATH: '/usr/lib:/usr/lib64:/usr/lib64/atlas:{{ GCC_LIBS }}'
     PYTHONPATH: '{{ PYTHONPATH }}:{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages'
-  when: USE_FFTW == 'no' and USE_OPENBLAS == 'yes'
+  when: BLAS_BACKEND == 'openblas'
   register: numpy_openblas_log
 
 - local_action: template src=openblas_numpy_log.j2 dest={{ NUMPY_BUILD_DIR }}/build.log
-  when: USE_FFTW == 'no' and USE_OPENBLAS == 'yes'
+  when: BLAS_BACKEND == 'openblas'
 
 - debug:
     msg: "NumPy build logs saved to {{ NUMPY_BUILD_DIR }}/build.log"

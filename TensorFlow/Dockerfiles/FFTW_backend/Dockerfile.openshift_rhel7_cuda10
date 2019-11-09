@@ -21,7 +21,7 @@ LABEL io.openshift.expose-services="8080:http"
 ENV APP_DIR="/benchmark_app"
 
 # Copy s2i assemble + run
-COPY TensorFlow/.s2i_fftw/bin/ /usr/libexec/s2i
+COPY TensorFlow/.s2i/bin/ /usr/libexec/s2i
 
 # Put on port 8080
 EXPOSE 8080

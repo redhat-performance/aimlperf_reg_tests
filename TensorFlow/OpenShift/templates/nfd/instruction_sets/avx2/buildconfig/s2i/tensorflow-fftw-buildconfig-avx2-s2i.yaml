@@ -24,6 +24,8 @@ objects:
         env:
           - name: "RHEL_VERSION"
             value: "${RHEL_VERSION}"
+          - name: "BACKEND"
+            value: "fftw"
           - name: "DEVICE"
             value: "cpu"
           - name: "NUM_DEVICES"

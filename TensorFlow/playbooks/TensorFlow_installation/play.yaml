@@ -19,8 +19,7 @@
     NUMPY_VERSION: '{{ np_version | default("1.17.3") }}'
 
     # Use FFTW or OpenBLAS?
-    USE_FFTW: '{{ use_fftw | default("yes") }}'
-    USE_OPENBLAS: '{{ use_openblas | default("no") }}'
+    BLAS_BACKEND: '{{ blas_backend | default("fftw") }}'
 
     # Use CPU or GPU?
     DEVICE: '{{ device | default("cpu") }}'

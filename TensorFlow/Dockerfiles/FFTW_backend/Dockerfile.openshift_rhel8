@@ -15,7 +15,7 @@ LABEL io.openshift.s2i.scripts-url="image:///usr/libexec/s2i"
 LABEL io.openshift.expose-services="8080:http"
 
 # Copy s2i assemble + run
-COPY TensorFlow/.s2i_fftw/bin/ /usr/libexec/s2i
+COPY TensorFlow/.s2i/bin/ /usr/libexec/s2i
 
 # Set playbook paths
 ENV FFTW_PREREQS_PLAYBOOK=${HOME}/playbooks/fftw_package_installation

@@ -5,20 +5,20 @@
     state: directory
     path: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages'
 
-- name: Install NumPy
+- name: Install NumPy (FFTW backend)
   shell: |
     cd {{ NUMPY_BUILD_DIR }}
     CC="gcc -lblas -lgfortran" python3 setup.py install --prefix={{ NUMPY_INSTALL_DIR }}
   environment:
     PYTHONPATH: '{{ PYTHONPATH }}:{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages'
     LD_LIBRARY_PATH: '{{ BLAS_LIB_DIRS }}'
-  when: USE_FFTW == 'yes' and USE_OPENBLAS == 'no'
+  when: BLAS_BACKEND == 'fftw'
 
-- name: Install NumPy
+- name: Install NumPy (OpenBLAS backend)
   shell: |
     cd {{ NUMPY_BUILD_DIR }}
     python3 setup.py install --prefix={{ NUMPY_INSTALL_DIR }}
   environment:
     PYTHONPATH: '{{ PYTHONPATH }}:{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages'
     LD_LIBRARY_PATH: '{{ BLAS_LIB_DIRS }}'
-  when: USE_FFTW == 'no' and USE_OPENBLAS == 'yes'
+  when: BLAS_BACKEND == 'openblas'
