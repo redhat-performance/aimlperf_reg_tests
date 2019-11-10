@@ -133,11 +133,11 @@ if [[ ${DEVICE} == "gpu" ]]; then
 
     # Print out info
     echo "NCCL installation params:"
-    echo "  Install path:      ${NCCL_INSTALL_PATH}"
-    echo "  CUDA install path: ${CUDA_INSTALL_PATH}"
-    echo "  RHEL version:      ${RHEL_VERSION}"
+    echo "  Install path:          ${NCCL_INSTALL_PATH}"
+    echo "  CUDA install path:     ${CUDA_INSTALL_PATH}"
+    echo "  RHEL version:          ${RHEL_VERSION}"
     if [[ ${WHICH_SOURCE} == "url" ]] || [[ ${WHICH_SOURCE} == "URL" ]]; then
-        echo "  NCCL installer:    ${NCCL}"
+        echo "  NCCL installer:        ${NCCL}"
         echo ""
     elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]] || [[ ${WHICH_SOURCE} == "none" ]] || [[ ${WHICH_SOURCE} == "NONE" ]]; then
         echo ""
@@ -183,15 +183,13 @@ if [[ ${DEVICE} == "gpu" ]] && [[ ${RHEL_VERSION} == "7" ]]; then
 
     # Print out info
     echo "TensorRT installation params:"
-    echo "  RHEL version:      ${RHEL_VERSION}"
+    echo "  RHEL version:          ${RHEL_VERSION}"
     if [[ ${WHICH_SOURCE} == "url" ]] || [[ ${WHICH_SOURCE} == "URL" ]]; then
-        echo "  TensorRT installer:   ${TENSORRT}"
+        echo "  TensorRT installer:    ${TENSORRT}"
         echo ""
     elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]] || [[ ${WHICH_SOURCE} == "none" ]] || [[ ${WHICH_SOURCE} == "NONE" ]]; then
         echo ""
     else
-        echo "TensorRT installation params:"
-        echo "  RHEL version:          ${RHEL_VERSION}"
         echo "  TensorRT s3 bucket:    ${TENSORRT}"
         echo "  AWS access key:        [private]"
         echo "  AWS secret access key: [private]"
@@ -229,17 +227,14 @@ if [[ ${DEVICE} == "gpu" ]]; then
 
     # Print out info
     echo "cuDNN installation params:"
-    echo "  CUDA install path: ${CUDA_INSTALL_PATH}"
-    echo "  RHEL version:      ${RHEL_VERSION}"
+    echo "  CUDA install path:     ${CUDA_INSTALL_PATH}"
+    echo "  RHEL version:          ${RHEL_VERSION}"
     if [[ ${WHICH_SOURCE} == "url" ]] || [[ ${WHICH_SOURCE} == "URL" ]]; then
-        echo "  cuDNN installer:   ${CUDNN}"
+        echo "  cuDNN installer:       ${CUDNN}"
         echo ""
     elif [[ ${WHICH_SOURCE} == "ebs" ]] || [[ ${WHICH_SOURCE} == "EBS" ]] || [[ ${WHICH_SOURCE} == "none" ]] || [[ ${WHICH_SOURCE} == "NONE" ]]; then
         echo ""
     else
-        echo "cuDNN installation params:"
-        echo "  CUDA install path:     ${CUDA_INSTALL_PATH}"
-        echo "  RHEL version:          ${RHEL_VERSION}"
         echo "  cuDNN s3 bucket:       ${CUDNN}"
         echo "  AWS access key:        [private]"
         echo "  AWS secret access key: [private]"
