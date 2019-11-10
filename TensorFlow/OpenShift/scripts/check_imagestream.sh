@@ -16,7 +16,6 @@ oc status > statuses.txt
 while IFS=" " read -r t || [ -n "$t" ]; do
     if [[ "$t" == "bc/${BUILDCONFIG_NAME}"* ]]; then
         found_bc_name="True"
-	echo "HERE"
     elif [[ $found_bc_name == "True" ]]; then
         if [[ "$t" == *"build #"* ]]; then
             build_id=$(echo $t | cut -d' ' -f 2 | cut -d'#' -f 2)
@@ -28,10 +27,6 @@ while IFS=" " read -r t || [ -n "$t" ]; do
 	fi
     fi
 done < "statuses.txt"
-
-echo ${BUILDCONFIG_NAME}
-echo $num_builds
-echo $latest_build_status
 
 # Check the image build
 build_succeeded_status=""
