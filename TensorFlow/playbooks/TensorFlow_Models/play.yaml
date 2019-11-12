@@ -49,32 +49,6 @@
 
       when: ls_benchmarks_dest_dir.stdout == ""
 
-    # Check for Python 'requests' library
-    - name: Check for Python 'requests' library under {{ python3_libs_path }}
-      shell: ls '{{ python3_libs_path }}/requests'
-      register: ls_python3_requests
-      ignore_errors: yes
-
-    - name: Check for Python 'requests' library under {{ python3_requests }}
-      shell: ls '{{ python3_requests }}'
-      register: ls_python3_requests_non_standard
-      ignore_errors: yes
-
-    # If Python 3 requests is not installed, then install it
-    - block:
-
-      - name: If 'requests' is not installed, create directory for it under {{ python3_requests }}
-        file:
-          state: directory
-          path: '{{ python3_requests }}'
-
-      - name: Install 'requests' to {{ python3_requests }}
-        pip:
-          name: requests
-          executable: pip3
-          extra_args: '--target={{ python3_requests }}'
-      when: ls_python3_requests_non_standard.stdout == '' and ls_python3_requests.stdout == ''
-
     # Download CIFAR-10
     - name: Download the CIFAR-10 dataset
       shell: |
