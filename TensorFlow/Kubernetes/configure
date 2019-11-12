@@ -1,0 +1,244 @@
+#!/bin/bash
+
+# This script configures the app build
+
+while test $# -gt 0; do
+    case "${1}" in
+	-h|--help)
+            echo "This script configures the OpenShift TensorFlow benchmarking app"
+            echo ""
+            echo "[REQUIRED]"
+            echo "  -s, --pull-secret  |  Pull secret name for pulling images from registry.redhat.io or the OpenShift Image Registry namespace. (You must have already created and loaded the secret into OpenShift.)"
+	    echo "  -d, --num-devices  |  Number of devices (CPU or GPU) to use."
+	    echo "  -i, --image        |  The full url to your image, along with the image tag (e.g., quay.io/example/tensorflow:sometag)"
+            echo ""
+            echo "[OPTIONAL]"
+	    echo "  Automatic Name Generation Configuration"
+	    echo "  -----------------------------"
+	    echo "  For autogenerating names, pass in the following values:"
+            echo "    -b, --backend      |  NumPy backend to use with TensorFlow. Choose from: {fftw, openblas, none}" 
+	    echo "        --use-gpu      |  Specify that you're using the GPU"
+	    echo ""
+	    echo "  Deployment Configuration"
+	    echo "  ------------------------"
+	    echo "  -n, --deployment-name  |  Custom deployment name (e.g., 'my-tensorflow-fftw-gpu-deployment'). Default name: tensorflow-[BACKEND]-[DEVICE]-deployment"
+	    echo ""
+	    echo "  Instance Type Configuration"
+	    echo "  ---------------------------"
+	    echo "  Specify exact instance:"
+            echo "    -t, --instance-type |  Instance type (e.g., m4.4xlarge, m4.large, etc.). Currently cannot be combined with AVX* instructions (this is a TODO)"
+	    echo ""
+	    echo "  Specify instance based on AVX* instructions:"
+            echo "    --use-avx           |  Use AVX instructions"
+	    echo "    --use-avx2          |  Use AVX and AVX2 instructions"
+	    echo "    --use-avx512        |  Use AVX, AVX2, and AVX512 instructions"
+	    echo ""
+	    echo "  CPU Manager Configuration"
+	    echo "  -------------------------"
+	    echo "  --cpu-mgr     |  Use the CPU manager"
+	    echo "  -m, --memory  |  Amount of memory (resources) to allocate"
+	    exit 1
+	    ;;
+	-b|--backend)
+	    shift
+	    if [[ ${1} != "fftw" ]] && [[ ${1} != "openblas" ]] && [[ ${1} != "none" ]]; then
+	        echo "ERROR. Invalid backend choice. Choose from: {fftw, openblas, none}"
+		exit 1
+	    else
+		BACKEND=${1}
+	    fi
+            shift
+	    ;;
+	-d|--num-devices)
+	    shift
+	    NUM_DEVICES=${1}
+            if [[ ! ${NUM_DEVICES} =~ ^[0-9]+$ ]]; then
+                echo "ERROR. Number of devices is not a number. You entered: ${NUM_DEVICES}"
+                exit 1
+            elif (( NUM_DEVICES <= 0 )); then
+                echo "ERROR. Number of devices must be a positive number. You entered: ${NUM_DEVICES}"
+                exit 1
+            fi
+            shift
+	    ;;
+	-s|--pull-secret)
+	    shift
+	    PULL_SECRET=${1}
+	    shift
+	    ;;
+	-i|--image)
+	    shift
+	    IMAGE_URL=${1}
+	    shift
+	    ;;
+	-n|--deployment-name)
+	    shift
+	    DEPLOYMENT_NAME=${1}
+	    shift
+	    ;;
+        -t|--instance-type)
+	    shift
+	    INSTANCE_TYPE=${1}
+	    shift
+	    ;;
+	--use-avx)
+	    AVX="avx"
+	    shift
+	    ;;
+	--use-avx2)
+	    AVX="avx2"
+	    shift
+	    ;;
+	--use-avx512)
+	    AVX="avx512"
+	    shift
+	    ;;
+	-g|--use-gpu)
+	    USE_GPU="true"
+	    shift
+	    ;;
+	--use-cpu-mgr)
+	    USE_CPU_MANAGER="true"
+	    shift
+	    ;;
+        -m|--memory)
+	    shift
+	    CPU_MANAGER_MEMORY=${1}
+	    shift
+	    ;;
+	*)
+	    echo "ERROR. Unrecognized option ${1}"
+	    break
+	    ;;
+    esac	
+done
+
+###########################################
+#           Check user's inputs           #
+###########################################
+# Check if image url was supplied
+if [[ -z ${IMAGE_URL} ]]; then
+    echo "ERROR. TensorFlow image url was not provided. Please provide a url to your pre-built TensorFlow image using the '-i' or '--image' flag. Exiting now."
+    exit 1
+fi
+
+# Check if pull secret was supplied
+if [[ -z ${PULL_SECRET} ]]; then
+    echo "ERROR. Pull secret was not suppied. Please provide an Kubernetes secret with the '-s' or '--pull-secret' flag."
+    exit 1
+fi
+
+# Check if number of devices was supplied
+if [[ -z ${NUM_DEVICES} ]]; then
+    echo "WARNING. Number of devices was not supplied. Setting number of devices equal to 1. If you would like to use more devices (CPUs or GPUs), specify the amount via the '-d' or '--num-devices' flag."
+    NUM_DEVICES=1
+fi
+
+# Check the instance type, if passed in
+if [[ ! -z ${INSTANCE_TYPE} ]]; then
+
+    instance_type_label="beta.kubernetes.io/instance-type=${INSTANCE_TYPE}"
+    matching_nodes=$(kubectl describe node -l $instance_type_label)
+
+    # If the instance type does not exist, throw an error
+    if [[ -z ${matching_nodes} ]]; then
+        echo "ERROR. No nodes found for instance type ${INSTANCE_TYPE}"
+        exit 1
+    fi
+fi
+
+# Set the imagestream target
+if [[ ! -z ${AVX} ]]; then
+    build_image_template_name="tensorflow-${BACKEND}-${AVX}-build-image-rhel${RHEL_VERSION}"
+elif [[ ! -z ${USE_GPU} ]]; then
+    if [[ ${BACKEND} == "none" ]]; then
+        build_image_template_name="tensorflow-pip-build-image-rhel${RHEL_VERSION}-gpu"
+    elif [[ ${RHEL_VERSION} == "7" ]]; then
+        build_image_template_name="tensorflow-${BACKEND}-build-image-ubi${RHEL_VERSION}-gpu"
+    else
+        build_image_template_name="tensorflow-${BACKEND}-build-image-rhel${RHEL_VERSION}-gpu"
+    fi
+else
+    build_image_template_name="tensorflow-${BACKEND}-build-image-rhel${RHEL_VERSION}"
+fi
+
+# Set device type
+if [[ ! -z ${USE_GPU} ]]; then
+    device="gpu"
+else
+    device="cpu"
+fi
+
+# Set backend
+if [[ -z ${BACKEND} ]]; then
+    BACKEND="unspecified"
+fi
+
+# Initialize deployment name (if not specified)
+if [[ -z ${DEPLOYMENT_NAME} ]]; then
+    if [[ ${BACKEND} != "none" ]]; then
+	if [[ -z ${AVX} ]]; then
+            DEPLOYMENT_NAME="tensorflow-${BACKEND}-${device}-deployment"
+	else
+            DEPLOYMENT_NAME="tensorflow-${BACKEND}-${AVX}-deployment"
+	fi
+    else
+	if [[ -z ${AVX} ]]; then
+            DEPLOYMENT_NAME="tensorflow-official-${device}-deployment"
+	else
+            DEPLOYMENT_NAME="tensorflow-official-${device}-${AVX}-deployment"
+	fi
+    fi
+fi
+
+# Initialize app name
+APP_NAME="tensorflow-${BACKEND}-${device}"
+
+###########################################
+#    Save configure options to Makefile   #
+###########################################
+# Set Makefile name
+makefile="./Makefile"
+
+# Set YAML file
+deployment_yaml="tensorflow-deployment.yaml"
+
+# Remove existing makefile and YAML
+rm -f ${makefile}
+rm -f ${deployment_yaml}
+
+# Populate Makefile vars
+echo "# Kubernetes names" >> ${makefile}
+echo "DEPLOYMENT_NAME=${DEPLOYMENT_NAME}" >> ${makefile}
+echo "APP_NAME=${APP_NAME}" >> ${makefile}
+echo "" >> ${makefile}
+echo "# Image info" >> ${makefile}
+echo "IMAGE=${IMAGE_URL}" >> ${makefile}
+echo "PULL_SECRET=${PULL_SECRET}" >> ${makefile}
+echo "" >> ${makefile}
+echo "# Benchmark info" >> ${makefile}
+echo "NUM_DEVICES=${NUM_DEVICES}" >> ${makefile}
+echo "" >>  ${makefile}
+
+# Optional: instance type setting
+if [[ ! -z ${INSTANCE_TYPE} ]]; then
+    echo "INSTANCE_TYPE=${INSTANCE_TYPE}" >> ${makefile}
+    echo "" >> ${makefile}
+fi
+
+# Set 
+echo "all: generate_yaml add_deployment" >> ${makefile}
+echo "" >> ${makefile}
+echo "generate_yaml:" >> ${makefile}
+if [[ -z ${INSTANCE_TYPE} ]]; then
+    echo -e "\techo -e \"apiVersion: apps/v1\\\nkind: Deployment\\\nmetadata:\\\n  name: \$(DEPLOYMENT_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  replicas: 1\\\n  selector:\\\n    matchLabels:\\\n      app: \$(APP_NAME)\\\n  template:\\\n    metadata:\\\n      labels:\\\n        app: \$(APP_NAME)\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE)\\\n        ports:\\\n        - containerPort: 80\\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\\\n      env:\\\n      - name: NUM_DEVICES\\\n        value: \$(NUM_DEVICES)\" >> ${deployment_yaml}" >> ${makefile}
+else
+    echo -e "\techo -e \"apiVersion: apps/v1\\\nkind: Deployment\\\nmetadata:\\\n  name: \$(DEPLOYMENT_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  replicas: 1\\\n  selector:\\\n    matchLabels:\\\n      app: \$(APP_NAME)\\\n  template:\\\n    metadata:\\\n      labels:\\\n        app: \$(APP_NAME)\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE)\\\n        ports:\\\n        - containerPort: 80\\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\\\n      env:\\\n      - name: NUM_DEVICES\\\n        value: \$(NUM_DEVICES)\\\n      nodeSelector:\\\n        beta.kubernetes.io/instance-type: \$(INSTANCE_TYPE)\" >> ${deployment_yaml}" >> ${makefile}
+fi
+
+echo "" >> ${makefile}
+echo "add_deployment:" >> ${makefile}
+echo -e "\tkubectl create -f ${deployment_yaml}" >> ${makefile}
+echo "" >> ${makefile}
+echo "clean:" >> ${makefile}
+echo -e "\tkubectl delete -f ${deployment_yaml}" >> ${makefile}
