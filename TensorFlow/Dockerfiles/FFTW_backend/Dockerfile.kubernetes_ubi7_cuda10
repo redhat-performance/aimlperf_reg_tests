@@ -123,10 +123,15 @@ RUN cd ${SCRIPTS_DIR} && \
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
     PYTHONPATH=/usr/lib/python2.7 ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', use_ubi: 'yes', update_yum: 'no', ansible_python_interpreter: '/usr/bin/python2.7'}" && \
     cd ${TF_PREREQS_PLAYBOOK} && \
-    PYTHONPATH=/usr/lib/python2.7 ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', use_s2i_ubi: 'yes', ansible_python_interpreter: '/usr/bin/python2.7'}"
+    PYTHONPATH=/usr/lib/python2.7 ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', use_s2i_ubi: 'yes', ansible_python_interpreter: '/usr/bin/python2.7'}" && \
+    pip3 install requests
 
 # Install CUDA packages with playbooks
-RUN cd ${NCCL_INSTALLATION} && \
+RUN pip3 install awscli && \
+    mkdir ~/.aws && \
+    touch ~/.aws/config && \
+    touch ~/.aws/credentials && \
+    cd ${NCCL_INSTALLATION} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: 7, use_url: 'no', use_ebs: 'no', use_aws: 'yes', nccl_install_path: '${NCCL_INSTALL_PATH}', bucket: '${NCCL}', add_aws_credentials: 'yes',  aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'no', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}" && \
     cd ${TENSORRT_INSTALLATION} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: 7, install_dir: '${TENSORRT_INSTALL_PATH}', use_ebs: 'no', use_url: 'no', use_awscli: 'yes', bucket: '${TENSORRT}', add_aws_credentials: 'no',  aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'no', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}" && \
@@ -142,9 +147,12 @@ RUN cp /usr/include/cublas* /usr/local/cuda/include
 
 # Install TensorFlow+NumPy
 RUN cd ${TENSORFLOW_INSTALLATION} && \
-    x86_64_folder=$(ls /usr/lib | grep x86_64)
-    gcc_libs="/usr/lib/${x86_64_folder}"
+    export x86_64_folder=$(ls /usr/lib | grep x86_64) && \
+    export gcc_libs="/usr/lib/${x86_64_folder}" && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: 7, cc: '/usr/bin/gcc', gcc_libs: '${gcc_libs}', blas_library_dirs: '${FFTW_INSTALL_PATH}/lib', blas_include_dirs: '${FFTW_INSTALL_PATH}/include', tf_install_dir: '${TENSORFLOW_INSTALL_PATH}', device: 'gpu', nccl_install_path: '${NCCL_INSTALL_PATH}', pythonpath: '/usr/local/lib/python3.6/site-packages', ansible_python_interpreter: '/usr/local/bin/python3', python_executable: '/usr/local/bin/python3', use_s2i: 'yes'}"
+
+# Set Ansible tmp dir
+RUN chmod -R 777 ${APPDIR}
 
 # Set work directory
 WORKDIR ${APPDIR}
@@ -153,4 +161,4 @@ WORKDIR ${APPDIR}
 USER ${USER}
 
 # Set entrypoint
-ENTRYPOINT ["/bin/bash", "-c", "cd ${TENSORFLOW_MODELS} && ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: \"${TENSORFLOW_INSTALL_PATH}\", device_type: \"gpu\", benchmarks_path: \"${APPDIR}/benchmarks\", num_devices: \"${NUM_DEVICES}\"}'"]
+ENTRYPOINT ["/bin/bash", "-c", "export ANSIBLE_LOCAL_TEMP=. && cd ${TENSORFLOW_MODELS} && ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: \"${TENSORFLOW_INSTALL_PATH}\", device_type: \"gpu\", benchmarks_path: \"${APPDIR}/benchmarks\", num_devices: \"${NUM_DEVICES}\"}'"]
