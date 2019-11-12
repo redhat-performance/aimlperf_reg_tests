@@ -1,0 +1,159 @@
+FROM nvidia/cuda:10.0-base-ubi7
+MAINTAINER Courtney Pacheco <cpacheco@redhat.com>
+ENV LANG=en_US.utf8
+USER root
+ENV BUILDER_VERSION 1.0
+
+# Set AWS args
+ARG AWS_ACCESS_KEY=null
+ARG AWS_SECRET_ACCESS_KEY=null
+ARG AWS_REGION=null
+ARG AWS_PROFILE=null
+
+# Set CUDA args
+ARG NCCL=null
+ARG CUDNN=null
+ARG TENSORRT=null
+
+# Set number of devices
+ENV NUM_DEVICES
+
+# Python version
+ENV PYTHON_VERSION=3.6.9
+
+# Ansible version
+ENV ANSIBLE_VERSION=v2.8.6
+
+# Put on port 8080
+EXPOSE 8080
+
+# Set timeout for yum (in seconds) to prevent Curl timeout errors w/ yum
+ENV YUM_TIMEOUT=300
+RUN sed -i "/[main]/a timeout=${YUM_TIMEOUT}" /etc/yum.conf
+
+# Set home dir
+ENV HOME=/home
+
+# Set app directory
+ENV APPDIR="${HOME}/benchmark_app"
+
+# Set CUDA package install paths
+ENV CUDA_INSTALL_PATH=/usr/local/cuda
+ENV NCCL_INSTALL_PATH=/opt/nccl
+ENV TENSORRT_INSTALL_PATH=/opt/tensorrt
+
+# Set FFTW + TensorFlow install paths
+ENV FFTW_INSTALL_PATH=/opt/fftw3
+ENV TENSORFLOW_INSTALL_PATH=/opt/tensorflow
+
+# Set build directories
+ENV FFTW_BUILD_PATH=${HOME}/build/fftw3
+ENV TENSORFLOW_BUILD_PATH=${HOME}/build/tensorflow
+
+# Set user
+ENV USER=1001
+
+# Set playbook paths
+ENV PLAYBOOKS_DIR=${APPDIR}/playbooks
+ENV FFTW_PREREQS_PLAYBOOK=${PLAYBOOKS_DIR}/fftw_package_installation
+ENV TF_PREREQS_PLAYBOOK=${PLAYBOOKS_DIR}/tensorflow_package_installation
+ENV FFTW_INSTALLATION=${PLAYBOOKS_DIR}/FFTW_installation
+ENV TENSORFLOW_INSTALLATION=${PLAYBOOKS_DIR}/TensorFlow_installation
+ENV TENSORFLOW_MODELS=${PLAYBOOKS_DIR}/TensorFlow_Models
+ENV NCCL_INSTALLATION=${PLAYBOOKS_DIR}/nccl_installation
+ENV CUDNN_INSTALLATION=${PLAYBOOKS_DIR}/cudnn_installation
+ENV TENSORRT_INSTALLATION=${PLAYBOOKS_DIR}/tensorrt_installation
+
+# Set scripts path
+ENV SCRIPTS_DIR=${APPDIR}/scripts
+
+# Create folders for playbooks and folder for playbooks cache, then allow execute permissions
+RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
+    mkdir -p ${TF_PREREQS_PLAYBOOK} && \
+    mkdir -p ${FFTW_INSTALLATION} && \
+    mkdir -p ${TENSORFLOW_INSTALLATION} && \
+    mkdir -p ${TENSORFLOW_MODELS} && \
+    mkdir -p ${NCCL_INSTALLATION} && \
+    mkdir -p ${CUDNN_INSTALLATION} && \
+    mkdir -p ${TENSORRT_INSTALLATION} && \
+    mkdir -p ${SCRIPTS_DIR} && \
+    mkdir -p ${APPDIR}/.cache && \
+    chmod -R +x ${PLAYBOOKS_DIR}
+
+# Copy playbooks and scripts
+COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
+COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
+COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
+COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
+COPY TensorFlow/playbooks/TensorFlow_Models ${TENSORFLOW_MODELS}
+COPY TensorFlow/playbooks/nccl_installation ${NCCL_INSTALLATION}
+COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
+COPY TensorFlow/playbooks/tensorrt_installation ${TENSORRT_INSTALLATION}
+COPY helper_scripts/Python/install_python_from_source.sh ${SCRIPTS_DIR}
+COPY helper_scripts/Ansible/install_ansible_from_source.sh ${SCRIPTS_DIR}
+
+# Create symlink for NumPy so that it can find endian.h
+RUN yum -y install glibc glibc-devel && \
+    ln -s /usr/include/endian.h /usr/include/sys/endian.h
+
+# Install CUDA yum packages
+ENV CUDA_PACKAGE_VERSION=10-0
+RUN yum clean all && \
+    yum -y install cuda-cudart-${CUDA_PACKAGE_VERSION} \
+                   cuda-compat-${CUDA_PACKAGE_VERSION} \
+                   cuda-core-${CUDA_PACKAGE_VERSION} \
+                   cuda-cublas-${CUDA_PACKAGE_VERSION} \
+                   cuda-cudart-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-cufft-${CUDA_PACKAGE_VERSION} \
+                   cuda-cufft-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-cupti-${CUDA_PACKAGE_VERSION} \
+                   cuda-curand-${CUDA_PACKAGE_VERSION} \
+                   cuda-curand-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-cusolver-${CUDA_PACKAGE_VERSION} \
+                   cuda-cusolver-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-cusparse-${CUDA_PACKAGE_VERSION} \
+                   cuda-cusparse-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-misc-headers-${CUDA_PACKAGE_VERSION} \
+                   libcublas-devel && \
+    rm -rf /var/cache/dnf/*
+
+# Install Python version ${PYTHON_VERSION} from source and Ansible version ${ANSIBLE_VERSION} from source
+RUN cd ${SCRIPTS_DIR} && \
+    sh install_python_from_source.sh ${PYTHON_VERSION} && \
+    sh install_ansible_from_source.sh ${ANSIBLE_VERSION}
+
+# Install FFTW + TensorFlow prerequisites via Ansible and pip3
+RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
+    PYTHONPATH=/usr/lib/python2.7 ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', use_ubi: 'yes', update_yum: 'no', ansible_python_interpreter: '/usr/bin/python2.7'}" && \
+    cd ${TF_PREREQS_PLAYBOOK} && \
+    PYTHONPATH=/usr/lib/python2.7 ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '7', use_s2i_ubi: 'yes', ansible_python_interpreter: '/usr/bin/python2.7'}"
+
+# Install CUDA packages with playbooks
+RUN cd ${NCCL_INSTALLATION} && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: 7, use_url: 'no', use_ebs: 'no', use_aws: 'yes', nccl_install_path: '${NCCL_INSTALL_PATH}', bucket: '${NCCL}', add_aws_credentials: 'yes',  aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'no', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}" && \
+    cd ${TENSORRT_INSTALLATION} && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: 7, install_dir: '${TENSORRT_INSTALL_PATH}', use_ebs: 'no', use_url: 'no', use_awscli: 'yes', bucket: '${TENSORRT}', add_aws_credentials: 'no',  aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'no', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}" && \
+    cd ${CUDNN_INSTALLATION} && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: 7, use_ebs: 'no', use_url: 'no', use_awscli: 'yes', bucket: '${CUDNN}', add_aws_credentials: 'no', aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}
+
+# Install FFTW
+RUN cd ${FFTW_INSTALLATION} && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: '${FFTW_INSTALL_PATH}', build_dir: '${FFTW_BUILD_PATH}', rhel_version: 7, cc: '/usr/bin/gcc', s2i: 'yes'}"
+
+# Copy CUBLAS files to work around TensorFlow 'cublas_api.h' error
+RUN cp /usr/include/cublas* /usr/local/cuda/include
+
+# Install TensorFlow+NumPy
+RUN cd ${TENSORFLOW_INSTALLATION} && \
+    x86_64_folder=$(ls /usr/lib | grep x86_64)
+    gcc_libs="/usr/lib/${x86_64_folder}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: 7, cc: '/usr/bin/gcc', gcc_libs: '${gcc_libs}', blas_library_dirs: '${FFTW_INSTALL_PATH}/lib', blas_include_dirs: '${FFTW_INSTALL_PATH}/include', tf_install_dir: '${TENSORFLOW_INSTALL_PATH}', device: 'gpu', nccl_install_path: '${NCCL_INSTALL_PATH}', pythonpath: '/usr/local/lib/python3.6/site-packages', ansible_python_interpreter: '/usr/local/bin/python3', python_executable: '/usr/local/bin/python3', use_s2i: 'yes'}"
+
+# Set work directory
+WORKDIR ${APPDIR}
+
+# Set user to '1001'
+USER ${USER}
+
+# Set entrypoint
+ENTRYPOINT ["/bin/bash", "-c", "cd ${TENSORFLOW_MODELS} && ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: \"${TENSORFLOW_INSTALL_PATH}\", device_type: \"gpu\", benchmarks_path: \"${APPDIR}/benchmarks\", num_devices: \"${NUM_DEVICES}\"}'"]
