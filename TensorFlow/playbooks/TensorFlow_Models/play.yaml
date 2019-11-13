@@ -21,9 +21,6 @@
     # Set path to Python
     python3_lib_dir: '{{ python3_libs_path | default("/usr/local/lib/python3.6/site-packages") }}' 
 
-    # Python 3 requests library
-    python3_requests: '{{ lookup("env", "HOME") }}/requests'
-
   # Begin
   tasks:
 
@@ -55,7 +52,7 @@
         cd '{{ benchmarks_dest_dir }}/models/official/vision/image_classification'
         python3 ../../r1/resnet/cifar10_download_and_extract.py
       environment: 
-        PYTHONPATH: '{{ tensorflow_dir }}:{{ python3_lib_dir }}:{{ benchmarks_dest_dir }}/models:{{ python3_requests }}'
+        PYTHONPATH: '{{ tensorflow_dir }}:{{ python3_lib_dir }}:{{ benchmarks_dest_dir }}/models'
 
     # Run the benchmarks
     - name: Run the benchmarks
@@ -63,7 +60,7 @@
         cd '{{ benchmarks_dest_dir }}/models/official/vision/image_classification'
         python3 resnet_cifar_main.py --num_gpus={{ num_devices }} 
       environment:
-        PYTHONPATH: '{{ tensorflow_dir }}:{{ python3_lib_dir }}:{{ benchmarks_dest_dir }}/models:{{ python3_requests }}'
+        PYTHONPATH: '{{ tensorflow_dir }}:{{ python3_lib_dir }}:{{ benchmarks_dest_dir }}/models'
       register: resnet56_cifar10_benchmarks_output
       ignore_errors: yes
 
