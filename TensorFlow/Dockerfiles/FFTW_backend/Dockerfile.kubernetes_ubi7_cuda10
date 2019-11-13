@@ -149,7 +149,7 @@ RUN cp /usr/include/cublas* /usr/local/cuda/include
 RUN cd ${TENSORFLOW_INSTALLATION} && \
     export x86_64_folder=$(ls /usr/lib | grep x86_64) && \
     export gcc_libs="/usr/lib/${x86_64_folder}" && \
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: 7, cc: '/usr/bin/gcc', gcc_libs: '${gcc_libs}', blas_library_dirs: '${FFTW_INSTALL_PATH}/lib', blas_include_dirs: '${FFTW_INSTALL_PATH}/include', tf_install_dir: '${TENSORFLOW_INSTALL_PATH}', device: 'gpu', nccl_install_path: '${NCCL_INSTALL_PATH}', pythonpath: '/usr/local/lib/python3.6/site-packages', ansible_python_interpreter: '/usr/local/bin/python3', python_executable: '/usr/local/bin/python3', use_s2i: 'yes'}"
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: 7, cc: '/usr/bin/gcc', gcc_libs: '${gcc_libs}', blas_library_dirs: '${FFTW_INSTALL_PATH}/lib', blas_include_dirs: '${FFTW_INSTALL_PATH}/include', tf_install_dir: '${TENSORFLOW_INSTALL_PATH}', device: 'gpu', nccl_install_path: '${NCCL_INSTALL_PATH}', use_tensorrt: 'yes', tensorrt_install_path: '${TENSORRT_INSTALL_PATH}', pythonpath: '/usr/local/lib/python3.6/site-packages', ansible_python_interpreter: '/usr/local/bin/python3', python_executable: '/usr/local/bin/python3', use_s2i: 'yes'}"
 
 # Set Ansible tmp dir
 RUN chmod -R 777 ${APPDIR}
