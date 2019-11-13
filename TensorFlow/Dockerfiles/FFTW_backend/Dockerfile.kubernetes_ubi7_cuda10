@@ -161,4 +161,4 @@ WORKDIR ${APPDIR}
 USER ${USER}
 
 # Set entrypoint
-ENTRYPOINT ["/bin/bash", "-c", "export ANSIBLE_LOCAL_TEMP=. && cd ${TENSORFLOW_MODELS} && ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: \"${TENSORFLOW_INSTALL_PATH}\", device_type: \"gpu\", benchmarks_path: \"${APPDIR}/benchmarks\", num_devices: \"${NUM_DEVICES}\"}'"]
+ENTRYPOINT ["/bin/bash", "-c", "export ANSIBLE_LOCAL_TEMP=. && cd ${TENSORFLOW_MODELS} && ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: ${TENSORFLOW_INSTALL_PATH}, device_type: gpu, benchmarks_path: ${APPDIR}/benchmarks, num_devices: ${NUM_DEVICES}}'"]
