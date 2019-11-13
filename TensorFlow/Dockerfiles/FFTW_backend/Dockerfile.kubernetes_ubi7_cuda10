@@ -160,5 +160,8 @@ WORKDIR ${APPDIR}
 # Set user to '1001'
 USER ${USER}
 
+# Set LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/cuda/lib64:/usr/lib64:/usr/local/cuda-10.0/compat
+
 # Set entrypoint
-ENTRYPOINT ["/bin/bash", "-c", "export ANSIBLE_LOCAL_TEMP=. && cd ${TENSORFLOW_MODELS} && ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_install_dir: ${TENSORFLOW_INSTALL_PATH}, device_type: gpu, benchmarks_path: ${APPDIR}/benchmarks, num_devices: ${NUM_DEVICES}}'"]
+ENTRYPOINT export ANSIBLE_LOCAL_TEMP=. && cd ${TENSORFLOW_MODELS} && ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_path: /opt/tensorflow, device_type: gpu, benchmarks_path: /home/benchmark_app/benchmarks, num_devices: $NUM_DEVICES}'
