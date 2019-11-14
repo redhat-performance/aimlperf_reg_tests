@@ -7,15 +7,13 @@
   vars:
     rhel_ver: '{{ rhel_version | default("7") }}'
     bazel_ver: '{{ bazel_version | default("0.26.1") }}'
-    s2i_ubi: '{{ use_s2i_ubi | default("no") }}'
-    gpu: '{{ use_gpu | default("no") }}'
-    cuda_ver: '{{ cuda_version | default("10.1") }}'
-    cuda_network_rpm: '{{ cuda_rpm | default("") }}'
+    use_ubi: '{{ ubi | default("yes") }}'
 
   roles:
 
     # Install python3
     - role: rhel_python3
+      when: (use_ubi == 'no' and rhel_version == '7') or (rhel_version == '8')
 
     # Install pip
     - role: python3_pip
@@ -29,13 +27,5 @@
     # Install TensorFlow prereqs
     - role: tensorflow
 
-    # Build BLAS and LAPACK by hand (since UBI/s2i yum repos do not contain BLAS or LAPACK)
-    - role: s2i_blas_lapack
-      when: s2i_ubi == 'yes'
-
-    # Install CBLAS
-    - role: cblas
-
-    # Install GPU prerequisites
-    - role: cuda
-      when: gpu == 'yes'
+    # Build BLAS, LAPACK, and CBLAS from source
+    - role: blas
