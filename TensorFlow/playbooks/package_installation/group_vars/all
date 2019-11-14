@@ -1,28 +1,16 @@
-CBLAS_BUILD_DIR: "{{ lookup('env', 'HOME') }}/CBLAS"
-CBLAS_INSTALL_DIR: /usr/lib64
-LAPACK_BUILD_DIR: /tmp/Reference-LAPACK
-LAPACK_VERSION: 'v3.8.0'
-BLAS_INSTALL_DIR: /usr/lib64
-LAPACK_INSTALL_DIR: /usr/lib64
-SUBVERSION_BUILD_DIR: "{{ lookup('env', 'HOME') }}/subversion"
-SUBVERSION_VERSION: 1.13.0
-APR_BUILD_DIR: "{{ lookup('env', 'HOME') }}/apr"
-APR_VERSION: 1.6.5
-APR_UTIL_BUILD_DIR: "{{ lookup('env', 'HOME') }}/apr-utils"
-APR_UTIL_VERSION: 1.6.1
-SQLITE_BUILD_DIR: "{{ lookup('env', 'HOME') }}/sqlite"
-LZ4_BUILD_DIR: "{{ lookup('env', 'HOME') }}/lz4"
-LZ4_VERSION: v1.9.1
-UTF8PROC_BUILD_DIR: "{{ lookup('env', 'HOME') }}/utf8proc"
-UTF8PROC_VERSION: v2.4.0
-CUDA_TMP_DIR: "{{ lookup('env', 'HOME') }}/cuda"
-MESA_BUILD_DIR: "{{ lookup('env', 'HOME') }}/mesa"
-MESA_VERSION: '19.1.6'
-VDPAU: "{{ lookup('env', 'HOME') }}/vdpau"
-VDPAU_VERSION: '1.3'
-LIBDRM_BUILD_DIR: "{{ lookup('env', 'HOME') }}/drm"
-LIBDRM_VERSION: 'libdrm-2.4.97'
-LIBPCIACCESS_BUILD_DIR: "{{ lookup('env', 'HOME') }}/libpciaccess"
-LIBPCIACCESS_VERSION: 'libpciaccess-0.16'
-XORG_MACROS_BUILD_DIR: "{{ lookup('env', 'HOME') }}/xorg-macros"
-XORG_MACROS_VERSION: 'util-macros-1.19.1'
+cblas_install_dir: /usr/lib64
+lapack_build_dir: /tmp/Reference-LAPACK
+lapack_version: 'v3.8.0'
+blas_install_dir: /usr/lib64
+lapack_install_dir: /usr/lib64
+subversion_build_dir: "{{ lookup('env', 'HOME') }}/subversion"
+subversion_version: 1.13.0
+apr_build_dir: "{{ lookup('env', 'HOME') }}/apr"
+apr_version: 1.6.5
+apr_util_build_dir: "{{ lookup('env', 'HOME') }}/apr-utils"
+apr_util_version: 1.6.1
+sqlite_build_dir: "{{ lookup('env', 'HOME') }}/sqlite"
+lz4_build_dir: "{{ lookup('env', 'HOME') }}/lz4"
+lz4_version: v1.9.1
+utf8proc_build_dir: "{{ lookup('env', 'HOME') }}/utf8proc"
+utf8proc_version: v2.4.0
