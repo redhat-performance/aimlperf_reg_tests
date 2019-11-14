@@ -179,8 +179,9 @@
 
 # Get TensorRT version
 - block:
-  - name: If using the GPU and using TensorRT, find the TensorRT version
-    shell: pip3 show tensorrt | grep "Version:" | cut -d ' ' -f 2
+
+  - name: If using the GPU and using TensorRT, find the TensorRT major version
+    shell: sed -n 's/^#define NV_TENSORRT_MAJOR\s*\(.*\).*/\1/p' '{{ TENSORRT_INSTALL_PATH }}/include/NvInferVersion.h' | cut -d ' ' -f 1
     register: tensorrt_version
 
   - debug:
@@ -223,8 +224,11 @@
     GCC_HOST_COMPILER_PATH: '{{ CC }}'
     CC_OPT_FLAGS: '-march=native'
     TF_CUDA_PATHS: '/usr/local/cuda,/usr/include,{{ NCCL_INSTALL_PATH }},{{ TENSORRT_INSTALL_PATH }}'
+    TF_CUDA_VERSION: '{{ cuda_version.stdout }}'
+    TF_CUDNN_VERSION: '{{ cudnn_version.stdout }}'
     TF_DOWNLOAD_CLANG: '0'
     TF_ENABLE_XLA: '0'
+    TF_NCCL_VERSION: '{{ nccl_version.stdout }}'
     TF_NEED_COMPUTECPP: '0'
     TF_NEED_CUDA: '1'
     TF_NEED_MPI: '0'
@@ -234,6 +238,7 @@
     TF_NEED_TENSORRT: '1'
     TF_PYTHON_CONFIG_REPO: '@org_tensorflow//third_party/toolchains/cpus/py'
     TF_SET_ANDROID_WORKSPACE: '0'
+    TF_TENSORRT_VERSION: '{{ tensorrt_version.stdout }}'
     PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
     PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
     NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'

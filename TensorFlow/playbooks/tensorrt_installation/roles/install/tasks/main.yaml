@@ -16,6 +16,23 @@
     name: get_tensorrt_from_ebs
   when: use_awscli == 'no' and use_http == 'no' and use_ebs == 'yes'
 
+# Delete existing install folder
+- name: Delete install folder if it exists
+  file:
+    state: absent
+    path: '{{ tensorrt_install_dir }}'
+
+# Setup install tree
+- name: Setup install tree
+  file:
+    state: directory
+    path: '{{ item }}'
+  with_items:
+    - '{{ tensorrt_install_dir }}'
+    - '{{ tensorrt_install_dir }}/include'
+    - '{{ tensorrt_install_dir }}/lib'
+    - '{{ tensorrt_install_dir }}/lib/python3.6/site-packages'
+
 # Next step is to install the Python TensorRT wheel file, but first, we must get the wheel file name
 - name: Get TensorRT wheel file name
   find:
@@ -53,7 +70,7 @@
   pip:
     name: '{{ item.path }}'
     executable: pip3
-    extra_args: '--target={{ tensorrt_install_dir }}'
+    extra_args: '--target={{ tensorrt_install_dir }}/lib/python3.6/site-packages'
   with_items: '{{ tensorrt_wheel_file.files }}'
 
 # Install the UFF wheel file
@@ -61,7 +78,7 @@
   pip:
     name: '{{ item.path }}'
     executable: pip3
-    extra_args: '--target={{ tensorrt_install_dir }}'
+    extra_args: '--target={{ tensorrt_install_dir }}/lib/python3.6/site-packages'
   with_items: '{{ uff_wheel_file.files }}'
 
 # Now install
@@ -69,8 +86,16 @@
   pip:
     name: '{{ item.path }}'
     executable: pip3
-    extra_args: '--target={{ tensorrt_install_dir }}'
+    extra_args: '--target={{ tensorrt_install_dir }}/lib/python3.6/site-packages'
   with_items: '{{ graphsurgeon_wheel_file.files }}'
+
+# Install headers
+- name: Install headers
+  shell: 'mv {{ tensorrt_install_dir }}/include/* {{ tensorrt_install_dir }}/include'
+
+# Install libs
+- name: Install shared object libs
+  shell: 'mv {{ tensorrt_install_dir }}/lib/* {{ tensorrt_install_dir }}/lib'
 
 # Finally, do some clean up: Remove the temporary download dir because we don't need
 # it anymore
