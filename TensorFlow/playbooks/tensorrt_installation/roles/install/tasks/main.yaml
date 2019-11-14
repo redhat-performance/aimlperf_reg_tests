@@ -91,11 +91,11 @@
 
 # Install headers
 - name: Install headers
-  shell: 'mv {{ tensorrt_install_dir }}/include/* {{ tensorrt_install_dir }}/include'
+  shell: 'mv {{ tensorrt_download_dir }}/include/* {{ tensorrt_install_dir }}/include'
 
 # Install libs
 - name: Install shared object libs
-  shell: 'mv {{ tensorrt_install_dir }}/lib/* {{ tensorrt_install_dir }}/lib'
+  shell: 'mv {{ tensorrt_download_dir }}/lib/* {{ tensorrt_install_dir }}/lib'
 
 # Finally, do some clean up: Remove the temporary download dir because we don't need
 # it anymore
