@@ -2,47 +2,21 @@
 
 This folder contains scripts for executing TensorFlow builds on Kubernetes. This also works for OpenShift. The difference between the `../OpenShift` folder than this folder is that the `../OpenShift` folder utilizes Source-to-Image (s2i) to execute the TensorFlow builds, and it requires less manual effort.
 
-## Creating Your Podman/Docker Image
+## Preparing to Create Your Podman/Docker Image (GPU Builds Only)
 
-First, you must create your Podman/Docker image. Currently, the only Dockerfile that exists for Kubernetes in this repository is `../Dockerfiles/FFTW_backend/Dockerfile.kubernetes_ubi7_cuda10`. It requires **SEVEN (7)** args:
-
-  - `AWS_ACCESS_KEY`: Your AWS access key
-  - `AWS_SECRET_ACCESS_KEY`: Your AWS secret access key
-  - `AWS_REGION`: The AWS region for your account
-  - `AWS_PROFILE`: The profile you're using
-  - `NCCL`: s3 bucket path to a NCCL tarball (`.txz`)
-  - `CUDNN`: s3 bucket path to a cuDNN tarball (`.tgz`)
-  - `TENSORRT`: s3 bucket path to a TensorRT tarball (`.tar.gz`)
-
-To build with Podman,
+First, you must create your Podman/Docker image. If you are using GPUs, your first step is to call the `Makefile` in the `setup` directory:
 
 ```
-$ cd ../../
-$ podman build -f TensorFlow/Dockerfiles/FFTW_backend/Dockerfile.kubernetes_ubi7_cuda10 \
-               --build-arg AWS_ACCESS_KEY=${AWS_ACCESS_KEY} \
-               --build-arg AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
-               --build-arg AWS_REGION=${AWS_REGION} \
-               --build-arg AWS_PROFILE=${AWS_PROFILE} \
-               --build-arg NCCL=${NCCL} \
-               --build-arg CUDNN=${CUDNN} \
-               --build-arg TENSORRT=${TENSORRT} .
+$ make -C setup AWS_DIR=~/.aws AWS_PROFILE=<your-profile> CUDNN=s3://your-bucket/path/to/cudnn.tgz NCCL=s3://your-bucket/path/to/nccl.txz TENSORRT=s3://your-bucket/path/to/tensorrt.tar.gz
 ```
 
-To build with Docker,
+You can leave out TensorRT if you do not wish to use TensorRT.
 
-```
-$ cd ../../
-$ docker build -f TensorFlow/Dockerfiles/FFTW_backend/Dockerfile.kubernetes_ubi7_cuda10 \
-               --build-arg AWS_ACCESS_KEY=${AWS_ACCESS_KEY} \
-               --build-arg AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
-               --build-arg AWS_REGION=${AWS_REGION} \
-               --build-arg AWS_PROFILE=${AWS_PROFILE} \
-               --build-arg NCCL=${NCCL} \
-               --build-arg CUDNN=${CUDNN} \
-               --build-arg TENSORRT=${TENSORRT} .
-```
+Note that the `make` command will generate an `aws_env.sh` file that is consumed by the GPU Dockerfile of your choosing. There is no need to edit the `aws_env.sh` file unless you want to.
 
-## Configuring the Deployment
+Once you have done this setup (or if you're using CPUs), you can run `configure`, as described in the next section.
+
+## Configuring the Image Build and Deployment
 
 In order to run the benchmarks in Kubernetes, you must run `configure`, like so:
 
@@ -52,6 +26,8 @@ $ ./configure [flags]
 
 The main flags you should be concerned with:
 
+  - `-v`/`--rhel-version`: The version of RHEL to use. (Currently, only RHEL 7 is supported.)
+  - `-b`/`--backend`: The BLAS backend to use (either 'fftw' or 'openblas').
   - `-i`/`--image`: The url of the image you're using (e.g., `quay.io/example-organization/example:exampletag`)
   - `-s`/`--pull-secret`: The pull secret for pulling your image
   - `-d`/`--num-devices`: Number of devices to use. Either CPU or GPU devices.
@@ -66,12 +42,26 @@ For help on how to use `configure` or to see what other flags are available for 
 $ ./configure --help
 ```
 
-## Run the Deployment
+## Build the Image and Run the Deployment
 
-Run the deployment by running `make`, like so:
+Run the image build and deployment by running `make`, like so:
 
 ```bash
 $ make
 ```
 
 This command will generate a YAML file for creating a Kubernetes deployment, then create a deployment with said YAML file.
+
+If you'd like to run just the image build,
+
+```bash
+$ make build_image
+```
+
+If you'd like to run just the deployment,
+
+```bash
+$ make add_deployment
+```
+
+Also, you can "clean" things by calling the `clean`, `clean_image`, or `clean_deployment` targets.
