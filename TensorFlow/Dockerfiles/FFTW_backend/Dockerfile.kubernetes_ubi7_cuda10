@@ -132,7 +132,7 @@ RUN cd ${SCRIPTS_DIR} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: 7, install_dir: '${TENSORRT_INSTALL_PATH}', use_ebs: 'no', use_url: 'no', use_awscli: 'yes', bucket: '${TENSORRT}', add_aws_credentials: 'no',  aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'no', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}" && \
     cd ${CUDNN_INSTALLATION} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: 7, use_ebs: 'no', use_url: 'no', use_awscli: 'yes', bucket: '${CUDNN}', add_aws_credentials: 'no', aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}" && \
-    rm -rf ${SCRIPTS}
+    rm -rf ${SCRIPTS_DIR}
 
 # Install FFTW
 RUN cd ${FFTW_INSTALLATION} && \
