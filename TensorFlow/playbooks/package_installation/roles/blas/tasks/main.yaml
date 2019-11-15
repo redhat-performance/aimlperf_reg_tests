@@ -4,138 +4,174 @@
 - name: Remove existing LAPACK build directory
   file:
     state: directory
-    path: '{{ LAPACK_BUILD_DIR }}'
+    path: '{{ lapack_build_dir }}'
 
 # Get sources to make libblas and liblapack
 - name: Download LAPACK read-only sources
   git:
     repo: https://github.com/Reference-LAPACK/lapack.git
-    dest: '{{ LAPACK_BUILD_DIR }}'
-    version: '{{ LAPACK_VERSION }}'
+    dest: '{{ lapack_build_dir }}'
+    version: '{{ lapack_version }}'
 
 # Rename make.inc.example to make.inc
 - name: Rename INSTALL/make.inc.gfortran to make.inc
-  command: 'mv {{ LAPACK_BUILD_DIR }}/INSTALL/make.inc.gfortran {{ LAPACK_BUILD_DIR }}/make.inc'
+  command: 'mv {{ lapack_build_dir }}/INSTALL/make.inc.gfortran {{ lapack_build_dir }}/make.inc'
 
 # Make libblas.a
 - name: Make libblas.a
   make:
     target: blaslib
-    chdir: '{{ LAPACK_BUILD_DIR }}'
+    chdir: '{{ lapack_build_dir }}'
 
 # Rename 'librefblas.a' to libblas.a, and move it to /usr/lib64
-- name: Rename 'librefblas.a' to 'libblas.a', and move it to '{{ BLAS_INSTALL_DIR }}'
-  command: 'mv {{ LAPACK_BUILD_DIR }}/librefblas.a {{ BLAS_INSTALL_DIR }}/libblas.a'
+- name: Rename 'librefblas.a' to 'libblas.a', and move it to '{{ blas_install_dir }}'
+  command: 'mv {{ lapack_build_dir }}/librefblas.a {{ blas_install_dir }}/libblas.a'
 
 # Clean up the repo
 - name: Clean the repo
   make:
     target: clean
-    chdir: '{{ LAPACK_BUILD_DIR }}'
+    chdir: '{{ lapack_build_dir }}'
 
 # Make liblapack.a
 - name: Make liblapack.a
   make:
     target: lapacklib
-    chdir: '{{ LAPACK_BUILD_DIR }}'
+    chdir: '{{ lapack_build_dir }}'
 
-# Make liblapack.a
-- name: Move liblapack.a to '{{ LAPACK_INSTALL_DIR }}'
-  command: 'mv {{ LAPACK_BUILD_DIR }}/liblapack.a {{ LAPACK_INSTALL_DIR }}/liblapack.a'
+# Move liblapack.a
+- name: Move liblapack.a to '{{ lapack_install_dir }}'
+  command: 'mv {{ lapack_build_dir }}/liblapack.a {{ lapack_install_dir }}/liblapack.a'
 
 # Clean up the repo
 - name: Clean the repo
   make:
     target: clean
-    chdir: '{{ LAPACK_BUILD_DIR }}'
+    chdir: '{{ lapack_build_dir }}'
+
+# Make libcblas.a
+- name: Make libcblas.a
+  make:
+    target: cblaslib
+    chdir: '{{ lapack_build_dir }}'
+
+# Move 'libcblas.a' to /usr/lib64
+- name: Move 'libcblas.a' to '{{ cblas_install_dir }}'
+  command: 'mv {{ lapack_build_dir }}/libcblas.a {{ cblas_install_dir }}/libcblas.a'
+
+# Clean up the repo
+- name: Clean up the repo once more
+  make:
+    target: clean
+    chdir: '{{ lapack_build_dir }}'
 
 # Modify our 'make.inc' file such that we build BLAS and LAPACK shared object libraries
 - name: Modify make.inc -- Add -fPIC to CFLAGS
   lineinfile:
-    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    path: '{{ lapack_build_dir }}/make.inc'
     regexp: '^CFLAGS*'
     line: 'CFLAGS = -O3 -fPIC'
 
 - name: Modify make.inc -- Add -fPIC to Fortran OPTS
   lineinfile:
-    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    path: '{{ lapack_build_dir }}/make.inc'
     regexp: '^OPTS'
     line: 'OPTS    = -O2 -frecursive -fPIC'
 
 - name: Modify make.inc -- Add -fPIC to Fortran NOOPT
   lineinfile:
-    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    path: '{{ lapack_build_dir }}/make.inc'
     regexp: '^NOOPT'
     line: 'NOOPT    = -O0 -frecursive -fPIC'
 
 - name: Modify make.inc -- Add -fPIC to LOADOPTS
   lineinfile:
-    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    path: '{{ lapack_build_dir }}/make.inc'
     regexp: '^LOADOPTS'
     line: 'LOADOPTS = -fPIC'
 
 - name: Set ARCH in make.inc to point to gcc
   lineinfile:
-    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
-    regexp: '^ARCH =*'
-    line: 'ARCH = gcc'
+    path: '{{ lapack_build_dir }}/make.inc'
+    regexp: '^AR =*'
+    line: 'AR = gcc'
 
 - name: Set ARCHFLAGS in make.inc to use '-shared' and '-o'
   lineinfile:
-    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
-    regexp: '^ARCHFLAGS'
-    line: 'ARCHFLAGS = -shared -o'
+    path: '{{ lapack_build_dir }}/make.inc'
+    regexp: '^ARFLAGS'
+    line: 'ARFLAGS = -shared -o'
 
 - name: Comment out ranlib since we don't need it
   lineinfile:
-    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    path: '{{ lapack_build_dir }}/make.inc'
     regexp: '^RANLIB'
     line: '#RANLIB    = ranlib'
 
 - name: Remove RANLIB from BLAS/SRC/Makefile
   lineinfile:
-    path: '{{ LAPACK_BUILD_DIR }}/BLAS/SRC/Makefile'
+    path: '{{ lapack_build_dir }}/BLAS/SRC/Makefile'
     regexp: '.*\$\(RANLIB\) \$\@'
     line: ' '
 
 - name: Remove RANLIB from SRC/Makefile
   lineinfile:
-    path: '{{ LAPACK_BUILD_DIR }}/SRC/Makefile'
+    path: '{{ lapack_build_dir }}/SRC/Makefile'
+    regexp: '.*\$\(RANLIB\) \$\@'
+    line: ' '
+
+- name: Remove RANLIB from CBLAS/src/Makefile
+  lineinfile:
+    path: '{{ lapack_build_dir }}/CBLAS/src/Makefile'
     regexp: '.*\$\(RANLIB\) \$\@'
     line: ' '
 
 - name: Set BLAS lib name to libblas.so
   lineinfile:
-    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    path: '{{ lapack_build_dir }}/make.inc'
     regexp: '^BLASLIB'
     line: 'BLASLIB      = ../../libblas.so'
 
 - name: Set LAPACK lib name to liblapack.so
   lineinfile:
-    path: '{{ LAPACK_BUILD_DIR }}/make.inc'
+    path: '{{ lapack_build_dir }}/make.inc'
     regexp: '^LAPACKLIB'
     line: 'LAPACKLIB    = liblapack.so'
+
+- name: Set CBLAS lib name to libcblas.so
+  lineinfile:
+    path: '{{ lapack_build_dir }}/make.inc'
+    regexp: '^CBLASLIB'
+    line: 'CBLASLIB     = ../../libcblas.so'
 
 # Make the libraries
 - name: Make libblas.so
   make:
     target: blaslib
-    chdir: '{{ LAPACK_BUILD_DIR }}'
+    chdir: '{{ lapack_build_dir }}'
 
 - name: Make liblapack.so
   make:
     target: lapacklib
-    chdir: '{{ LAPACK_BUILD_DIR }}'
+    chdir: '{{ lapack_build_dir }}'
+
+- name: Make libcblas.so
+  make:
+    target: cblaslib
+    chdir: '{{ lapack_build_dir }}'
 
 # Finally, move the shared object library to /usr/lib so it can be found by NumPy
-- name: Move libblas.so to '{{ BLAS_INSTALL_DIR }}'
-  command: 'mv {{ LAPACK_BUILD_DIR }}/libblas.so {{ BLAS_INSTALL_DIR }}/libblas.so'
+- name: Move libblas.so to '{{ blas_install_dir }}'
+  command: 'mv {{ lapack_build_dir }}/libblas.so {{ blas_install_dir }}/libblas.so'
 
-- name: Move liblapack.so to '{{ LAPACK_INSTALL_DIR }}'
-  command: 'mv {{ LAPACK_BUILD_DIR }}/liblapack.so {{ LAPACK_INSTALL_DIR }}/liblapack.so'
+- name: Move liblapack.so to '{{ lapack_install_dir }}'
+  command: 'mv {{ lapack_build_dir }}/liblapack.so {{ lapack_install_dir }}/liblapack.so'
 
-# Remove the folder
+- name: Move libcblas.so to '{{ cblas_install_dir }}'
+  command: 'mv {{ lapack_build_dir }}/libcblas.so {{ cblas_install_dir }}/libcblas.so'
+
+# Remove the build folder
 - name: Remove Reference-LAPACK repo
   file:
     state: absent
-    path: '{{ LAPACK_BUILD_DIR }}'
+    path: '{{ lapack_build_dir }}'
