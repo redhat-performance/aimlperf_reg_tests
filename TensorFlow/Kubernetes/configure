@@ -265,7 +265,7 @@ echo "" >> ${makefile}
 echo "# YAML info" >> ${makefile}
 echo "DEPLOYMENT_YAML=${deployment_yaml}" >> ${makefile}
 echo "" >> ${makefile}
-echo "# Directory to AWS config and credentials"
+echo "# Directory to AWS config and credentials" >> ${makefile}
 echo "AWS_DIR=${AWS_DIR}" >> ${makefile}
 echo "" >> ${makefile}
 
@@ -280,12 +280,6 @@ echo "all: set_aws_env build_image push_image generate_yaml add_deployment" >> $
 echo "" >> ${makefile}
 echo "set_aws_env:" >> ${makefile}
 echo -e "\t"
-
-all: update_yamls add_secrets
-
-update_yamls:
-        sh update_secret_yamls.sh $(HOME_DIR)/.aws/credentials $(HOME_DIR)/.aws/config $(PROFILE)
-
 echo "build_image:" >> ${makefile}
 echo -e "\t\$(IMAGE_BUILDER) -f \$(DOCKERFILE) ../.. --tag \$(IMAGE_NAME)" >> ${makefile}
 echo "" >> ${makefile}
