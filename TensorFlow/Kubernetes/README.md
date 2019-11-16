@@ -52,16 +52,20 @@ $ make
 
 This command will generate a YAML file for creating a Kubernetes deployment, then create a deployment with said YAML file.
 
-If you'd like to run just the image build,
+If you'd like to run just the image build and push the image to your desired repository,
 
 ```bash
-$ make build_image
+$ make build
 ```
 
-If you'd like to run just the deployment,
+If you'd like to run just the job,
 
 ```bash
-$ make add_deployment
+$ make start_job
 ```
 
-Also, you can "clean" things by calling the `clean`, `clean_image`, or `clean_deployment` targets.
+Also, you can "clean" things by calling the `clean`, `clean_image`, or `clean_job` targets. The `clean_image` target deletes the image from your local docker/podman repo, while the `clean_job` deletes the job from Kubernetes. To clean everything, just call the `clean` target. e.g.,
+
+```bash
+$ make clean
+```

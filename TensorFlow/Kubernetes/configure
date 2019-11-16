@@ -188,19 +188,19 @@ if [[ -z ${BACKEND} ]]; then
     BACKEND="unspecified"
 fi
 
-# Initialize deployment name (if not specified)
-if [[ -z ${DEPLOYMENT_NAME} ]]; then
+# Initialize job name (if not specified)
+if [[ -z ${JOB_NAME} ]]; then
     if [[ ${BACKEND} != "none" ]]; then
 	if [[ -z ${AVX} ]]; then
-            DEPLOYMENT_NAME="tensorflow-${BACKEND}-${device}-deployment"
+            JOB_NAME="tensorflow-${BACKEND}-${device}-job"
 	else
-            DEPLOYMENT_NAME="tensorflow-${BACKEND}-${AVX}-deployment"
+            JOB_NAME="tensorflow-${BACKEND}-${AVX}-job"
 	fi
     else
 	if [[ -z ${AVX} ]]; then
-            DEPLOYMENT_NAME="tensorflow-official-${device}-deployment"
+            JOB_NAME="tensorflow-official-${device}-job"
 	else
-            DEPLOYMENT_NAME="tensorflow-official-${device}-${AVX}-deployment"
+            JOB_NAME="tensorflow-official-${device}-${AVX}-job"
 	fi
     fi
 fi
@@ -243,14 +243,14 @@ fi
 makefile="./Makefile"
 
 # Set YAML file
-deployment_yaml="tensorflow-deployment.yaml"
+job_yaml="tensorflow-${device}-job.yaml"
 
 # Remove existing Makefile
 rm -f ${makefile}
 
 # Populate Makefile vars
 echo "# Kubernetes names" >> ${makefile}
-echo "DEPLOYMENT_NAME=${DEPLOYMENT_NAME}" >> ${makefile}
+echo "JOB_NAME=${JOB_NAME}" >> ${makefile}
 echo "APP_NAME=${APP_NAME}" >> ${makefile}
 echo "" >> ${makefile}
 echo "# Image info" >> ${makefile}
@@ -263,7 +263,7 @@ echo "# Benchmark info" >> ${makefile}
 echo "NUM_DEVICES=${NUM_DEVICES}" >> ${makefile}
 echo "" >> ${makefile}
 echo "# YAML info" >> ${makefile}
-echo "DEPLOYMENT_YAML=${deployment_yaml}" >> ${makefile}
+echo "JOB_YAML=${job_yaml}" >> ${makefile}
 echo "" >> ${makefile}
 echo "# Directory to AWS config and credentials" >> ${makefile}
 echo "AWS_DIR=${AWS_DIR}" >> ${makefile}
@@ -276,10 +276,10 @@ if [[ ! -z ${INSTANCE_TYPE} ]]; then
 fi
 
 # Set targets
-echo "all: set_aws_env build_image push_image generate_yaml add_deployment" >> ${makefile}
+echo "all: generate_yaml start_job" >> ${makefile}
 echo "" >> ${makefile}
-echo "set_aws_env:" >> ${makefile}
-echo -e "\t"
+echo "build: build_image push_image" >> ${makefile}
+echo "" >> ${makefile}
 echo "build_image:" >> ${makefile}
 echo -e "\t\$(IMAGE_BUILDER) -f \$(DOCKERFILE) ../.. --tag \$(IMAGE_NAME)" >> ${makefile}
 echo "" >> ${makefile}
@@ -288,19 +288,19 @@ echo -e "\t\$(IMAGE_BUILDER) push \$(IMAGE_NAME)" >> ${makefile}
 echo "" >> ${makefile}
 echo "generate_yaml:" >> ${makefile}
 if [[ -z ${INSTANCE_TYPE} ]]; then
-    echo -e "\techo -e \"apiVersion: apps/v1\\\nkind: Deployment\\\nmetadata:\\\n  name: \$(DEPLOYMENT_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  replicas: 1\\\n  selector:\\\n    matchLabels:\\\n      app: \$(APP_NAME)\\\n  template:\\\n    metadata:\\\n      labels:\\\n        app: \$(APP_NAME)\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE_NAME)\\\n        ports:\\\n        - containerPort: 80\\\n        env:\\\n        - name: NUM_DEVICES\\\n          value: \\\"\$(NUM_DEVICES)\\\"\\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\" > \$(DEPLOYMENT_YAML)" >> ${makefile}
+    echo -e "\techo -e \"apiVersion: batch/v1\\\nkind: Job\\\nmetadata:\\\n  name: \$(JOB_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  template:\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE_NAME)\\\n        ports:\\\n        - containerPort: 80\\\n        env:\\\n        - name: NUM_DEVICES\\\n          value: \\\"\$(NUM_DEVICES)\\\"\\\n      restartPolicy: Never      \\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\" > \$(JOB_YAML)" >> ${makefile}
 else
-    echo -e "\techo -e \"apiVersion: apps/v1\\\nkind: Deployment\\\nmetadata:\\\n  name: \$(DEPLOYMENT_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  replicas: 1\\\n  selector:\\\n    matchLabels:\\\n      app: \$(APP_NAME)\\\n  template:\\\n    metadata:\\\n      labels:\\\n        app: \$(APP_NAME)\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE_NAME)\\\n        ports:\\\n        - containerPort: 80\\\n        env:\\\n        - name: NUM_DEVICES\\\n          value: \\\"\$(NUM_DEVICES)\\\"\\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\\\n      nodeSelector:\\\n        beta.kubernetes.io/instance-type: \$(INSTANCE_TYPE)\" > \$(DEPLOYMENT_YAML)" >> ${makefile}
+    echo -e "\techo -e \"apiVersion: batch/v1\\\nkind: Job\\\nmetadata:\\\n  name: \$(JOB_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  template:\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE_NAME)\\\n        ports:\\\n        - containerPort: 80\\\n        env:\\\n        - name: NUM_DEVICES\\\n          value: \\\"\$(NUM_DEVICES)\\\"\\\n      restartPolicy: Never      \\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\\\n      nodeSelector:\\\n        beta.kubernetes.io/instance-type: \$(INSTANCE_TYPE)\" > \$(JOB_YAML)" >> ${makefile}
 fi
 
 echo "" >> ${makefile}
-echo "add_deployment:" >> ${makefile}
-echo -e "\tkubectl create -f \$(DEPLOYMENT_YAML)" >> ${makefile}
+echo "start_job:" >> ${makefile}
+echo -e "\tkubectl create -f \$(JOB_YAML)" >> ${makefile}
 echo "" >> ${makefile}
-echo "clean: clean_deployment clean_image" >> ${makefile}
+echo "clean: clean_job clean_image" >> ${makefile}
 echo "" >> ${makefile}
 echo "clean_image:" >> ${makefile}
 echo -e "\t\$(IMAGE_BUILDER) rmi \$(IMAGE_NAME)" >> ${makefile}
 echo "" >> ${makefile}
-echo "clean_deployment:" >> ${makefile}
-echo -e "\tkubectl delete -f \$(DEPLOYMENT_YAML)" >> ${makefile}
+echo "clean_job:" >> ${makefile}
+echo -e "\tkubectl delete -f \$(JOB_YAML)" >> ${makefile}
