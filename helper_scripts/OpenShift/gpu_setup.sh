@@ -45,4 +45,5 @@ fi
 
 # Deploy SRO
 cd $special_resource_operator_folder/..
+make -C special-resource-operator build
 make -C special-resource-operator deploy
