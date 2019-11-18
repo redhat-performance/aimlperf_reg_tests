@@ -21,6 +21,7 @@
   file:
     state: absent
     path: '{{ tensorrt_install_dir }}'
+  when: tensorrt_install_dir != '/usr/local' and tensorrt_install_dir != '/usr'
 
 # Setup install tree
 - name: Setup install tree
@@ -32,6 +33,7 @@
     - '{{ tensorrt_install_dir }}/include'
     - '{{ tensorrt_install_dir }}/lib'
     - '{{ tensorrt_install_dir }}/lib/python3.6/site-packages'
+  when: tensorrt_install_dir != '/usr/local' and tensorrt_install_dir != '/usr'
 
 # Next step is to install the Python TensorRT wheel file, but first, we must get the wheel file name
 - name: Get TensorRT wheel file name
