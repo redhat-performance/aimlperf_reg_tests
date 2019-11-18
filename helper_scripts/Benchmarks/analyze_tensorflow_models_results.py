@@ -36,7 +36,14 @@ def parse_file(filename):
     # Set vars
     epoch_number = -1
     previous_line_was_benchmark_results = False
-    next_line_is_avg_examples_per_sec = False
+    previous_line_was_step_timestamp_log = False
+    previous_line_was_avg_examples_per_sec = False
+    previous_line_was_batch_label = False
+    previous_line_was_batch_index = False
+    previous_line_was_timestamp_label = False
+    previous_line_was_timestamp = False
+    first_timestamp = -1
+    last_timestamp = -1
 
     # Open the file
     with open(filename, "r") as log_file:
@@ -56,21 +63,36 @@ def parse_file(filename):
 
                 # Iterate through each item in the benchmark_results var
                 for benchmark_data in benchmark_results:
-
+                    
                     if "examples_per_sec" in benchmark_data:
-                        next_line_is_avg_examples_per_sec = True
+                        previous_line_was_avg_examples_per_sec = True
+                    
+                    elif "timestamp" in benchmark_data:
+                        previous_line_was_timestamp = True
 
-                    elif next_line_is_avg_examples_per_sec == True:
+                    elif previous_line_was_avg_examples_per_sec == True:
                         avg_examples_per_sec, _ = benchmark_data.split("}")
                         avg_examples_per_sec_list.append(float(avg_examples_per_sec))
-                        next_line_is_avg_examples_per_sec = False
+                        previous_line_was_avg_examples_per_sec = False
 
-                previous_line_was_benchmark_results = False
-
+                    elif previous_line_was_timestamp == True and "BatchTimestamp" not in benchmark_data:
+                        try:
+                            timestamp, _  = benchmark_data.split(">")
+                            timestamp_as_float = float(timestamp)
+                            if first_timestamp == -1:
+                                first_timestamp = timestamp_as_float
+                            elif last_timestamp < timestamp_as_float:
+                                last_timestamp = timestamp_as_float
+                        except ValueError:
+                            continue
+                        previous_line_was_timestamp = False
 
             # If the line starts with "Epoch", then we can grab the epoch number
             elif "Epoch" in line:
                 break
+
+                # Reset
+                previous_line_was_benchmark_results = False
 
     # Get mean rate
     mean_rate = np.mean(avg_examples_per_sec_list)
@@ -78,8 +100,16 @@ def parse_file(filename):
     # Get standard deviation
     standard_dev_rate = np.std(avg_examples_per_sec_list)
 
-    # Print results
+    # Print avg example rate results
     print("Average examples per sec: %0.2f +/- %0.2f" % (mean_rate, standard_dev_rate))
+
+    # Get total time
+    total_time_hours = (last_timestamp - first_timestamp) / 60 / 60
+
+    # Print total time
+    print("Total time (hours): %0.2f" % (total_time_hours))
+    print("  - Start timestamp: %0.2f" % (first_timestamp))
+    print("  - End timestamp: %0.2f" % (last_timestamp))
 
 def check_file_validity(filename):
 
