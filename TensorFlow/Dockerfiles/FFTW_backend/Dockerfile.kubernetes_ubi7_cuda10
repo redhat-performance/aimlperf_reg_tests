@@ -151,8 +151,9 @@ RUN cd ${TENSORFLOW_INSTALLATION} && \
     cd .. && \
     rm -rf ${TENSORFLOW_INSTALLATION}
 
-# Set Ansible tmp dir
-RUN chmod -R 777 ${APPDIR}
+# Set Ansible tmp dir and permissions
+RUN chmod -R 777 ${APPDIR} && \
+    chmod -R 777 ${HOME}/.ansible
 
 # Set work directory
 WORKDIR ${APPDIR}
@@ -161,7 +162,7 @@ WORKDIR ${APPDIR}
 USER ${USER}
 
 # Set LD_LIBRARY_PATH
-ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/cuda/lib64:/usr/lib64:/usr/local/cuda-10.0/compat
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CUDA_INSTALL_PATH}/lib64:/usr/lib64:/usr/local/cuda-10.0/compat:${NCCL_INSTALL_PATH}/lib:${TENSORRT_INSTALL_PATH}/lib
 
 # Set entrypoint
 ENTRYPOINT export ANSIBLE_LOCAL_TEMP=. && cd ${TENSORFLOW_MODELS} && ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_path: /opt/tensorflow, device_type: gpu, benchmarks_path: /home/benchmark_app/benchmarks, num_devices: $NUM_DEVICES}'
