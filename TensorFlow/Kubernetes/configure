@@ -208,6 +208,8 @@ fi
 # Set Dockerfile name
 if [[ ${BACKEND} == "fftw" ]]; then
     blas_folder="FFTW_backend"
+elif [[ ${BACKEND} == "unspecified" ]]; then
+    blas_folder="default"
 else
     blas_folder="OpenBLAS_backend"
 fi
@@ -218,7 +220,13 @@ else
 fi
 if [[ ${device} == "gpu" ]]; then
     cuda_version="10" #hard coded for now since there are no CUDA 10.1 builds yet
-    dockerfile_path="../Dockerfiles/${blas_folder}/Dockerfile.kubernetes_${os_type}_cuda${cuda_version}"
+    dockerfile_path="../Dockerfiles/${blas_folder}"
+    
+    if [[ ${BACKEND} == "fftw" ]] || [[ ${BACKEND} == "openblas" ]]; then
+	 dockerfile_path="${dockerfile_path}/Dockerfile.kubernetes_${os_type}_cuda${cuda_version}"
+    else
+	 dockerfile_path="${dockerfile_path}/rhel${RHEL_VERSION}/${device}/Dockerfile.kubernetes_${os_type}_cuda${cuda_version}_official"
+    fi
 else
     dockerfile_path="../Dockerfiles/${blas_folder}/Dockerfile.kubernetes_${os_type}"
 fi
@@ -281,16 +289,16 @@ echo "" >> ${makefile}
 echo "build: build_image push_image" >> ${makefile}
 echo "" >> ${makefile}
 echo "build_image:" >> ${makefile}
-echo -e "\t\$(IMAGE_BUILDER) -f \$(DOCKERFILE) ../.. --tag \$(IMAGE_NAME)" >> ${makefile}
+echo -e "\t\$(IMAGE_BUILDER) build -f \$(DOCKERFILE) ../.. --tag \$(IMAGE_NAME) --layers=false --squash" >> ${makefile}
 echo "" >> ${makefile}
 echo "push_image:" >> ${makefile}
 echo -e "\t\$(IMAGE_BUILDER) push \$(IMAGE_NAME)" >> ${makefile}
 echo "" >> ${makefile}
 echo "generate_yaml:" >> ${makefile}
 if [[ -z ${INSTANCE_TYPE} ]]; then
-    echo -e "\techo -e \"apiVersion: batch/v1\\\nkind: Job\\\nmetadata:\\\n  name: \$(JOB_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  template:\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE_NAME)\\\n        ports:\\\n        - containerPort: 80\\\n        env:\\\n        - name: NUM_DEVICES\\\n          value: \\\"\$(NUM_DEVICES)\\\"\\\n      restartPolicy: Never      \\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\" > \$(JOB_YAML)" >> ${makefile}
+    echo -e "\techo -e \"apiVersion: batch/v1\\\nkind: Job\\\nmetadata:\\\n  name: \$(JOB_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  template:\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE_NAME)\\\n        ports:\\\n        - containerPort: 80\\\n        env:\\\n        - name: NUM_DEVICES\\\n          value: \\\"\$(NUM_DEVICES)\\\"\\\n        imagePullPolicy: Always\\\n      restartPolicy: Never      \\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\" > \$(JOB_YAML)" >> ${makefile}
 else
-    echo -e "\techo -e \"apiVersion: batch/v1\\\nkind: Job\\\nmetadata:\\\n  name: \$(JOB_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  template:\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE_NAME)\\\n        ports:\\\n        - containerPort: 80\\\n        env:\\\n        - name: NUM_DEVICES\\\n          value: \\\"\$(NUM_DEVICES)\\\"\\\n      restartPolicy: Never      \\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\\\n      nodeSelector:\\\n        beta.kubernetes.io/instance-type: \$(INSTANCE_TYPE)\" > \$(JOB_YAML)" >> ${makefile}
+    echo -e "\techo -e \"apiVersion: batch/v1\\\nkind: Job\\\nmetadata:\\\n  name: \$(JOB_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  template:\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE_NAME)\\\n        ports:\\\n        - containerPort: 80\\\n        env:\\\n        - name: NUM_DEVICES\\\n          value: \\\"\$(NUM_DEVICES)\\\"\\\n        imagePullPolicy: Always\\\n      restartPolicy: Never      \\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\\\n      nodeSelector:\\\n        beta.kubernetes.io/instance-type: \$(INSTANCE_TYPE)\" > \$(JOB_YAML)" >> ${makefile}
 fi
 
 echo "" >> ${makefile}

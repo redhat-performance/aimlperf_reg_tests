@@ -1,0 +1,118 @@
+FROM nvidia/cuda:10.0-base-ubi7
+MAINTAINER Courtney Pacheco <cpacheco@redhat.com>
+ENV LANG=en_US.utf8
+USER root
+ENV BUILDER_VERSION 1.0
+
+# Python version
+ENV PYTHON_VERSION=3.6.9
+
+# Ansible version
+ENV ANSIBLE_VERSION=v2.8.6
+
+# Put on port 8080
+EXPOSE 8080
+
+# Set timeout for yum (in seconds) to prevent Curl timeout errors w/ yum
+ENV YUM_TIMEOUT=300
+RUN sed -i "/[main]/a timeout=${YUM_TIMEOUT}" /etc/yum.conf
+
+# Set home dir
+ENV HOME=/home
+
+# Set app directory
+ENV APPDIR="${HOME}/benchmark_app"
+
+# Set CUDA package install paths
+ENV CUDA_INSTALL_PATH=/usr/local/cuda
+ENV TENSORRT_INSTALL_PATH=/usr/local
+
+# Set user
+ENV USER=1001
+
+# Set playbook paths
+ENV PLAYBOOKS_DIR=${APPDIR}/playbooks
+ENV TENSORFLOW_MODELS=${PLAYBOOKS_DIR}/TensorFlow_Models
+ENV CUDNN_INSTALLATION=${PLAYBOOKS_DIR}/cudnn_installation
+ENV TENSORRT_INSTALLATION=${PLAYBOOKS_DIR}/tensorrt_installation
+
+# Set scripts path
+ENV SCRIPTS_DIR=${APPDIR}/scripts
+
+# Create folders for playbooks and folder for playbooks cache, then allow execute permissions
+RUN mkdir -p ${TENSORFLOW_MODELS} && \
+    mkdir -p ${CUDNN_INSTALLATION} && \
+    mkdir -p ${TENSORRT_INSTALLATION} && \
+    mkdir -p ${SCRIPTS_DIR} && \
+    mkdir -p ${APPDIR}/.cache && \
+    chmod -R +x ${PLAYBOOKS_DIR}
+
+# Copy playbooks and scripts
+COPY TensorFlow/playbooks/TensorFlow_Models ${TENSORFLOW_MODELS}
+COPY TensorFlow/playbooks/cudnn_installation ${CUDNN_INSTALLATION}
+COPY TensorFlow/playbooks/tensorrt_installation ${TENSORRT_INSTALLATION}
+COPY helper_scripts/Python/install_python_from_source.sh ${SCRIPTS_DIR}
+COPY helper_scripts/Ansible/install_ansible_from_source.sh ${SCRIPTS_DIR}
+COPY TensorFlow/Kubernetes/aws_env.sh ${SCRIPTS_DIR}/aws_env.sh
+
+# Install CUDA yum packages
+ENV CUDA_PACKAGE_VERSION=10-0
+RUN yum clean all && \
+    yum -y install cuda-cudart-${CUDA_PACKAGE_VERSION} \
+                   cuda-compat-${CUDA_PACKAGE_VERSION} \
+                   cuda-core-${CUDA_PACKAGE_VERSION} \
+                   cuda-cublas-${CUDA_PACKAGE_VERSION} \
+                   cuda-cudart-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-cufft-${CUDA_PACKAGE_VERSION} \
+                   cuda-cufft-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-cupti-${CUDA_PACKAGE_VERSION} \
+                   cuda-curand-${CUDA_PACKAGE_VERSION} \
+                   cuda-curand-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-cusolver-${CUDA_PACKAGE_VERSION} \
+                   cuda-cusolver-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-cusparse-${CUDA_PACKAGE_VERSION} \
+                   cuda-cusparse-dev-${CUDA_PACKAGE_VERSION} \
+                   cuda-misc-headers-${CUDA_PACKAGE_VERSION} \
+                   libcublas-devel && \
+    rm -rf /var/cache/dnf/*
+
+# Install Python version ${PYTHON_VERSION} from source and Ansible version ${ANSIBLE_VERSION} from source
+RUN cd ${SCRIPTS_DIR} && \
+    sh install_python_from_source.sh ${PYTHON_VERSION} && \
+    sh install_ansible_from_source.sh ${ANSIBLE_VERSION}
+
+# Install CUDA packages with playbooks
+RUN cd ${SCRIPTS_DIR} && \
+    chmod +x aws_env.sh && \
+    . ./aws_env.sh && \
+    pip3 install awscli && \
+    mkdir ~/.aws && \
+    touch ~/.aws/config && \
+    touch ~/.aws/credentials && \
+    cd ${TENSORRT_INSTALLATION} && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: 7, install_dir: '${TENSORRT_INSTALL_PATH}', use_ebs: 'no', use_url: 'no', use_awscli: 'yes', bucket: '${TENSORRT}', add_aws_credentials: 'yes', aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'no', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}" && \
+    cd ${CUDNN_INSTALLATION} && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_ver: 7, use_ebs: 'no', use_url: 'no', use_awscli: 'yes', bucket: '${CUDNN}', add_aws_credentials: 'no', aws_profile: '${AWS_PROFILE}', aws_region: '${AWS_REGION}', aws_access_key: '${AWS_ACCESS_KEY}', aws_secret_access_key: '${AWS_SECRET_ACCESS_KEY}', delete_aws_credentials_after_installation: 'yes', cuda_install_path: '${CUDA_INSTALL_PATH}', gpu_check: 'no'}" && \
+    rm -rf ${SCRIPTS_DIR}
+
+# Copy CUBLAS files to work around TensorFlow 'cublas_api.h' error
+RUN cp /usr/include/cublas* /usr/local/cuda/include
+
+# Install TensorFlow
+RUN pip3 install tensorflow-gpu==2.0.0b1
+
+# Set Ansible tmp dir and permissions
+ENV ANSIBLE_TMP=${APPDIR}/tmp
+RUN mkdir -p ${ANSIBLE_TMP} && \
+    chmod -R 777 ${ANSIBLE_TMP} && \
+    mkdir -p ${APPDIR}/benchmarks && \
+    chmod -R 777 ${APPDIR}/benchmarks
+
+# Set user to '1001'
+USER ${USER}
+
+# Set LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CUDA_INSTALL_PATH}/lib64:/usr/lib64:/usr/local/cuda-10.0/compat:${TENSORRT_INSTALL_PATH}/lib
+
+# Set entrypoint
+ENTRYPOINT export ANSIBLE_LOCAL_TEMP=${ANSIBLE_TMP} && cd ${TENSORFLOW_MODELS} && ansible-playbook -i hosts play.yaml --extra-vars='{tensorflow_path: /usr/local/lib/python3.6/site-packages/tensorflow, device_type: gpu, benchmarks_path: /home/benchmark_app/benchmarks, num_devices: $NUM_DEVICES}'
