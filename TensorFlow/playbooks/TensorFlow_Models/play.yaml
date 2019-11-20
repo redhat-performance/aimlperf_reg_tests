@@ -66,11 +66,11 @@
         echo '-----------------------------------'
         python3 resnet_cifar_main.py --num_gpus={{ num_devices }} --batch_size="64" --train_epochs={{ epochs }}
         echo '-----------------------------------'
-        echo '>> BATCH SIZE: 128,  TRAIN_EPOCHS: {{ train_epochs }}'
+        echo '>> BATCH SIZE: 128,  TRAIN_EPOCHS: {{ epochs }}'
         echo '-----------------------------------'
         python3 resnet_cifar_main.py --num_gpus={{ num_devices }} --batch_size="128" --train_epochs={{ epochs }}
         echo '-----------------------------------'
-        echo '>> BATCH SIZE: 256,  TRAIN_EPOCHS: {{ train_epochs }}'
+        echo '>> BATCH SIZE: 256,  TRAIN_EPOCHS: {{ epochs }}'
         echo '-----------------------------------'
         python3 resnet_cifar_main.py --num_gpus={{ num_devices }} --batch_size="256" --train_epochs={{ epochs }}
       environment:
