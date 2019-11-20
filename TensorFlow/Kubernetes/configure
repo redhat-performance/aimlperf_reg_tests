@@ -19,9 +19,13 @@ while test $# -gt 0; do
 	    echo "  ---------------------------"
 	    echo "  -g, --use-gpu          |  Specify that you're using the GPU"
 	    echo ""
-	    echo "  Deployment Configuration"
+	    echo "  Benchmark Configuration"
 	    echo "  ---------------------------"
-	    echo "  -n, --deployment-name  |  Custom deployment name (e.g., 'my-tensorflow-fftw-gpu-deployment'). Default name: tensorflow-[BACKEND]-[DEVICE]-deployment"
+	    echo "  -e, --epochs           | Number of epochs to use when testing the benchmarks"
+	    echo ""
+	    echo "  Job Configuration"
+	    echo "  ---------------------------"
+	    echo "  -n, --job-name         |  Custom job name (e.g., 'my-tensorflow-fftw-gpu-job'). Default name: tensorflow-[BACKEND]-[DEVICE]-job"
 	    echo ""
 	    echo "  Instance Type Configuration"
 	    echo "  ---------------------------"
@@ -79,9 +83,9 @@ while test $# -gt 0; do
 	    IMAGE_URL=${1}
 	    shift
 	    ;;
-	-n|--deployment-name)
+	-n|--job-name)
 	    shift
-	    DEPLOYMENT_NAME=${1}
+	    JOB_NAME=${1}
 	    shift
 	    ;;
         -t|--instance-type)
@@ -112,6 +116,11 @@ while test $# -gt 0; do
         -m|--memory)
 	    shift
 	    CPU_MANAGER_MEMORY=${1}
+	    shift
+	    ;;
+	-e|--epochs)
+	    shift
+	    NUM_EPOCHS=${1}
 	    shift
 	    ;;
 	*)
@@ -146,6 +155,12 @@ fi
 if [[ -z ${NUM_DEVICES} ]]; then
     echo "WARNING. Number of devices was not supplied. Setting number of devices equal to 1. If you would like to use more devices (CPUs or GPUs), specify the amount via the '-d' or '--num-devices' flag."
     NUM_DEVICES=1
+fi
+
+# Check if the number of epochs was supplied
+if [[ -z ${NUM_EPOCHS} ]]; then
+    echo "WARNING. Number of epochs was not supplied. Setting the number of epochs equal to 30. If you would like to set the number of training epochsm, use the '-e' or '--epochs' flag."
+    NUM_EPOCHS=30
 fi
 
 # Check the instance type, if passed in
@@ -269,6 +284,7 @@ echo "PULL_SECRET=${PULL_SECRET}" >> ${makefile}
 echo "" >> ${makefile}
 echo "# Benchmark info" >> ${makefile}
 echo "NUM_DEVICES=${NUM_DEVICES}" >> ${makefile}
+echo "NUM_EPOCHS=${NUM_EPOCHS}" >> ${makefile}
 echo "" >> ${makefile}
 echo "# YAML info" >> ${makefile}
 echo "JOB_YAML=${job_yaml}" >> ${makefile}
@@ -296,9 +312,9 @@ echo -e "\t\$(IMAGE_BUILDER) push \$(IMAGE_NAME)" >> ${makefile}
 echo "" >> ${makefile}
 echo "generate_yaml:" >> ${makefile}
 if [[ -z ${INSTANCE_TYPE} ]]; then
-    echo -e "\techo -e \"apiVersion: batch/v1\\\nkind: Job\\\nmetadata:\\\n  name: \$(JOB_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  template:\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE_NAME)\\\n        ports:\\\n        - containerPort: 80\\\n        env:\\\n        - name: NUM_DEVICES\\\n          value: \\\"\$(NUM_DEVICES)\\\"\\\n        imagePullPolicy: Always\\\n      restartPolicy: Never      \\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\" > \$(JOB_YAML)" >> ${makefile}
+    echo -e "\techo -e \"apiVersion: batch/v1\\\nkind: Job\\\nmetadata:\\\n  name: \$(JOB_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  template:\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE_NAME)\\\n        ports:\\\n        - containerPort: 80\\\n        env:\\\n        - name: NUM_DEVICES\\\n          value: \\\"\$(NUM_DEVICES)\\\"\\\n        - name: NUM_EPOCHS\\\n           value: \\\"\$(NUM_EPOCHS)\\\"\\\n        imagePullPolicy: Always\\\n      restartPolicy: Never      \\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\" > \$(JOB_YAML)" >> ${makefile}
 else
-    echo -e "\techo -e \"apiVersion: batch/v1\\\nkind: Job\\\nmetadata:\\\n  name: \$(JOB_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  template:\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE_NAME)\\\n        ports:\\\n        - containerPort: 80\\\n        env:\\\n        - name: NUM_DEVICES\\\n          value: \\\"\$(NUM_DEVICES)\\\"\\\n        imagePullPolicy: Always\\\n      restartPolicy: Never      \\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\\\n      nodeSelector:\\\n        beta.kubernetes.io/instance-type: \$(INSTANCE_TYPE)\" > \$(JOB_YAML)" >> ${makefile}
+    echo -e "\techo -e \"apiVersion: batch/v1\\\nkind: Job\\\nmetadata:\\\n  name: \$(JOB_NAME)\\\n  labels:\\\n    app: \$(APP_NAME)\\\nspec:\\\n  template:\\\n    spec:\\\n      containers:\\\n      - name: \$(APP_NAME)\\\n        image: \$(IMAGE_NAME)\\\n        ports:\\\n        - containerPort: 80\\\n        env:\\\n        - name: NUM_DEVICES\\\n          value: \\\"\$(NUM_DEVICES)\\\"\\\n        - name: NUM_EPOCHS\\\n          value: \\\"\$(NUM_EPOCHS)\\\"\\\n        imagePullPolicy: Always\\\n      restartPolicy: Never      \\\n      imagePullSecrets:\\\n      - name: \$(PULL_SECRET)\\\n      nodeSelector:\\\n        beta.kubernetes.io/instance-type: \$(INSTANCE_TYPE)\" > \$(JOB_YAML)" >> ${makefile}
 fi
 
 echo "" >> ${makefile}
