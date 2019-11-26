@@ -94,12 +94,21 @@
       register: resnet56_cifar10_benchmarks_256_output
       ignore_errors: yes
 
-    # Create three separate debug statements, rather than 1 statement with a list of vars to print out
+    # Create three separate stdout_lines/stderr_lines debug statements
     - debug:
-        var: resnet56_cifar10_benchmarks_64_output.stdout_lines
+        var: '{{ item }}'
+      with_items:
+        - resnet56_cifar10_benchmarks_64_output.stderr_lines
+        - resnet56_cifar10_benchmarks_64_output.stdout_lines
 
     - debug:
-        var: resnet56_cifar10_benchmarks_128_output.stdout_lines
+        var: '{{ item }}'
+      with_items:
+        - resnet56_cifar10_benchmarks_128_output.stderr_lines
+        - resnet56_cifar10_benchmarks_128_output.stdout_lines
 
     - debug:
-        var: resnet56_cifar10_benchmarks_256_output.stdout_lines
+        var: '{{ item }}'
+      with_items:
+        - resnet56_cifar10_benchmarks_256_output.stderr_lines
+        - resnet56_cifar10_benchmarks_256_output.stdout_lines
