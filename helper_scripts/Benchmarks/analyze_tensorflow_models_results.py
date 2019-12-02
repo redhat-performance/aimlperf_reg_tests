@@ -9,6 +9,7 @@ import os.path
 import numpy as np
 
 FONT_SIZE=12
+BATCH_SIZES=(64, 128, 256)
 
 def parse_file(filename):
     """
@@ -24,22 +25,26 @@ def parse_file(filename):
 
     Returns
     =======
-    results_dict
-        Dictionary which contains train statistics and benchmark suite statistics 
+    batch_data
+        Dictionary which contains train statistics for different batch sizes
     """
 
     # Check if the file is valid. This will throw an error and exit out of the script if it's not valid.
     check_file_validity(filename)
 
     # We will store results in this dict
-    results_dict = {}
+    batch_data = {}
 
     # This will store the average examples per sec
     avg_examples_per_sec_list = []
 
+    # This will store the global step (batch) sizes (that go along with the avg examples per sec)
+    global_step_sizes = []
+
     # Set vars
     epoch_number = -1
-    previous_line_was_benchmark_results = False
+    current_batch_size = -1
+    previous_line_was_debug = False
     previous_line_was_step_timestamp_log = False
     previous_line_was_avg_examples_per_sec = False
     previous_line_was_batch_label = False
@@ -50,74 +55,102 @@ def parse_file(filename):
     last_timestamp = -1
 
     # Open the file
-    with open(filename, "r") as log_file:
+    with open(filename, 'r') as log_file:
         for line in log_file:
 
             # If the line contains "Run benchmarks", then iterate through the benchmark results
-            if "Run the benchmarks" in line:
+            if 'TASK [debug]' in line:
 
                 # Set this variable to 'True' so that we know we're ready to parse benchmark results
-                previous_line_was_benchmark_results = True
+                previous_line_was_debug = True
+
+                # Set current batch size
+                current_batch_size = -1
 
             # If the previous line was a benchmark output, then do:
-            elif previous_line_was_benchmark_results == True:
+            elif previous_line_was_debug == True:
                 
-                # Split the line by " "
-                benchmark_results = line.split()
+                batch_size_is_valid = False
+                for size in BATCH_SIZES:
 
-                # Iterate through each item in the benchmark_results var
-                for benchmark_data in benchmark_results:
-                    
-                    if "examples_per_sec" in benchmark_data:
-                        previous_line_was_avg_examples_per_sec = True
-                    
-                    elif "timestamp" in benchmark_data:
-                        previous_line_was_timestamp = True
+                    if str(size) in line:
+                        current_batch_size = size
+                        batch_size_is_valid = True
+                        break
 
-                    elif previous_line_was_avg_examples_per_sec == True:
-                        avg_examples_per_sec, _ = benchmark_data.split("}")
-                        avg_examples_per_sec_list.append(float(avg_examples_per_sec))
-                        previous_line_was_avg_examples_per_sec = False
+                if batch_size_is_valid == False:
+                    num_batch_sizes = len(BATCH_SIZES)
+                    invalid_batch_size_error = 'Invalid batch size. Currently, the following batch sizes are supported: ['
+                    for i, size in enumerate(BATCH_SIZES):
+                        invalid_batch_size_error += str(size)
 
-                    elif previous_line_was_timestamp == True and "BatchTimestamp" not in benchmark_data:
-                        try:
-                            timestamp, _  = benchmark_data.split(">")
-                            timestamp_as_float = float(timestamp)
-                            if first_timestamp == -1:
-                                first_timestamp = timestamp_as_float
-                            elif last_timestamp < timestamp_as_float:
-                                last_timestamp = timestamp_as_float
-                        except ValueError:
-                            continue
-                        previous_line_was_timestamp = False
+                        if i < (num_batch_sizes - 1):
+                            invalid_batch_size_error += ', '
+                        else:
+                            invalud_batch_size_error += ']'
+                    raise ValueError(invalid_batch_size_error)
 
-            # If the line starts with "Epoch", then we can grab the epoch number
-            elif "Epoch" in line:
-                break
+                # Reset the variable to 'False' so that this statement can get triggered again
+                previous_line_was_debug = False
 
-                # Reset
-                previous_line_was_benchmark_results = False
+            elif 'INFO:tensorflow:BenchmarkMetric:' in line and current_batch_size != -1 and 'epoch' not in line: 
 
-    # Get mean rate
-    mean_rate = np.mean(avg_examples_per_sec_list)
+                # Remove the 'INFO:tensorflow:BenchmarkMetric' part of the string
+                _, benchmark_metric_data = line.split('{')
 
-    # Get standard deviation
-    standard_dev_rate = np.std(avg_examples_per_sec_list)
+                # Split by comma so that we get something like ["'global step':100", "'time_taken': 29.077407", ... ]
+                global_step_str, time_taken_str, examples_per_sec_str, _ = benchmark_metric_data.split(',')
 
-    # Get total time
-    total_time_hours = (last_timestamp - first_timestamp) / 60 / 60
+                # Parse global step
+                _, global_step_size = global_step_str.split(':')
+                global_step_size = int(global_step_size)
 
-    # Save to results dictionary
-    results_dict = {'train_statistics':{
-                                        'all_results': avg_examples_per_sec_list,
-                                        'mean_rate': mean_rate, 'stdev_rate': standard_dev_rate
-                                       },
-                    'benchmark_suite_statistics':{
-                                                  'total_time_hrs': total_time_hours
-                                                 }
-                   }
+                # Parse time taken
+                _, time_taken = time_taken_str.split(':')
+                time_taken = float(time_taken)
 
-    return results_dict
+                # Parse examples per sec
+                _, examples_per_sec = examples_per_sec_str.split(':')
+                examples_per_sec, _ = examples_per_sec.split('}')
+                examples_per_sec = float(examples_per_sec)
+
+                # Now save results
+                if batch_data == {}:
+                    batch_data[current_batch_size] = [(global_step_size, time_taken, examples_per_sec)]
+                elif current_batch_size not in batch_data:
+                    batch_data[current_batch_size] = [(global_step_size, time_taken, examples_per_sec)]
+                else:
+                    existing_batch_data = batch_data[current_batch_size]
+                    existing_batch_data.append((global_step_size, time_taken, examples_per_sec))
+                    batch_data[current_batch_size] = existing_batch_data
+
+            # Time to parse the timestamps
+            elif 'BatchTimestamp' in line and current_batch_size != -1:
+
+                # Get the first and last timestamp and store them in these vars:
+                first_timestamp = -1
+                last_timestamp = -1
+
+                # Split the entries, which are separated by commas
+                performance_data_entries = line.split(',')
+
+                # Look for strings like 'BatchTimestamp<batch_index: 100, timestamp: 1574878094.6000183>'
+                for entry in performance_data_entries:
+
+                    if 'timestamp:' in entry:
+                        _, timestamp_str = entry.split('timestamp:')
+                        timestamp, _ = timestamp_str.split('>')
+                        timestamp = float(timestamp)
+
+                        if first_timestamp == -1:
+                            first_timestamp = timestamp
+                        elif last_timestamp < timestamp:
+                            last_timestamp = timestamp
+
+                total_duration = (last_timestamp - first_timestamp) / 60.0 / 60.0
+                print('Total duration of benchmarks for batch size %d: %0.2f hours' % (current_batch_size, total_duration))
+
+    return batch_data
 
 
 def check_file_validity(filename):
@@ -129,6 +162,7 @@ def check_file_validity(filename):
     # Check if the file can be opened
     if (os.path.exists(filename) == False):
         raise IOError("Could not open filename '%s'. It does not exist." % filename)
+
 
 def make_box_plot(data):
     """
@@ -148,32 +182,63 @@ def make_box_plot(data):
     # Unpack the data
     data_to_plot = []
     labels_to_plot = []
-    averages = []
     mins = []
     maxs = []
-    for label, results_dict in data.items():
+    medians = []
+    batch_sizes_mins = []
+    batch_sizes_maxs = []
+    batch_sizes_medians = []
+    all_yvals = []
+    all_idxs = []
 
-        # Grab all the y-values
-        yvals = results_dict['train_statistics']['all_results']
+    # Each entry in the 'data' dict is an instance size. e.g., 'g3.4xlarge'
+    for instance_type, instance_data in data.items():
 
-        # Grab the average rate for the log file
-        average = results_dict['train_statistics']['mean_rate']
+        # Each entry in the 'instance_data' is a list of batch data
+        for batch_size, batch_data in instance_data.items():
+
+            # Grab all the y-values
+            step_size, time_taken, yvals = zip(*batch_data)
+
+            # Add to list
+            all_yvals.extend(yvals)
+
+            # Create idx list
+            idx_list = [batch_size] * len(yvals)
+            all_idxs.extend(idx_list)
+
+        # Convert 'all_yvals' to numpy dict
+        yvals = np.array(all_yvals)
+    
+        # Get median
+        median_idx = np.argsort(yvals)[len(yvals)//2]
+        median = yvals[median_idx]
+
+        # Get median's corresponding batch size
+        median_corresponding_batch_size = np.int(all_idxs[median_idx])
 
         # Get min
-        min_val = np.min(yvals)
+        min_idx = yvals.argmin()
+        min_val = yvals[min_idx]
+        min_corresponding_batch_size = np.int(all_idxs[min_idx])
 
         # Get max
-        max_val = np.max(yvals)
+        max_idx = yvals.argmax()
+        max_val = yvals[max_idx]
+        max_corresponding_batch_size = np.int(all_idxs[max_idx])
 
         # Remove the '.log' from the log file
-        parsed_label, _ = label.split('.log')
+        parsed_label, _ = instance_type.split('.log')
 
         # Save to lists
         labels_to_plot.append(parsed_label)
         data_to_plot.append(yvals)
-        averages.append(average)
         mins.append(min_val)
         maxs.append(max_val)
+        medians.append(median)
+        batch_sizes_mins.append(min_corresponding_batch_size)
+        batch_sizes_maxs.append(max_corresponding_batch_size)
+        batch_sizes_medians.append(median_corresponding_batch_size)
 
     # Begin plotting
     fig1, ax = plt.subplots()
@@ -183,29 +248,30 @@ def make_box_plot(data):
     plt.grid()
 
     # Get data to prepare text labels for the plot
-    num_log_files_passed_in = len(averages)
+    num_log_files_passed_in = len(data)
     start_x = (1.0 / (num_log_files_passed_in * 4.0)) + 1.1
     overall_max_val = -1
-    avg_val_at_max = -1
+    med_val_at_max = -1
     for i in range(0,num_log_files_passed_in):
 
         # Unpack
-        avg = averages[i]
+        med = medians[i]
         max_val = maxs[i]
+        med_batch_size = batch_sizes_medians[i]
 
-        # Set the x- and y-locations for the text that displays the avg value
-        avg_x_location, avg_y_location = start_x, avg
+        # Set the x- and y-locations for the text that displays the med value
+        med_x_location, med_y_location = start_x, med
 
         # Keep track of the overall max value
         if max_val > overall_max_val:
             overall_max_val = max_val
-            avg_val_at_max = avg
+            med_val_at_max = med
 
         # Increment
         start_x += 1
 
         # Plot text
-        plt.text(avg_x_location, avg_y_location, 'average: %d' % np.int(avg))
+        plt.text(med_x_location, med_y_location, 'median: %d (batch size = %d)' % (np.int(med), med_batch_size))
 
     # Now plot mins and maxs
     threshold = (overall_max_val / 50)
@@ -213,9 +279,10 @@ def make_box_plot(data):
     for i in range(0,num_log_files_passed_in):
 
         # Unpack
-        avg = averages[i]
         max_val = maxs[i]
         min_val = mins[i]
+        min_batch_size = batch_sizes_mins[i]
+        max_batch_size = batch_sizes_maxs[i]
 
         # Set the x- and y-locations for the text that displays the max
         max_x_location, max_y_location = start_x, max_val
@@ -224,11 +291,11 @@ def make_box_plot(data):
         min_x_location, min_y_location = start_x, min_val
 
         # Check to make sure the labels don't overlap
-        if (max_y_location - avg_y_location) <= threshold:
+        if (max_y_location - med_y_location) <= threshold:
             max_y_location +=  threshold
 
-        plt.text(min_x_location, min_y_location, 'min: %d' % np.int(min_val))
-        plt.text(max_x_location, max_y_location, 'max: %d' % np.int(max_val))
+        plt.text(min_x_location, min_y_location, 'min: %d (batch size = %d)' % (np.int(min_val), min_batch_size))
+        plt.text(max_x_location, max_y_location, 'max: %d (batch size = %d)' % (np.int(max_val), max_batch_size))
 
         start_x += 1
 
