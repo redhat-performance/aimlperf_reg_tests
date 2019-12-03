@@ -249,7 +249,7 @@ def make_box_plot(data):
 
     # Get data to prepare text labels for the plot
     num_log_files_passed_in = len(data)
-    start_x = (1.0 / (num_log_files_passed_in * 4.0)) + 1.1
+    start_x = (1.0 / (num_log_files_passed_in * 4.0)) + 1.0 + (num_log_files_passed_in - 2) / 10
     overall_max_val = -1
     med_val_at_max = -1
     for i in range(0,num_log_files_passed_in):
@@ -275,7 +275,7 @@ def make_box_plot(data):
 
     # Now plot mins and maxs
     threshold = (overall_max_val / 50)
-    start_x = (1.0 / (num_log_files_passed_in * 4.0)) + 1.1
+    start_x = (1.0 / (num_log_files_passed_in * 4.0)) + 1.0 + (num_log_files_passed_in - 2) / 10
     for i in range(0,num_log_files_passed_in):
 
         # Unpack
