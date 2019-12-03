@@ -7,6 +7,7 @@ Current scripts:
   - `create_machineset.sh` - Creates a MachineSet YAML file for launching a new node of a specific size on an existing OpenShift cluster
   - `disable_cpumanager.sh` - Disables CPU Manager on an existing OpenShift cluster
   - `enable_cpumanager.sh` - Enables CPU Manager on an existing OpenShift cluster
+  - `force_delete_namespace` - Forcefully deletes a hanging namespace (e.g., if OpenShift SRO is stuck in 'Terminating' and won't actually terminate)
   - `gpu_setup.sh` - Prepares an existing OpenShift cluster for using GPUs
   - `nfd_setup.sh` - Deploys the Node Feature Discovery (NFD) Operator on an existing OpenShift cluster
 
@@ -62,4 +63,12 @@ Run this script if you would like to deploy the NFD Operator on OpenShift. To ru
 
 ```
 $ sh nfd_setup.sh
+```
+
+### force\_delete\_namespace.sh
+
+Run this script to force delete a namespace. For example,
+
+```
+$ sh force_delete_namespace.sh openshift-sro
 ```
