@@ -9,7 +9,7 @@ import os.path
 import numpy as np
 
 FONT_SIZE=12
-BATCH_SIZES=(64, 128, 256)
+BATCH_SIZES=(64, 128, 256, 512)
 
 def parse_file(filename):
     """
