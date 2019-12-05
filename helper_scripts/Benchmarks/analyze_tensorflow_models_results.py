@@ -148,7 +148,7 @@ def parse_file(filename):
                             last_timestamp = timestamp
 
                 total_duration = (last_timestamp - first_timestamp) / 60.0 / 60.0
-                print('Total duration of benchmarks for batch size %d: %0.2f hours' % (current_batch_size, total_duration))
+                print('    Total duration of benchmarks for batch size %d: %0.2f hours' % (current_batch_size, total_duration))
 
     return batch_data
 
@@ -164,9 +164,10 @@ def check_file_validity(filename):
         raise IOError("Could not open filename '%s'. It does not exist." % filename)
 
 
-def make_box_plot(data):
+def generate_combined_box_plot(data):
     """
-    Makes a box plot out of 'data'
+    Generates a 'combined' box plot out of 'data', where all the results in 'data'
+    are plotted on the same figure.
 
     Inputs
     ======
@@ -207,7 +208,7 @@ def make_box_plot(data):
             idx_list = [batch_size] * len(yvals)
             all_idxs.extend(idx_list)
 
-        # Convert 'all_yvals' to numpy dict
+        # Convert 'all_yvals' to numpy array
         yvals = np.array(all_yvals)
     
         # Get median
@@ -305,15 +306,208 @@ def make_box_plot(data):
     plt.show()
 
 
+def generate_individual_box_plots(data):
+    """
+    Generates a box plot for each batch size, for each AWS instance, so that it is
+    possible to see the spread of data for each batch size, rather than see the
+    spread of data across all batch sizes.
+
+    Inputs
+    ======
+    data: dictionary
+        Dictionary which contains lists of data points to make a box plot from
+
+    Returns
+    =======
+    None
+    """
+    import matplotlib.pyplot as plt
+
+    # Unpack the data
+    data_to_plot = []
+    labels_to_plot = []
+    mins = []
+    maxs = []
+    medians = []
+
+    # Save the batch data to a dictionary
+    batches = {}
+
+    # Each entry in the 'data' dict is an instance size. e.g., 'g3.4xlarge'
+    for instance_type, instance_data in data.items():
+
+        # Each entry in the 'instance_data' is a list of batch data
+        for batch_size, batch_data in instance_data.items():
+
+            # Grab all the y-values
+            step_size, time_taken, yvals = zip(*batch_data)
+
+            # Convert 'yvals' to numpy array
+            yvals = np.array(yvals)
+    
+            # Get median
+            median_idx = np.argsort(yvals)[len(yvals)//2]
+            median = yvals[median_idx]
+
+            # Get min
+            min_idx = yvals.argmin()
+            min_val = yvals[min_idx]
+
+            # Get max
+            max_idx = yvals.argmax()
+            max_val = yvals[max_idx]
+
+            # Remove the '.log' from the log file
+            parsed_label, _ = instance_type.split('.log')
+
+            # Save to dictionary
+            if batches == {}:
+                batches[batch_size] = {'medians':     [median],
+                                       'mins':        [min_val],
+                                       'maxs':        [max_val],
+                                       'median_idxs': [median_idx],
+                                       'min_idxs':    [min_idx],
+                                       'max_idxs':    [max_idx],
+                                       'data':        [yvals],
+                                       'labels':      [parsed_label]}
+            elif batch_size not in batches:
+                batches[batch_size] = {'medians':     [median],
+                                       'mins':        [min_val],
+                                       'maxs':        [max_val],
+                                       'median_idxs': [median_idx],
+                                       'min_idxs':    [min_idx],
+                                       'max_idxs':    [max_idx],
+                                       'data':        [yvals],
+                                       'labels':      [parsed_label]}
+            else:
+                medians = batches[batch_size]['medians']
+                median_idxs = batches[batch_size]['median_idxs']
+                mins = batches[batch_size]['mins']
+                min_idxs = batches[batch_size]['min_idxs']
+                maxs = batches[batch_size]['maxs']
+                max_idxs = batches[batch_size]['max_idxs']
+                data = batches[batch_size]['data']
+                labels = batches[batch_size]['labels']
+
+                medians.append(median)
+                median_idxs.append(median_idx)
+                mins.append(min_val)
+                min_idxs.append(min_idx)
+                maxs.append(max_val)
+                max_idxs.append(max_idx)
+                data.append(yvals)
+                labels.append(parsed_label)
+
+                batches[batch_size]['medians'] = medians
+                batches[batch_size]['median_idxs'] = median_idxs
+                batches[batch_size]['mins'] = mins
+                batches[batch_size]['min_idxs'] = min_idxs
+                batches[batch_size]['maxs'] = maxs
+                batches[batch_size]['max_idxs'] = max_idxs
+                batches[batch_size]['data'] = data
+                batches[batch_size]['labels'] = labels
+
+    # Now iterate through the parsed data
+    unique_batch_count = 1
+    for batch_size, plot_data in batches.items():
+
+        # Get data to plot
+        data_to_plot = plot_data['data']
+
+        # Get labels to plot
+        labels_to_plot = [' ']
+        labels = plot_data['labels']
+        for l in labels:
+            labels_to_plot.append(l)
+
+        # Begin plotting
+        plt.figure(unique_batch_count)
+        plt.title('TensorFlow\'s ResNet56 Training Rates on Various AWS Instances using the\n CIFAR-10 Dataset (60,000 Images) with a batch size of %d' % batch_size)
+        plt.boxplot(data_to_plot)
+        plt.xticks(np.arange(len(labels_to_plot)), labels_to_plot)
+        plt.grid()
+
+        # Get data to prepare text labels for the plot
+        num_log_files_passed_in = len(labels)
+        start_x = (1.0 / (num_log_files_passed_in * 4.0)) + 1.0 + (num_log_files_passed_in - 2) / 10
+        overall_max_val = -1
+        med_val_at_max = -1
+
+        # Unpack medians, maxs, mins
+        medians = plot_data['medians']
+        maxs = plot_data['maxs']
+        mins = plot_data['mins']
+
+        # Plot medians
+        for i in range(0,num_log_files_passed_in):
+
+            # Unpack
+            med = medians[i]
+            max_val = maxs[i]
+
+            # Set the x- and y-locations for the text that displays the med value
+            med_x_location, med_y_location = start_x, med
+
+            # Keep track of the overall max value
+            if max_val > overall_max_val:
+                overall_max_val = max_val
+                med_val_at_max = med
+
+            # Increment
+            start_x += 1
+
+            # Plot text
+            plt.text(med_x_location, med_y_location, 'median: %d' % (np.int(med)))
+
+        # Now plot mins and maxs
+        threshold = (overall_max_val / 50)
+        start_x = (1.0 / (num_log_files_passed_in * 4.0)) + 1.0 + (num_log_files_passed_in - 2) / 10
+        for i in range(0,num_log_files_passed_in):
+
+            # Unpack
+            max_val = maxs[i]
+            min_val = mins[i]
+
+            # Set the x- and y-locations for the text that displays the max
+            max_x_location, max_y_location = start_x, max_val
+
+            # Set the x- and y-locations for the text that displays the min
+            min_x_location, min_y_location = start_x, min_val
+
+            # Check to make sure the labels don't overlap
+            if (max_y_location - med_y_location) <= threshold:
+                max_y_location +=  threshold
+
+            plt.text(min_x_location, min_y_location, 'min: %d' % (np.int(min_val)))
+            plt.text(max_x_location, max_y_location, 'max: %d' % (np.int(max_val)))
+
+            start_x += 1
+
+        plt.ylabel('Average # of Examples / sec', fontsize=FONT_SIZE)
+        plt.xlabel('AWS Instance Type', fontsize=FONT_SIZE)
+
+        # Update the unique batch count
+        unique_batch_count += 1
+
+    plt.show()
+
 def main():
     all_results = {}
     for i, arg in enumerate(sys.argv):
         if i == 0:
             continue
+        instance_type, _ = arg.split('.log')
+        print('INSTANCE TYPE: %s' % instance_type)
         results = parse_file(arg)
         all_results[arg] = results
 
-    make_box_plot(all_results)
+    # Generate a combined box plot which shows all the results across different batch sizes
+    if i > 1:
+        generate_combined_box_plot(all_results)
+
+    # Generate individual box plots which show the results for different batch sizes
+    generate_individual_box_plots(all_results)
+
 
 if __name__ == "__main__":
     main()
