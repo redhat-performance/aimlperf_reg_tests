@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Set OCP release
+OCP_RELEASE=$1
+
+# Check OCP release
+if [[ -z ${OCP_RELEASE} ]]; then
+    echo "ERROR. Please provide an OpenShift release"
+    exit 1
+fi
+
 # Check for git
 do_not_have_git=$(which git | grep "which: no")
 if [[ ! -z $do_not_have_git ]]; then
@@ -27,6 +36,10 @@ fi
 # Clone the operator
 git clone https://github.com/zvonkok/special-resource-operator.git $special_resource_operator_folder
 
+# Check out the 4.2 release
+cd $special_resource_operator_folder
+git checkout release-${OCP_RELEASE}
+
 # Check for namespaces
 special_resource_operator_ns_check=$(oc get namespace/openshift-sro-operator)
 special_resource_ns_check=$(oc get namespace/openshift-sro)
@@ -45,5 +58,7 @@ fi
 
 # Deploy SRO
 cd $special_resource_operator_folder/..
+#PULL_POLICY=Always make -C special-resource-operator build
+#PULL_POLICY=Always make -C special-resource-operator deploy
 make -C special-resource-operator build
 make -C special-resource-operator deploy
