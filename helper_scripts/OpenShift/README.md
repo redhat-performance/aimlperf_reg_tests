@@ -62,7 +62,13 @@ $ sh gpu_setup.sh
 Run this script if you would like to deploy the NFD Operator on OpenShift. To run,
 
 ```
-$ sh nfd_setup.sh
+$ sh nfd_setup.sh <OCP-version>
+```
+
+e.g.,
+
+```
+$ sh nfd_setup.sh 4.2
 ```
 
 ### force\_delete\_namespace.sh
