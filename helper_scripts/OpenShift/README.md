@@ -54,7 +54,13 @@ $ sh nfd_setup.sh
 Then run:
 
 ```
-$ sh gpu_setup.sh
+$ sh gpu_setup.sh <OCP-version>
+```
+
+e.g.,
+
+```
+$ sh gpu_setup.sh 4.2
 ```
 
 ### nfd\_setup.sh
