@@ -320,8 +320,8 @@ echo "              - trainer.task" >> ${tfjob_yaml}
 echo "              - --batch_size=${BATCH_SIZE}" >> ${tfjob_yaml}
 echo "              - --training_steps=${TRAINING_STEPS}" >> ${tfjob_yaml}
 if [[ ! -z ${PULL_SECRET} ]]; then
-    echo "            imagePullSecrets:" >> ${tfjob_yaml}
-    echo "              - name: ${PULL_SECRET}" >> ${tfjob_yaml}
+    echo "          imagePullSecrets:" >> ${tfjob_yaml}
+    echo "            - name: ${PULL_SECRET}" >> ${tfjob_yaml}
 fi
 echo "    Worker:" >> ${tfjob_yaml}
 echo "      replicas: ${NUM_WORKERS}" >> ${tfjob_yaml}
@@ -338,8 +338,8 @@ echo "              - trainer.task" >> ${tfjob_yaml}
 echo "              - --batch_size=${BATCH_SIZE}" >> ${tfjob_yaml}
 echo "              - --training_steps=${TRAINING_STEPS}" >> ${tfjob_yaml}
 if [[ ! -z ${PULL_SECRET} ]]; then
-    echo "            imagePullSecrets:" >> ${tfjob_yaml}
-    echo "              - name: ${PULL_SECRET}" >> ${tfjob_yaml}
+    echo "          imagePullSecrets:" >> ${tfjob_yaml}
+    echo "            - name: ${PULL_SECRET}" >> ${tfjob_yaml}
 fi
 
 ###########################################
