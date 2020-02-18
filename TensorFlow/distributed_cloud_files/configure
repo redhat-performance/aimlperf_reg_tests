@@ -1,0 +1,390 @@
+#!/bin/bash
+
+# This script configures the app build
+
+while test $# -gt 0; do
+    case "${1}" in
+	-h|--help)
+            echo "This script configures the OpenShift TensorFlow benchmarking app"
+            echo ""
+            echo "[REQUIRED]"
+	    echo "  -v, --rhel-version        |  Version of RHEL to use. (Currently, only RHEL 7 is supported.)"
+            echo "  -s, --pull-secret         |  Pull secret name for pulling images from registry.redhat.io or the OpenShift Image Registry namespace. (You must have already created and loaded the secret into OpenShift.)"
+	    echo "  -i, --image               |  The full url to your image, along with the image tag (e.g., quay.io/example/tensorflow:sometag)"
+            echo "  -b, --backend             |  NumPy backend to use with TensorFlow. Choose from: {fftw, openblas, none}" 
+            echo ""
+            echo "[OPTIONAL]"
+	    echo "  GPU Configuration" 
+	    echo "  ------------------------------"
+	    echo "  -g, --use-gpu             |  Specify that you're using the GPU"
+	    echo ""
+	    echo "  Benchmark Configuration"
+	    echo "  ------------------------------"
+	    echo "  --training-steps          |  Number of training steps to use when testing the benchmarks"
+	    echo "  --batch-size              |  Batch size to use when testing the benchmarks"
+	    echo ""
+	    echo "  TfJob Configuration"
+	    echo "  ------------------------------"
+	    echo "  -n, --namespace           |  Namespace to run the job"
+	    echo "  -p, --parameters-servers  |  Number of parameter servers to use."
+	    echo "  -w. --workers             |  Number of workers to use"
+	    echo ""
+	    echo "  Instance Type Configuration"
+	    echo "  ------------------------------"
+	    echo "  Specify exact instance:"
+            echo "    -t, --instance-type     |  Instance type (e.g., m4.4xlarge, m4.large, etc.). Currently cannot be combined with AVX* instructions (this is a TODO)"
+	    echo ""
+	    echo "  Specify instance based on AVX* instructions:"
+            echo "    --use-avx               |  Use AVX instructions"
+	    echo "    --use-avx2              |  Use AVX and AVX2 instructions"
+	    echo "    --use-avx512            |  Use AVX, AVX2, and AVX512 instructions"
+	    echo ""
+	    echo "  CPU Manager Configuration"
+	    echo "  ------------------------------"
+	    echo "  --cpu-mgr                 |  Use the CPU manager"
+	    echo "  -m, --memory              |  Amount of memory (resources) to allocate"
+	    exit 1
+	    ;;
+	-v|--rhel-version)
+	    shift
+	    if [[ ${1} != "7" ]]; then
+	        echo "ERROR. RHEL ${1} is not supported at this time. The only supported OS is RHEL 7 at this time."
+		exit 1
+	    fi
+	    RHEL_VERSION=${1}
+	    shift
+	    ;;
+	-b|--backend)
+	    shift
+	    if [[ ${1} != "fftw" ]] && [[ ${1} != "openblas" ]] && [[ ${1} != "none" ]]; then
+	        echo "ERROR. Invalid backend choice. Choose from: {fftw, openblas, none}"
+		exit 1
+	    fi
+	    BACKEND=${1}
+            shift
+	    ;;
+	-s|--pull-secret)
+	    shift
+	    PULL_SECRET=${1}
+	    shift
+	    ;;
+	-i|--image)
+	    shift
+	    IMAGE_URL=${1}
+	    shift
+	    ;;
+	-n|--namespace)
+	    shift
+	    NAMESPACE=${1}
+	    shift
+	    ;;
+        -t|--instance-type)
+	    shift
+	    INSTANCE_TYPE=${1}
+	    shift
+	    ;;
+	--use-avx)
+	    AVX="avx"
+	    shift
+	    ;;
+	--use-avx2)
+	    AVX="avx2"
+	    shift
+	    ;;
+	--use-avx512)
+	    AVX="avx512"
+	    shift
+	    ;;
+	-g|--use-gpu)
+	    USE_GPU="true"
+	    shift
+	    ;;
+	--use-cpu-mgr)
+	    USE_CPU_MANAGER="true"
+	    shift
+	    ;;
+        -m|--memory)
+	    shift
+	    CPU_MANAGER_MEMORY=${1}
+	    shift
+	    ;;
+	--batch-size)
+	    shift
+	    BATCH_SIZE=${1}
+	    shift
+	    ;;
+	--training-steps)
+	    shift
+	    TRAINING_STEPS=${1}
+	    shift
+	    ;;
+	-p|--parameter-servers)
+	    shift
+	    PARAMETER_SERVERS=${1}
+            if [[ ! ${PARAMETER_SERVERS} =~ ^[0-9]+$ ]]; then
+                echo "ERROR. Number of parameter servers is not a number. You entered: ${PARAMETER_SERVERS}"
+                exit 1
+            elif (( PARAMETER_SERVERS <= 0 )); then
+                echo "ERROR. Number of parameter servers must be a positive number. You entered: ${PARAMETER_SERVERS}"
+                exit 1
+	    fi
+	    shift
+	    ;;
+	-w|--workers)
+	    shift
+	    NUM_WORKERS=${1}
+            if [[ ! ${NUM_WORKERS} =~ ^[0-9]+$ ]]; then
+                echo "ERROR. Number of workers is not a number. You entered: ${NUM_WORKERS}"
+                exit 1
+            elif (( PARAMETER_SERVERS <= 0 )); then
+                echo "ERROR. Number of parameter servers must be a positive number. You entered: ${NUM_WORKERS}"
+                exit 1
+	    fi
+	    shift
+	    ;;
+	*)
+	    echo "ERROR. Unrecognized option ${1}"
+	    break
+	    ;;
+    esac	
+done
+###########################################
+#         Set default parameters          #
+###########################################
+DEFAULT_BATCH_SIZE=32
+DEFAULT_NAMESPACE="openshift-image-registry"
+DEFAULT_TRAINING_STEPS=1000
+
+###########################################
+#           Check user's inputs           #
+###########################################
+# Check if user supplied 'RHEL_VERSION'
+if [[ -z ${RHEL_VERSION} ]]; then
+    echo "ERROR. Please supply a RHEL version."
+    exit 1
+fi
+
+# Check if user wants to use CPU manager
+if [[ ! -z ${CPU_MANAGER} ]]; then
+    echo "ERROR. CPU Manager is currently not supported by this script."
+    exit 1
+fi
+
+# Check if image url was supplied
+if [[ -z ${IMAGE_URL} ]]; then
+    echo "ERROR. TensorFlow image url was not provided. Please provide a url to your pre-built TensorFlow image using the '-i' or '--image' flag. Exiting now."
+    exit 1
+fi
+
+# Check if pull secret was supplied
+if [[ -z ${PULL_SECRET} ]]; then
+    echo "WARNING. Pull secret was not suppied. If your image requires a pull secret, please provide an Kubernetes secret with the '-s' or '--pull-secret' flag."
+fi
+
+# Check if number of parameter servers was supplied
+if [[ -z ${PARAMETER_SERVERS} ]]; then
+    echo "ERROR. Number of parameter servers was not supplied. Please provide the number of parameter servers to use via the '-p' or '--parameter-servers' flag. Exiting now."
+    exit 1
+fi
+
+# Check if number of workers was supplied
+if [[ -z ${NUM_WORKERS} ]]; then
+    echo "ERROR. Number of workers was not supplied. Please provide the number of workers to use via the '-w' or '--workers' flag. Exiting now."
+    exit 1
+fi
+
+# Check if the batch size was supplied
+if [[ -z ${BATCH_SIZE} ]]; then
+    echo "WARNING. Batch size was not supplied. Setting the batch size equal to ${DEFAULT_BATCH_SIZE}. If you would like to set the batch size, use the '--batch-size' flag."
+    BATCH_SIZE=${DEFAULT_BATCH_SIZE}
+fi
+
+# Check if the number of training steps was supplied
+if [[ -z ${TRAINING_STEPS} ]]; then
+    echo "WARNING. Number of training steps was not supplied. Setting the number of training steps equal to ${DEFAULT_TRAINING_STEPS}. If you would like to set the number of training steps, use the '--training-steps' flag."
+    TRAINING_STEPS=${DEFAULT_TRAINING_STEPS}
+fi
+
+# Check if the number of namespace was supplied
+if [[ -z ${NAMESPACE} ]]; then
+    echo "WARNING. Namespace was not supplied. Setting the namespace to ${DEFAULT_NAMESPACE}. If you would like to set the namespace, use the '-n' or '--namespace' flag."
+    NAMESPACE=${DEFAULT_NAMESPACE}
+fi
+
+# Check the instance type, if passed in
+if [[ ! -z ${INSTANCE_TYPE} ]]; then
+
+    instance_type_label="beta.kubernetes.io/instance-type=${INSTANCE_TYPE}"
+    matching_nodes=$(kubectl describe node -l $instance_type_label)
+
+    # If the instance type does not exist, throw an error
+    if [[ -z ${matching_nodes} ]]; then
+        echo "ERROR. No nodes found for instance type ${INSTANCE_TYPE}"
+        exit 1
+    fi
+fi
+
+# Set device type
+if [[ ! -z ${USE_GPU} ]]; then
+    device="gpu"
+    echo "ERROR. Using the GPU is currently not supported. Support will be added in the future."
+    exit 1
+else
+    device="cpu"
+fi
+
+# Set backend
+if [[ -z ${BACKEND} ]] || [[ ${BACKEND} == "none" ]]; then
+    BACKEND="unspecified"
+fi
+
+# Set the imagestream target
+if [[ ! -z ${AVX} ]]; then
+    build_image_template_name="tensorflow-${BACKEND}-${AVX}-build-image-rhel${RHEL_VERSION}"
+    echo "ERROR. AVX instructions options are currently not supported. Support will be added in the future."
+    exit 1
+elif [[ ! -z ${USE_GPU} ]]; then
+    if [[ ${BACKEND} == "none" ]]; then
+        build_image_template_name="tensorflow-pip-build-image-rhel${RHEL_VERSION}-gpu"
+    elif [[ ${RHEL_VERSION} == "7" ]]; then
+        build_image_template_name="tensorflow-${BACKEND}-build-image-ubi${RHEL_VERSION}-gpu"
+    else
+        build_image_template_name="tensorflow-${BACKEND}-build-image-rhel${RHEL_VERSION}-gpu"
+    fi
+else
+    build_image_template_name="tensorflow-${BACKEND}-build-image-rhel${RHEL_VERSION}"
+fi
+
+# Set Dockerfile name
+if [[ ${BACKEND} == "fftw" ]]; then
+    blas_folder="FFTW_backend"
+elif [[ ${BACKEND} == "unspecified" ]]; then
+    blas_folder="default"
+else
+    blas_folder="OpenBLAS_backend"
+fi
+if [[ ${RHEL_VERSION} == "7" ]]; then
+    os_type="ubi7"
+else
+    os_type="ubi8"
+fi
+if [[ ${device} == "gpu" ]]; then
+    cuda_version="10" #hard coded for now since there are no CUDA 10.1 builds yet
+    dockerfile_path="../Dockerfiles/${blas_folder}"
+    
+    if [[ ${BACKEND} == "fftw" ]] || [[ ${BACKEND} == "openblas" ]]; then
+	 dockerfile_path="${dockerfile_path}/Dockerfile.kubeflow_${os_type}_cuda${cuda_version}"
+    else
+	 dockerfile_path="${dockerfile_path}/rhel${RHEL_VERSION}/${device}/Dockerfile.kubeflow_${os_type}_cuda${cuda_version}_official"
+    fi
+else
+    dockerfile_path="../Dockerfiles/${blas_folder}/rhel${RHEL_VERSION}/${device}"
+    dockerfile_path="${dockerfile_path}/Dockerfile.kubeflow_${os_type}"
+fi
+
+# Find out if we're using podman or docker
+if [[ ! -z `which podman` ]]; then
+    image_builder=`which podman`
+elif [[ ! -z `which docker` ]]; then 
+    image_builder=`which docker`
+else
+    echo "ERROR. Could not find podman or docker for building images"
+    exit 1
+fi
+###########################################
+#      Save configure options to YAML     #
+###########################################
+# Set YAML file
+tfjob_yaml="tfjob-${device}.yaml"
+
+# YAML generation
+echo "apiVersion: kubeflow.org/v1" > ${tfjob_yaml}
+echo "kind: TFJob" >> ${tfjob_yaml}
+echo "metadata:" >> ${tfjob_yaml}
+echo "  generateName: tfjob-" >> ${tfjob_yaml}
+echo "  namespace: ${NAMESPACE}" >> ${tfjob_yaml}
+echo "spec:" >> ${tfjob_yaml}
+echo "  tfReplicaSpecs:" >> ${tfjob_yaml}
+echo "    PS:" >> ${tfjob_yaml}
+echo "      replicas: ${PARAMETER_SERVERS}" >> ${tfjob_yaml}
+echo "      restartPolicy: Never" >> ${tfjob_yaml}
+echo "      template:" >> ${tfjob_yaml}
+echo "        spec:" >> ${tfjob_yaml}
+echo "          containers:" >> ${tfjob_yaml}
+echo "          - name: tensorflow" >> ${tfjob_yaml}
+echo "            image: ${IMAGE_URL}" >> ${tfjob_yaml}
+echo "            command:" >> ${tfjob_yaml}
+echo "              - python3" >> ${tfjob_yaml}
+echo "              - -m" >> ${tfjob_yaml}
+echo "              - trainer.task" >> ${tfjob_yaml}
+echo "              - --batch_size=${BATCH_SIZE}" >> ${tfjob_yaml}
+echo "              - --training_steps=${TRAINING_STEPS}" >> ${tfjob_yaml}
+if [[ ! -z ${PULL_SECRET} ]]; then
+    echo "            imagePullSecrets:" >> ${tfjob_yaml}
+    echo "              - name: ${PULL_SECRET}" >> ${tfjob_yaml}
+fi
+echo "    Worker:" >> ${tfjob_yaml}
+echo "      replicas: ${NUM_WORKERS}" >> ${tfjob_yaml}
+echo "      restartPolicy: Never" >> ${tfjob_yaml}
+echo "      template:" >> ${tfjob_yaml}
+echo "        spec:" >> ${tfjob_yaml}
+echo "          containers:" >> ${tfjob_yaml}
+echo "          - name: tensorflow" >> ${tfjob_yaml}
+echo "            image: ${IMAGE_URL}" >> ${tfjob_yaml}
+echo "            command:" >> ${tfjob_yaml}
+echo "              - python3" >> ${tfjob_yaml}
+echo "              - -m" >> ${tfjob_yaml}
+echo "              - trainer.task" >> ${tfjob_yaml}
+echo "              - --batch_size=${BATCH_SIZE}" >> ${tfjob_yaml}
+echo "              - --training_steps=${TRAINING_STEPS}" >> ${tfjob_yaml}
+if [[ ! -z ${PULL_SECRET} ]]; then
+    echo "            imagePullSecrets:" >> ${tfjob_yaml}
+    echo "              - name: ${PULL_SECRET}" >> ${tfjob_yaml}
+fi
+
+###########################################
+#    Save configure options to Makefile   #
+###########################################
+# Set Makefile name
+makefile="./Makefile"
+
+# Remove existing Makefile
+rm -f ${makefile}
+
+# Populate Makefile vars
+echo "# Image info" >> ${makefile}
+echo "IMAGE_BUILDER=${image_builder}" >> ${makefile}
+echo "DOCKERFILE=${dockerfile_path}" >> ${makefile}
+echo "IMAGE_NAME=${IMAGE_URL}" >> ${makefile}
+echo "" >> ${makefile}
+echo "# YAML info" >> ${makefile}
+echo "TFJOB_YAML=${tfjob_yaml}" >> ${makefile}
+echo "" >> ${makefile}
+
+# Optional: instance type setting
+if [[ ! -z ${INSTANCE_TYPE} ]]; then
+    echo "INSTANCE_TYPE=${INSTANCE_TYPE}" >> ${makefile}
+    echo "" >> ${makefile}
+fi
+
+# Set targets
+echo "all: start_tfjob" >> ${makefile}
+echo "" >> ${makefile}
+echo "build: build_image push_image" >> ${makefile}
+echo "" >> ${makefile}
+echo "build_image:" >> ${makefile}
+echo -e "\t\$(IMAGE_BUILDER) build --tag \$(IMAGE_NAME) --layers=false --squash -f \$(DOCKERFILE) ../.." >> ${makefile}
+echo "" >> ${makefile}
+echo "push_image:" >> ${makefile}
+echo -e "\t\$(IMAGE_BUILDER) push \$(IMAGE_NAME)" >> ${makefile}
+echo "" >> ${makefile}
+echo "start_tfjob:" >> ${makefile}
+echo -e "\tkubectl create -f \$(TFJOB_YAML)" >> ${makefile}
+echo "" >> ${makefile}
+echo "clean: clean_tfjob clean_image" >> ${makefile}
+echo "" >> ${makefile}
+echo "clean_image:" >> ${makefile}
+echo -e "\t\$(IMAGE_BUILDER) rmi \$(IMAGE_NAME)" >> ${makefile}
+echo "" >> ${makefile}
+echo "clean_tfjob:" >> ${makefile}
+echo -e "\tkubectl delete -f \$(TFJOB_YAML)" >> ${makefile}
