@@ -49,7 +49,7 @@
     shell: |
       avx512cd=$(lscpu | grep 'Flags' | grep avx512cd)
       echo $avx512cd
-   register: HAVE_AVX512CD
+    register: HAVE_AVX512CD
 
   # Next step is to determine if we have FMA instructions that we can take advantage of
   - name: Determine if we have FMA instructions
