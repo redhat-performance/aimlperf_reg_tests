@@ -43,7 +43,7 @@
     CC="{{ CC }} -lblas -lgfortran -lm -std=c99" python3 setup.py build_ext --build-lib fftw --fcompiler=gnu95
   environment:
     LD_LIBRARY_PATH: '/usr/lib:/usr/lib64:/usr/lib64/atlas:/usr/local/lib:{{ GCC_LIBS }}'
-    PYTHONPATH: '{{ PYTHONPATH }}:{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages'
+    PYTHONPATH: '{{ PYTHONPATH }}:{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages'
   when: BLAS_BACKEND == 'fftw'
   register: numpy_fftw_log
 

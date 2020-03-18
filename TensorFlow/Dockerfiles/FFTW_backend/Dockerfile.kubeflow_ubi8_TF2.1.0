@@ -1,0 +1,118 @@
+FROM registry.access.redhat.com/ubi8
+MAINTAINER Courtney Pacheco <cpacheco@redhat.com>
+ENV LANG=en_US.utf8
+USER root
+ENV BUILDER_VERSION 1.0
+
+# RHEL version (for building FFTW)
+ENV RHEL_VERSION=8
+
+# Python version
+ENV PYTHON_VERSION=3.6.9
+
+# TensorFlow version
+ENV TENSORFLOW_VERSION=2.1.0
+
+# Bazel version
+ENV BAZEL_VERSION=0.27.1
+
+# Python path
+ENV PYTHONPATH=/usr/local/lib/python3.6
+
+# Set up labels
+LABEL io.openshift.expose-services="8080:http"
+
+# Put on port 8080
+EXPOSE 8080
+
+# Set timeout for yum (in seconds) to prevent Curl timeout errors w/ yum
+ENV YUM_TIMEOUT=300
+RUN sed -i "/[main]/a timeout=${YUM_TIMEOUT}" /etc/yum.conf
+
+# Set top directory
+ENV TOPDIR=/home
+
+# Set FFTW + TensorFlow install paths
+ENV FFTW_INSTALL_PATH=/opt/fftw3
+ENV TENSORFLOW_INSTALL_PATH=/opt/tensorflow
+
+# Set build directories
+ENV FFTW_BUILD_PATH=${TOPDIR}/build/fftw3
+ENV TENSORFLOW_BUILD_PATH=${TOPDIR}/build/tensorflow
+
+# Set TensorFlow MNIST path
+ENV TENSORFLOW_MNIST_BENCHMARKS=/home/mnist_neural_network
+
+# Set scripts path
+ENV SCRIPTS_DIR=${TOPDIR}/scripts
+
+# Set playbooks paths
+ENV PLAYBOOKS_DIR=${TOPDIR}/playbooks
+ENV FFTW_PREREQS_PLAYBOOK=${PLAYBOOKS_DIR}/fftw_package_installation
+ENV TF_PREREQS_PLAYBOOK=${PLAYBOOKS_DIR}/tensorflow_package_installation
+ENV FFTW_INSTALLATION=${PLAYBOOKS_DIR}/FFTW_installation
+ENV TENSORFLOW_INSTALLATION=${PLAYBOOKS_DIR}/TensorFlow_installation
+
+# Create folders for playbooks and folder for playbooks cache
+RUN mkdir -p ${FFTW_PREREQS_PLAYBOOK} && \
+    mkdir -p ${TF_PREREQS_PLAYBOOK} && \
+    mkdir -p ${FFTW_INSTALLATION} && \
+    mkdir -p ${TENSORFLOW_INSTALLATION} && \
+    mkdir -p ${SCRIPTS_DIR} && \
+    mkdir -p ${TOPDIR}/.cache && \
+    mkdir -p ${TENSORFLOW_MNIST_BENCHMARKS}
+
+# Copy playbooks and scripts
+COPY FFTW/playbooks/package_installation ${FFTW_PREREQS_PLAYBOOK}
+COPY TensorFlow/playbooks/package_installation ${TF_PREREQS_PLAYBOOK}
+COPY FFTW/playbooks/FFTW_installation ${FFTW_INSTALLATION}
+COPY TensorFlow/playbooks/TensorFlow_installation ${TENSORFLOW_INSTALLATION}
+COPY helper_scripts/Python/install_python_from_source.sh ${SCRIPTS_DIR}
+COPY helper_scripts/Ansible/install_ansible_from_source.sh ${SCRIPTS_DIR}
+
+# Copy the MINST benchmarks
+COPY TensorFlow/distributed_cloud_files/src/fashion_mnist.py ${TENSORFLOW_MNIST_BENCHMARKS}
+
+# Put on port 8080
+EXPOSE 8080
+
+# Create symlink for NumPy so that it can find endian.h
+RUN yum -y install git glibc glibc-devel && \
+    ln -s /usr/include/endian.h /usr/include/sys/endian.h && \
+    rm -rf /var/cache/dnf/*
+
+# Install Python 3.6 and Ansible version ${ANSIBLE_VERSION} from source
+RUN cd ${SCRIPTS_DIR} && \
+    yum -y install python3 python3-devel && \
+    sh install_ansible_from_source.sh ${ANSIBLE_VERSION} && \
+    cd .. && \
+    rm -rf ${SCRIPTS_DIR} && \
+    rm -rf /var/cache/dnf/*
+
+# Install FFTW + TensorFlow prerequisites via Ansible and pip3
+RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', use_ubi: 'yes', update_dnf: 'no'}" && \
+    cd ${TF_PREREQS_PLAYBOOK} && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', ubi: 'yes', bazel_version: '${BAZEL_VERSION}'}" && \
+    rm -rf ${FFTW_PREREQS_PLAYBOOK} ${TF_PREREQS_PLAYBOOK}
+
+# Install FFTW
+RUN cd ${FFTW_INSTALLATION} && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{install_dir: '${FFTW_INSTALL_PATH}', build_dir: '${FFTW_BUILD_PATH}', rhel_version: '${RHEL_VERSION}', cc: '/usr/bin/gcc', s2i: 'yes'}" && \
+    cd .. && \
+    rm -rf ${FFTW_INSTALLATION} ${FFTW_BUILD_PATH}
+
+# Install TensorFlow+NumPy
+RUN cd ${TENSORFLOW_INSTALLATION} && \
+    ln -s /usr/bin/python3 /usr/bin/python && \
+    export x86_64_folder=$(ls /usr/lib | grep x86_64) && \
+    export gcc_libs="/usr/lib/${x86_64_folder}" && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', cc: '/usr/bin/gcc', gcc_libs: '${gcc_libs}', blas_library_dirs: '${FFTW_INSTALL_PATH}/lib', blas_include_dirs: '${FFTW_INSTALL_PATH}/include', tf_install_dir: '${TENSORFLOW_INSTALL_PATH}', device: 'cpu', tf_version: ${TENSORFLOW_VERSION}, pythonpath: '/usr/lib/python3.6/site-packages', python_executable: '/usr/bin/python3', use_s2i: 'yes'}" && \
+    cd .. && \
+    rm -rf ${TENSORFLOW_INSTALLATION} ${HOME}/build/tensorflow ${HOME}/build/numpy ${HOME}/.cache/bazel*
+
+# Set PYTHONPATH
+ENV PYTHONPATH=${PYTHONPATH}:${TENSORFLOW_INSTALL_PATH}
+
+# Set workdir
+WORKDIR ${TENSORFLOW_MNIST_BENCHMARKS}

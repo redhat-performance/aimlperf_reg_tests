@@ -27,10 +27,7 @@ RUN sed -i "/[main]/a timeout=${YUM_TIMEOUT}" /etc/yum.conf
 ENV TOPDIR=${HOME}
 
 # Set TensorFlow benchmarks path
-ENV TENSORFLOW_BENCHMARKS=/opt/tf-benchmarks
-
-# Set Kubeflow path
-ENV KUBEFLOW=/tmp/kubeflow
+ENV TENSORFLOW_BENCHMARKS=/opt/models
 
 # Create folders for playbooks and folder for playbooks cache
 RUN mkdir -p ${TENSORFLOW_BENCHMARKS} && \
@@ -65,20 +62,24 @@ RUN chmod 777 ${TOPDIR} && \
     touch ${TOPDIR}/.gitconfig && \
     chmod 777 ${TOPDIR}/.gitconfig
 
-# Install TensorFlow GPU
-RUN pip3 install tensorflow==2.0.0b1
+# Install TensorFlow GPU and Python 'requests'
+RUN pip3 install tensorflow==2.0.0b1 && \
+    pip3 install requests
 
 # Get TensorFlow benchmarks
-RUN git clone https://github.com/tensorflow/benchmarks.git ${TENSORFLOW_BENCHMARKS}
+RUN git clone https://github.com/tensorflow/models.git ${TENSORFLOW_BENCHMARKS} && \
+    cd ${TENSORFLOW_BENCHMARKS} && \
+    git checkout tags/v2.1.0
 
-# Get Kubeflow git repo so that we can get 'launcher.py' from tf-controller-examples. 'launcher.py'
-# will enable us to run a TfJob custom resource (CR).
-RUN git clone https://github.com/kubeflow/kubeflow.git ${KUBEFLOW} && \
-    cd ${KUBEFLOW}/tf-controller-examples/tf-cnn && \
-    cp launcher.py /opt && \
-    cd ${KUBEFLOW}/.. && \
-    rm -rf ${KUBEFLOW}
+# Turn off eager execution
+RUN sed -i "24itf.compat.v1.disable_eager_execution()" ${TENSORFLOW_BENCHMARKS}/official/vision/image_classification/resnet_cifar_main.py
 
-# Set permissions and entrypoint
-RUN chmod u+x /opt/*
-ENTRYPOINT ["/opt/launcher.py"]
+# Add the 'models' folder to the PYTHONPATH environment variable
+ENV PYTHONPATH=${PYTHONPATH}:${TENSORFLOW_BENCHMARKS}
+
+# Download and extract CIFAR-10 dataset
+RUN cd ${TENSORFLOW_BENCHMARKS}/official/vision/image_classification && \
+    python3 ../../r1/resnet/cifar10_download_and_extract.py
+
+# Set workdir
+WORKDIR ${TENSORFLOW_BENCHMARKS}/official/vision/image_classification

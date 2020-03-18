@@ -12,6 +12,7 @@ while test $# -gt 0; do
             echo "  -s, --pull-secret         |  Pull secret name for pulling images from registry.redhat.io or the OpenShift Image Registry namespace. (You must have already created and loaded the secret into OpenShift.)"
 	    echo "  -i, --image               |  The full url to your image, along with the image tag (e.g., quay.io/example/tensorflow:sometag)"
             echo "  -b, --backend             |  NumPy backend to use with TensorFlow. Choose from: {fftw, openblas, none}" 
+	    echo "  -d, --num-devices         |  Number of CPUs or GPUs to use"
             echo ""
             echo "[OPTIONAL]"
 	    echo "  GPU Configuration" 
@@ -20,8 +21,9 @@ while test $# -gt 0; do
 	    echo ""
 	    echo "  Benchmark Configuration"
 	    echo "  ------------------------------"
-	    echo "  --training-steps          |  Number of training steps to use when testing the benchmarks"
-	    echo "  --batch-size              |  Batch size to use when testing the benchmarks"
+	    echo "  -e, --num-epochs          |  Number of epochs"
+	    echo "  -bs, --batch-size         |  Batch size to use when testing the benchmarks"
+	    echo "  -nn, --neurons            |  Number of neurons"
 	    echo ""
 	    echo "  TfJob Configuration"
 	    echo "  ------------------------------"
@@ -47,8 +49,8 @@ while test $# -gt 0; do
 	    ;;
 	-v|--rhel-version)
 	    shift
-	    if [[ ${1} != "7" ]]; then
-	        echo "ERROR. RHEL ${1} is not supported at this time. The only supported OS is RHEL 7 at this time."
+	    if [[ ${1} != "7" ]] && [[ ${1} != "8" ]]; then
+	        echo "ERROR. RHEL ${1} is not supported at this time. The only supported OSes are RHEL 7 and RHEL 8 at this time."
 		exit 1
 	    fi
 	    RHEL_VERSION=${1}
@@ -108,14 +110,9 @@ while test $# -gt 0; do
 	    CPU_MANAGER_MEMORY=${1}
 	    shift
 	    ;;
-	--batch-size)
+	-bs|--batch-size)
 	    shift
 	    BATCH_SIZE=${1}
-	    shift
-	    ;;
-	--training-steps)
-	    shift
-	    TRAINING_STEPS=${1}
 	    shift
 	    ;;
 	-p|--parameter-servers)
@@ -136,8 +133,44 @@ while test $# -gt 0; do
             if [[ ! ${NUM_WORKERS} =~ ^[0-9]+$ ]]; then
                 echo "ERROR. Number of workers is not a number. You entered: ${NUM_WORKERS}"
                 exit 1
-            elif (( PARAMETER_SERVERS <= 0 )); then
-                echo "ERROR. Number of parameter servers must be a positive number. You entered: ${NUM_WORKERS}"
+            elif (( NUM_WORKERS <= 0 )); then
+                echo "ERROR. Number of workers must be a positive number. You entered: ${NUM_WORKERS}"
+                exit 1
+	    fi
+	    shift
+	    ;;
+	-d|--num-devices)
+	    shift
+	    NUM_DEVICES=${1}
+            if [[ ! ${NUM_DEVICES} =~ ^[0-9]+$ ]]; then
+                echo "ERROR. Number of devices is not a number. You entered: ${NUM_DEVICES}"
+                exit 1
+            elif (( NUM_DEVICES <= 0 )); then
+                echo "ERROR. Number of devices must be a positive number. You entered: ${NUM_DEVICES}"
+                exit 1
+	    fi
+	    shift
+	    ;;
+        -e|--num-epochs)
+	    shift
+	    NUM_EPOCHS=${1}
+            if [[ ! ${NUM_EPOCHS} =~ ^[0-9]+$ ]]; then
+                echo "ERROR. Number of epochs is not a number. You entered: ${NUM_EPOCHS}"
+                exit 1
+            elif (( NUM_EPOCHS <= 0 )); then
+                echo "ERROR. Number of epochs must be a positive number. You entered: ${NUM_EPOCHS}"
+                exit 1
+	    fi
+	    shift
+	    ;;
+        -nn|--num-neurons)
+	    shift
+	    NUM_NEURONS=${1}
+            if [[ ! ${NUM_NEURONS} =~ ^[0-9]+$ ]]; then
+                echo "ERROR. Number of neurons is not a number. You entered: ${NUM_NEURONS}"
+                exit 1
+            elif (( NUM_NEURONS <= 0 )); then
+                echo "ERROR. Number of neurons must be a positive number. You entered: ${NUM_NEURONS}"
                 exit 1
 	    fi
 	    shift
@@ -151,9 +184,10 @@ done
 ###########################################
 #         Set default parameters          #
 ###########################################
-DEFAULT_BATCH_SIZE=32
+DEFAULT_BATCH_SIZE=100
+DEFAULT_NUM_EPOCHS=100
+DEFAULT_NUM_NEURONS=128
 DEFAULT_NAMESPACE="openshift-image-registry"
-DEFAULT_TRAINING_STEPS=1000
 
 ###########################################
 #           Check user's inputs           #
@@ -161,6 +195,12 @@ DEFAULT_TRAINING_STEPS=1000
 # Check if user supplied 'RHEL_VERSION'
 if [[ -z ${RHEL_VERSION} ]]; then
     echo "ERROR. Please supply a RHEL version."
+    exit 1
+fi
+
+# Check if number of devices was passed in
+if [[ -z ${NUM_DEVICES} ]]; then
+    echo "ERROR. Please provide the number of devices to use."
     exit 1
 fi
 
@@ -199,10 +239,16 @@ if [[ -z ${BATCH_SIZE} ]]; then
     BATCH_SIZE=${DEFAULT_BATCH_SIZE}
 fi
 
-# Check if the number of training steps was supplied
-if [[ -z ${TRAINING_STEPS} ]]; then
-    echo "WARNING. Number of training steps was not supplied. Setting the number of training steps equal to ${DEFAULT_TRAINING_STEPS}. If you would like to set the number of training steps, use the '--training-steps' flag."
-    TRAINING_STEPS=${DEFAULT_TRAINING_STEPS}
+# Check if the number of epochs was supplied
+if [[ -z ${NUM_EPOCHS} ]]; then
+    echo "WARNING. Number of epochs was not supplied. Setting the number of epochs equal to ${DEFAULT_NUM_EPOCHS}. If you would like to set the number of epochs, use the '-e' or '--num-epochs' flag."
+    NUM_EPOCHS=${DEFAULT_NUM_EPOCHS}
+fi
+
+# Check if the number of neurons was supplied
+if [[ -z ${NUM_NEURONS} ]]; then
+    echo "WARNING. Number of neurons was not supplied. Setting the number of neurons equal to ${DEFAULT_NUM_NEURONS}. If you would like to set the number of neurons, use the '-nn' or '--num-neurons' flag."
+    NUM_NEURONS=${DEFAULT_NUM_NEURONS}
 fi
 
 # Check if the number of namespace was supplied
@@ -315,10 +361,11 @@ echo "          - name: tensorflow" >> ${tfjob_yaml}
 echo "            image: ${IMAGE_URL}" >> ${tfjob_yaml}
 echo "            command:" >> ${tfjob_yaml}
 echo "              - python3" >> ${tfjob_yaml}
-echo "              - -m" >> ${tfjob_yaml}
-echo "              - trainer.task" >> ${tfjob_yaml}
-echo "              - --batch_size=${BATCH_SIZE}" >> ${tfjob_yaml}
-echo "              - --training_steps=${TRAINING_STEPS}" >> ${tfjob_yaml}
+echo "              - fashion_mnist.py" >> ${tfjob_yaml}
+echo "              - \"${NUM_EPOCHS}\"" >> ${tfjob_yaml}
+echo "              - \"${NUM_NEURONS}\"" >> ${tfjob_yaml}
+echo "              - \"${BATCH_SIZE}\"" >> ${tfjob_yaml}
+echo "            imagePullPolicy: Always" >> ${tfjob_yaml}
 if [[ ! -z ${PULL_SECRET} ]]; then
     echo "          imagePullSecrets:" >> ${tfjob_yaml}
     echo "            - name: ${PULL_SECRET}" >> ${tfjob_yaml}
@@ -333,10 +380,11 @@ echo "          - name: tensorflow" >> ${tfjob_yaml}
 echo "            image: ${IMAGE_URL}" >> ${tfjob_yaml}
 echo "            command:" >> ${tfjob_yaml}
 echo "              - python3" >> ${tfjob_yaml}
-echo "              - -m" >> ${tfjob_yaml}
-echo "              - trainer.task" >> ${tfjob_yaml}
-echo "              - --batch_size=${BATCH_SIZE}" >> ${tfjob_yaml}
-echo "              - --training_steps=${TRAINING_STEPS}" >> ${tfjob_yaml}
+echo "              - fashion_mnist.py" >> ${tfjob_yaml}
+echo "              - \"${NUM_EPOCHS}\"" >> ${tfjob_yaml}
+echo "              - \"${NUM_NEURONS}\"" >> ${tfjob_yaml}
+echo "              - \"${BATCH_SIZE}\"" >> ${tfjob_yaml}
+echo "            imagePullPolicy: Always" >> ${tfjob_yaml}
 if [[ ! -z ${PULL_SECRET} ]]; then
     echo "          imagePullSecrets:" >> ${tfjob_yaml}
     echo "            - name: ${PULL_SECRET}" >> ${tfjob_yaml}

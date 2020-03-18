@@ -7,13 +7,13 @@
   vars:
 
     # Version of RHEL to use
-    RHEL_VERSION: '{{ rhel_version | default("7") }}'
+    RHEL_VERSION: '{{ rhel_version | default("8") }}'
 
     # Version of TensorFlow to use
-    TENSORFLOW_VERSION: '{{ tf_version | default("2.0.0") }}'
+    TENSORFLOW_VERSION: '{{ tf_version | default("2.1.0") }}'
 
     # Where to install TensorFlow to
-    TENSORFLOW_INSTALL_DIR: '{{ tf_install_dir | default("/home/tensorflow") }}'
+    TENSORFLOW_INSTALL_DIR: '{{ tf_install_dir | default("/opt/tensorflow") }}'
 
     # Version of NumPy to use
     NUMPY_VERSION: '{{ np_version | default("1.17.3") }}'
@@ -50,6 +50,10 @@
     # Use UBI or s2i?
     UBI: '{{ use_ubi | default("no") }}'
     S2I: '{{ use_s2i | default("no") }}'
+
+    # Which AVX instructions to use? If empty, this playbook will determine
+    # the instructions for you. Otherwise, input 'avx', 'avx2', or 'avx512'
+    AVX_INSTRUCTIONS: '{{ avx_instructions | default("") }}'
 
   roles:
     # Setup NumPy and TensorFlow build folders

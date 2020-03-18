@@ -3,14 +3,14 @@
 - name: Create NumPy 'site-packages' install folder so that NumPy can write to it
   file:
     state: directory
-    path: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages'
+    path: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages'
 
 - name: Install NumPy (FFTW backend)
   shell: |
     cd {{ NUMPY_BUILD_DIR }}
     CC="gcc -lblas -lgfortran" python3 setup.py install --prefix={{ NUMPY_INSTALL_DIR }}
   environment:
-    PYTHONPATH: '{{ PYTHONPATH }}:{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages'
+    PYTHONPATH: '{{ PYTHONPATH }}:{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages'
     LD_LIBRARY_PATH: '{{ BLAS_LIB_DIRS }}'
   when: BLAS_BACKEND == 'fftw'
 

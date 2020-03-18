@@ -14,45 +14,89 @@
   shell: echo '{{ GCC_VERSION.stdout }}' | cut -d"." -f 2
   register: GCC_RELEASE
 
-# Next step is to determine if we have any AVX* instructions that we can take advantage of
-- name: Determine if we have AVX instructions
-  shell: |
-    avx=$(lscpu | grep 'Flags' | grep avx)
-    echo $avx
-  register: HAVE_AVX
 
-- name: Determine if we have AVX2 instructions
-  shell: |
-    avx2=$(lscpu | grep 'Flags' | grep avx2)
-    echo $avx2
-  register: HAVE_AVX2
+# For users who want this playbook to determine the AVX instructions on their machine...
+- block:
 
-# XXX:TODO --> Make check to see which version of gcc is being used. TensorFlow requires
-# gcc version 4.9 or greater if using -mavx512f, -mavx512dq, etc.
-- name: Determine if we have AVX512F instructions
-  shell: |
-    avx512f=$(lscpu | grep 'Flags' | grep avx512f)
-    echo $avx512f
-  register: HAVE_AVX512F
+  # Next step is to determine if we have any AVX* instructions that we can take advantage of
+  - name: Determine if we have AVX instructions
+    shell: |
+      avx=$(lscpu | grep 'Flags' | grep avx)
+      echo $avx
+    register: HAVE_AVX
 
-- name: Determine if we have AVX512DQ instructions
-  shell: |
-    avx512dq=$(lscpu | grep 'Flags' | grep avx512dq)
-    echo $avx512dq
-  register: HAVE_AVX512DQ
+  - name: Determine if we have AVX2 instructions
+    shell: |
+      avx2=$(lscpu | grep 'Flags' | grep avx2)
+      echo $avx2
+    register: HAVE_AVX2
 
-- name: Determine if we have AVX512CD instructions
-  shell: |
-    avx512cd=$(lscpu | grep 'Flags' | grep avx512cd)
-    echo $avx512cd
-  register: HAVE_AVX512CD
+  # XXX:TODO --> Make check to see which version of gcc is being used. TensorFlow requires
+  # gcc version 4.9 or greater if using -mavx512f, -mavx512dq, etc.
+  - name: Determine if we have AVX512F instructions
+    shell: |
+      avx512f=$(lscpu | grep 'Flags' | grep avx512f)
+      echo $avx512f
+    register: HAVE_AVX512F
 
-# Next step is to determine if we have FMA instructions that we can take advantage of
-- name: Determine if we have FMA instructions
-  shell: |
-    fma=$(lscpu | grep 'Flags' | grep fma)
-    echo $fma
-  register: HAVE_FMA
+  - name: Determine if we have AVX512DQ instructions
+    shell: |
+      avx512dq=$(lscpu | grep 'Flags' | grep avx512dq)
+      echo $avx512dq
+    register: HAVE_AVX512DQ
+
+  - name: Determine if we have AVX512CD instructions
+    shell: |
+      avx512cd=$(lscpu | grep 'Flags' | grep avx512cd)
+      echo $avx512cd
+   register: HAVE_AVX512CD
+
+  # Next step is to determine if we have FMA instructions that we can take advantage of
+  - name: Determine if we have FMA instructions
+    shell: |
+      fma=$(lscpu | grep 'Flags' | grep fma)
+      echo $fma
+    register: HAVE_FMA
+
+  when: AVX_INSTRUCTIONS|length == 0
+
+# If the user specified their AVX instructions...
+- block:
+
+  - name: Did the user specify AVX?
+    shell: |
+      echo 'avx'
+    register: HAVE_AVX
+    when: AVX_INSTRUCTIONS == 'avx' or AVX_INSTRUCTIONS == 'avx2' or AVX_INSTRUCTIONS == 'avx512'
+
+  - name: Did the user specify AVX2?
+    shell: |
+      echo 'avx2'
+    register: HAVE_AVX2
+    when: AVX_INSTRUCTIONS == 'avx2' or AVX_INSTRUCTIONS == 'avx512'
+
+  - name: If the user specified AVX512 instructions, determine if we have AVX512F instructions
+    shell: |
+      avx512f=$(lscpu | grep 'Flags' | grep avx512f)
+      echo $avx512f
+    register: HAVE_AVX512F
+    when: AVX_INSTRUCTIONS == 'avx512'
+
+  - name: If the user specified AVX512 instructions, determine if we have AVX512DQ instructions
+    shell: |
+      avx512dq=$(lscpu | grep 'Flags' | grep avx512dq)
+      echo $avx512dq
+    register: HAVE_AVX512DQ
+    when: AVX_INSTRUCTIONS == 'avx512'
+
+  - name: If the user specified AVX512 instructions, determine if we have AVX512CD instructions
+    shell: |
+      avx512cd=$(lscpu | grep 'Flags' | grep avx512cd)
+      echo $avx512cd
+    register: HAVE_AVX512CD
+    when: AVX_INSTRUCTIONS == 'avx512'
+
+ when: AVX_INSTRUCTIONS|length > 0
 
 # Now determine SSE* instructions
 - name: Determine if we have SSE2 instructions
@@ -116,6 +160,94 @@
 - debug:
     msg: "Build flags: {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }}"
 
+- name: Determine main TensorFlow version
+  shell: |
+    "echo {{ TENSORFLOW_VERSION }} | cut -d '.' -f 1"
+  register: TF_MAIN_VERSION
+
+- name: Determine TensorFlow release
+  shell: |
+    "echo {{ TENSORFLOW_VERSION }} | cut -d '.' -f 2"
+  register: TF_RELEASE
+
+# Setup files for TF 2.1.0 and greater
+- block:
+
+  - name: Remove {{ TENSORFLOW_BUILD_DIR }}/third_party/py/BUILD because it's empty and useless right now
+    file:
+      state: absent
+      path: '{{ TENSORFLOW_BUILD_DIR }}/third_party/py/BUILD'
+
+  - name: Copy {{ TENSORFLOW_BUILD_DIR }}/third_party/toolchains/preconfig/ubuntu16.04/py/BUILD to {{ TENSORFLOW_BUILD_DIR }}/third_party/py/BUILD
+    copy:
+      src: '{{ TENSORFLOW_BUILD_DIR }}/third_party/toolchains/preconfig/ubuntu16.04/py/BUILD'
+      dest: '{{ TENSORFLOW_BUILD_DIR }}/third_party/py/BUILD'
+
+  when: TF_MAIN_VERSION == 2 and TF_RELEASE > 0
+
+# For RHEL 8 only (and thus ubi8), as well as TensorFlow version > 2.0.0, we have to create symbolic links for python3.6
+- block:
+
+  - name: Edit the BUILD file to change the interpreter path from /usr/bin/python2 to /usr/bin/python3
+    replace:
+      regexp: '    interpreter_path = "/usr/bin/python2",'
+      replace: '    interpreter_path = "/usr/bin/python3",'
+
+  - name: Edit the BUILD file to change all 'python2.7' strings to 'python3.6m' strings
+    replace:
+      path: '{{ TENSORFLOW_BUILD_DIR }}/third_party/py/BUILD'
+      regexp: 'python2.7'
+      replace: 'python3.6m'
+
+  - name: Create symbolic link for /usr/local/include/python3.6m by setting it to point to /usr/include/python3.6m
+    file:
+      src: '/usr/include/python3.6m'
+      dest: '/usr/local/include/python3.6m'
+      state: link
+
+  - name: Create directory which we will use for a symbolic link w/ NumPy
+    file:
+      state: directory
+      path: '/usr/local/lib/python3.6'
+
+  - name: Create symbolic link for /usr/local/lib/python3.6/site-packages by setting it to point to '{{ NUMPY_INSTALL_DIR }}'
+    file:
+      src: '{{ NUMPY_INSTALL_DIR }}'
+      dest: '/usr/local/lib/python3.6/site-packages'
+      state: link
+
+  - name: Create symbolic link that causes /usr/bin/python to point to /usr/bin/python3
+    file:
+      state: link
+      src: '/usr/bin/python'
+      dest: '/usr/bin/python3'
+
+  when: TF_MAIN_VERSION == 2 and TF_RELEASE > 0 and RHEL_VERSION == 8
+
+# Update 'WORKSPACE' for TensorFlow 1.x
+- name: TensorFlow 1.x workaround --> update {{ TENSORFLOW_BUILD_DIR }}/WORKSPACE to add the 'io_bazel_rules_docker' http archive so that bazel rules can be cloned
+  blockinfile:
+    path: '{{ TENSORFLOW_BUILD_DIR }}/WORKSPACE'
+    insertafter: 'load\(\"\@bazel\_tools\/\/tools\/build\_defs\/repo:http.bzl\",\ \"http_archive\",\ \"http_file"\)'
+    block: |
+      http_archive(
+          name = "io_bazel_rules_docker",
+          sha256 = "aed1c249d4ec8f703edddf35cbe9dfaca0b5f5ea6e4cd9e83e99f3b0d1136c3d",
+          strip_prefix = "rules_docker-0.7.0",
+          urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.7.0.tar.gz"],
+      )
+  when: TF_MAIN_VERSION < 2
+
+# The WORKSPACE file is missing info, so we need to add the missing info to it
+- name: Edit WORKSPACE file to include 'local_python_config' so that the build doesn't fail (as per the TensorFlow maintainers' suggestion)
+  blockinfile:
+    path: '{{ TENSORFLOW_BUILD_DIR }}/WORKSPACE'
+    insertafter: '^tf_repositories()'
+    block: |
+      load("//third_party/py:python_configure.bzl", "python_configure")
+      python_configure(name = "local_config_python")
+  when: TF_MAIN_VERSION == 2 and TF_RELEASE > 0
+
 # Now configure TensorFlow for the CPU
 - name: Configure TensorFlow for the CPU
   shell: |
@@ -133,7 +265,7 @@
     TF_NEED_OPENCL_SYCL: '0'
     TF_NEED_ROCM: '0'
     TF_NEED_TENSORRT: '0'
-    TF_PYTHON_CONFIG_REPO: '@org_tensorflow//third_party/toolchains/cpus/py'
+    TF_PYTHON_CONFIG_REPO: '@org_tensorflow//third_party/toolchains/cpus/py3'
     TF_SET_ANDROID_WORKSPACE: '0'
     PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
     PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
@@ -207,7 +339,6 @@
     TF_NEED_OPENCL_SYCL: '0'
     TF_NEED_ROCM: '0'
     TF_NEED_TENSORRT: '0'
-    TF_PYTHON_CONFIG_REPO: '@org_tensorflow//third_party/toolchains/cpus/py'
     TF_SET_ANDROID_WORKSPACE: '0'
     PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
     PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
@@ -236,7 +367,6 @@
     TF_NEED_OPENCL_SYCL: '0'
     TF_NEED_ROCM: '0'
     TF_NEED_TENSORRT: '1'
-    TF_PYTHON_CONFIG_REPO: '@org_tensorflow//third_party/toolchains/cpus/py'
     TF_SET_ANDROID_WORKSPACE: '0'
     TF_TENSORRT_VERSION: '{{ tensorrt_version.stdout }}'
     PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
@@ -249,25 +379,20 @@
 - debug:
     msg: "TensorFlow config logs saved to {{ TENSORFLOW_BUILD_DIR }}/configure.log"
 
-# Update 'WORKSPACE'
-- name: Workaround --> update {{ TENSORFLOW_BUILD_DIR }}/WORKSPACE to add the 'io_bazel_rules_docker' http archive so that bazel rules can be cloned
-  blockinfile:
-    path: '{{ TENSORFLOW_BUILD_DIR }}/WORKSPACE'
-    insertafter: 'load\(\"\@bazel\_tools\/\/tools\/build\_defs\/repo:http.bzl\",\ \"http_archive\",\ \"http_file"\)'
-    block: |
-      http_archive(
-          name = "io_bazel_rules_docker",
-          sha256 = "aed1c249d4ec8f703edddf35cbe9dfaca0b5f5ea6e4cd9e83e99f3b0d1136c3d",
-          strip_prefix = "rules_docker-0.7.0",
-          urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.7.0.tar.gz"],
-      )
+# TensorFlow 2.1.0 requires a '/root/.bazelrc' file, so let's just copy it from `pwd`/.tf_config_bazelrc
+- name: Create a symlink fo have /root/.bazelrc to point to {{ TENSORFLOW_BUILD_DIR }}/.tf_configure.bazelrc
+  file:
+    src: '{{ TENSORFLOW_BUILD_DIR }}/.tf_configure.bazelrc'
+    dest: '/root/.bazelrc'
+    state: link
+  when: TF_MAIN_VERSION == 2 and TF_RELEASE > 0
 
 # Now it's time to build TensorFlow for the CPU. We want to use the optimization flags that we
 # found earlier, if applicable.
 - name: Build TensorFlow for the CPU
   shell: |
     cd {{ TENSORFLOW_BUILD_DIR }}
-    bazel build --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt -k //tensorflow/tools/pip_package:build_pip_package
+    bazel build --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
   when: DEVICE == 'cpu'
   environment:
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
@@ -275,7 +400,7 @@
 - name: Build TensorFlow for the GPU
   shell: |
     cd {{ TENSORFLOW_BUILD_DIR }}
-    bazel build --copt="-I/usr/include" --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt --config=cuda -k //tensorflow/tools/pip_package:build_pip_package
+    bazel build --copt="-I/usr/include" --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
   when: DEVICE == 'gpu'
   environment:
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
@@ -289,3 +414,9 @@
   shell: |
     cd {{ TENSORFLOW_BUILD_DIR }}
     ./bazel-bin/tensorflow/tools/pip_package/build_pip_package {{ TF_PIP_PACKAGE_LOCATION }}
+
+- name: Shutdown bazel
+  shell: bazel shutdown
+
+- name: Remove bazel cache because it is very large and we don't need it anymore
+  shell: rm -rf /root/.cache/bazel
