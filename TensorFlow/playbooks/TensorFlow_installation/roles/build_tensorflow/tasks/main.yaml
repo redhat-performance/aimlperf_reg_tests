@@ -96,7 +96,7 @@
     register: HAVE_AVX512CD
     when: AVX_INSTRUCTIONS == 'avx512'
 
- when: AVX_INSTRUCTIONS|length > 0
+  when: AVX_INSTRUCTIONS|length > 0
 
 # Now determine SSE* instructions
 - name: Determine if we have SSE2 instructions
