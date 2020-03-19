@@ -14,6 +14,17 @@
   shell: echo '{{ GCC_VERSION.stdout }}' | cut -d"." -f 2
   register: GCC_RELEASE
 
+# This is a workaround for determining which Ansible var will be used
+- name: Determine whether the user specified AVX* instructions or if they want this playbook to optimize for them
+  shell: |
+    if [[ '{{ AVX_INSTRUCTIONS }}' != 'avx' ]] && [[ '{{ AVX_INSTRUCTIONS }}' != 'avx2' ]] && [[ '{{ AVX_INSTRUCTIONS }}' != 'avx512' ]]; then echo 'default'; else echo 'user_defined'; fi
+  register: AVX_SETTINGS
+
+# This is also a workaround for determining which Ansible var will be used
+- name: Determine whether the user specified SSE* instructions or if they want this playbook to optimize for them
+  shell: |
+    if [[ '{{ SSE_INSTRUCTIONS }}' != 'sse2' ]] && [[ '{{ SSE_INSTRUCTIONS }}' != 'sse3' ]] && [[ '{{ SSE_INSTRUCTIONS }}' != 'sse4.1' ]] && [[ '{{ SSE_INSTRUCTIONS }}' != 'sse4.2' ]] ; then echo 'default'; else echo 'user_defined'; fi
+  register: SSE_SETTINGS
 
 # For users who want this playbook to determine the AVX instructions on their machine...
 - block:
@@ -23,13 +34,13 @@
     shell: |
       avx=$(lscpu | grep 'Flags' | grep avx)
       echo $avx
-    register: HAVE_AVX
+    register: DEFAULT_HAVE_AVX
 
   - name: Determine if we have AVX2 instructions
     shell: |
       avx2=$(lscpu | grep 'Flags' | grep avx2)
       echo $avx2
-    register: HAVE_AVX2
+    register: DEFAULT_HAVE_AVX2
 
   # XXX:TODO --> Make check to see which version of gcc is being used. TensorFlow requires
   # gcc version 4.9 or greater if using -mavx512f, -mavx512dq, etc.
@@ -37,28 +48,46 @@
     shell: |
       avx512f=$(lscpu | grep 'Flags' | grep avx512f)
       echo $avx512f
-    register: HAVE_AVX512F
+    register: DEFAULT_HAVE_AVX512F
 
   - name: Determine if we have AVX512DQ instructions
     shell: |
       avx512dq=$(lscpu | grep 'Flags' | grep avx512dq)
       echo $avx512dq
-    register: HAVE_AVX512DQ
+    register: DEFAULT_HAVE_AVX512DQ
 
   - name: Determine if we have AVX512CD instructions
     shell: |
       avx512cd=$(lscpu | grep 'Flags' | grep avx512cd)
       echo $avx512cd
-    register: HAVE_AVX512CD
+    register: DEFAULT_HAVE_AVX512CD
 
   # Next step is to determine if we have FMA instructions that we can take advantage of
   - name: Determine if we have FMA instructions
     shell: |
       fma=$(lscpu | grep 'Flags' | grep fma)
       echo $fma
-    register: HAVE_FMA
+    register: DEFAULT_HAVE_FMA
+
+  # Now that we've gathered information on optimization flags, let's set them appropriately
+  - name: Set FMA flag
+    shell: if [[ ! -z '{{ DEFAULT_HAVE_FMA.stdout }}' ]]; then echo "--copt=-mfma"; else echo ""; fi
+    register: DEFAULT_ENABLE_FMA
+
+  - name: Set AVX copt flag
+    shell: if [[ ! -z '{{ DEFAULT_HAVE_AVX.stdout }}' ]]; then echo "--copt=-mavx"; else echo ""; fi
+    register: DEFAULT_ENABLE_AVX
+
+  - name: Set AVX2 copt flag
+    shell: if [[ ! -z '{{ DEFAULT_HAVE_AVX2.stdout }}' ]]; then echo "--copt=-mavx2"; else echo ""; fi
+    register: DEFAULT_ENABLE_AVX2
+
+  - name: Set AVX512 copt flag
+    shell: if (( '{{ GCC_MAIN_VERSION.stdout }}' < '{{ TENSORFLOW_AVX512_MIN_GCC_VER }}' )); then echo ""; elif (( '{{ GCC_RELEASE.stdout }}' < '{{ TENSORFLOW_AVX512_MIN_GCC_REL }}' )) && (( '{{ GCC_MAIN_VERSION.stdout }}' == '{{ TENSORFLOW_AVX512_MIN_GCC_VER }}' )); then echo ""; elif [[ ! -z '{{ DEFAULT_HAVE_AVX512F.stdout }}' ]]; then echo "--copt=-mavx512f"; elif [[ ! -z '{{ DEFAULT_HAVE_AVX512DQ.stdout }}' ]]; then echo "--copt=-mavx512dq"; elif [[ ! -z '{{ DEFAULT_HAVE_AVX512CD.stdout }}' ]]; then echo "--copt=-mavx512cd"; else echo ""; fi
+    register: DEFAULT_ENABLE_AVX512
 
   when: AVX_INSTRUCTIONS|length == 0
+
 
 # If the user specified their AVX instructions...
 - block:
@@ -96,78 +125,148 @@
     register: HAVE_AVX512CD
     when: AVX_INSTRUCTIONS == 'avx512'
 
+  # Next step is to determine if we have FMA instructions that we can take advantage of
+  - name: Determine if we have FMA instructions
+    shell: |
+      fma=$(lscpu | grep 'Flags' | grep fma)
+      echo $fma
+    register: HAVE_FMA
+
+  # Now that we've gathered information on optimization flags, let's set them appropriately
+  - name: Set FMA flag
+    shell: if [[ ! -z '{{ HAVE_FMA.stdout }}' ]]; then echo "--copt=-mfma"; else echo ""; fi
+    register: ENABLE_FMA
+
+  # Now that we've gathered information on optimization flags, let's set them appropriately
+  - name: Set AVX copt flag
+    shell: if [[ ! -z '{{ HAVE_AVX.stdout }}' ]]; then echo "--copt=-mavx"; else echo ""; fi
+    register: ENABLE_AVX
+
+  - name: Set AVX2 copt flag
+    shell: if [[ ! -z '{{ HAVE_AVX2.stdout }}' ]]; then echo "--copt=-mavx2"; else echo ""; fi
+    register: ENABLE_AVX2
+
+  - name: Set AVX512 copt flag
+    shell: if (( '{{ GCC_MAIN_VERSION.stdout }}' < '{{ TENSORFLOW_AVX512_MIN_GCC_VER }}' )); then echo ""; elif (( '{{ GCC_RELEASE.stdout }}' < '{{ TENSORFLOW_AVX512_MIN_GCC_REL }}' )) && (( '{{ GCC_MAIN_VERSION.stdout }}' == '{{ TENSORFLOW_AVX512_MIN_GCC_VER }}' )); then echo ""; elif [[ ! -z '{{ HAVE_AVX512F.stdout }}' ]]; then echo "--copt=-mavx512f"; elif [[ ! -z '{{ HAVE_AVX512DQ.stdout }}' ]]; then echo "--copt=-mavx512dq"; elif [[ ! -z '{{ HAVE_AVX512CD.stdout }}' ]]; then echo "--copt=-mavx512cd"; else echo ""; fi
+    register: ENABLE_AVX512
+
   when: AVX_INSTRUCTIONS|length > 0
 
 # Now determine SSE* instructions
-- name: Determine if we have SSE2 instructions
-  shell: |
-    sse2=$(lscpu | grep 'Flags' | grep sse2)
-    echo $sse2
-  register: HAVE_SSE2
+- block:
 
-- name: Determine if we have SSE3 instructions
-  shell: |
-    sse3=$(lscpu | grep 'Flags' | grep sse3)
-    echo $sse3
-  register: HAVE_SSE3
+  - name: Determine if we have SSE2 instructions
+    shell: |
+      sse2=$(lscpu | grep 'Flags' | grep sse2)
+      echo $sse2
+    register: DEFAULT_HAVE_SSE2
 
-- name: Determine if we have SSE4.1 instructions
-  shell: |
-    sse4_1=$(lscpu | grep 'Flags' | grep sse4_1)
-    echo $sse4_1
-  register: HAVE_SSE4_1
+  - name: Determine if we have SSE3 instructions
+    shell: |
+      sse3=$(lscpu | grep 'Flags' | grep sse3)
+      echo $sse3
+    register: DEFAULT_HAVE_SSE3
 
-- name: Determine if we have SSE4.2 instructions
-  shell: |
-    sse4_2=$(lscpu | grep 'Flags' | grep sse4_2)
-    echo $sse4_2
-  register: HAVE_SSE4_2
+  - name: Determine if we have SSE4.1 instructions
+    shell: |
+      sse4_1=$(lscpu | grep 'Flags' | grep sse4_1)
+      echo $sse4_1
+    register: DEFAULT_HAVE_SSE4_1
 
-# Now that we've gathered information on optimization flags, let's set them appropriately
-- name: Set AVX copt flag
-  shell: if [[ ! -z '{{ HAVE_AVX.stdout }}' ]]; then echo "--copt=-mavx"; else echo ""; fi
-  register: ENABLE_AVX
+  - name: Determine if we have SSE4.2 instructions
+    shell: |
+      sse4_2=$(lscpu | grep 'Flags' | grep sse4_2)
+      echo $sse4_2
+    register: DEFAULT_HAVE_SSE4_2
 
-- name: Set AVX2 copt flag
-  shell: if [[ ! -z '{{ HAVE_AVX2.stdout }}' ]]; then echo "--copt=-mavx2"; else echo ""; fi
-  register: ENABLE_AVX2
+  - name: Set SSE2 copt flag
+    shell: if [[ ! -z '{{ DEFAULT_HAVE_SSE2.stdout }}' ]]; then echo "--copt=-msse2"; else echo ""; fi
+    register: DEFAULT_ENABLE_SSE2
 
-- name: Set AVX512 copt flag
-  shell: if (( '{{ GCC_MAIN_VERSION.stdout }}' < '{{ TENSORFLOW_AVX512_MIN_GCC_VER }}' )); then echo ""; elif (( '{{ GCC_RELEASE.stdout }}' < '{{ TENSORFLOW_AVX512_MIN_GCC_REL }}' )) && (( '{{ GCC_MAIN_VERSION.stdout }}' == '{{ TENSORFLOW_AVX512_MIN_GCC_VER }}' )); then echo ""; elif [[ ! -z '{{ HAVE_AVX512F.stdout }}' ]]; then echo "--copt=-mavx512f"; elif [[ ! -z '{{ HAVE_AVX512DQ.stdout }}' ]]; then echo "--copt=-mavx512dq"; elif [[ ! -z '{{ HAVE_AVX512CD.stdout }}' ]]; then echo "--copt=-mavx512cd"; else echo ""; fi
-  register: ENABLE_AVX512
+  - name: Set SSE3 copt flag
+    shell: if [[ ! -z '{{ DEFAULT_HAVE_SSE3.stdout }}' ]]; then echo "--copt=-msse3"; else echo ""; fi
+    register: DEFAULT_ENABLE_SSE3
 
-- name: Set FMA copt flag
-  shell: if [[ ! -z '{{ HAVE_FMA.stdout }}' ]]; then echo "--copt=-mfma"; else echo ""; fi
-  register: ENABLE_FMA
+  - name: Set SSE4.1 copt flag
+    shell: if [[ ! -z '{{ DEFAULT_HAVE_SSE4_1.stdout }}' ]]; then echo "--copt=-msse4.1"; else echo ""; fi
+    register: DEFAULT_ENABLE_SSE4_1
 
-- name: Set SSE2 copt flag
-  shell: if [[ ! -z '{{ HAVE_SSE2.stdout }}' ]]; then echo "--copt=-msse2"; else echo ""; fi
-  register: ENABLE_SSE2
+  - name: Set SSE4.2 copt flag
+    shell: if [[ ! -z '{{ DEFAULT_HAVE_SSE4_2.stdout }}' ]]; then echo "--copt=-msse4.2"; else echo ""; fi
+    register: DEFAULT_ENABLE_SSE4_2
 
-- name: Set SSE3 copt flag
-  shell: if [[ ! -z '{{ HAVE_SSE3.stdout }}' ]]; then echo "--copt=-msse3"; else echo ""; fi
-  register: ENABLE_SSE3
+  when: SSE_INSTRUCTIONS|length == 0
 
-- name: Set SSE4.1 copt flag
-  shell: if [[ ! -z '{{ HAVE_SSE4_1.stdout }}' ]]; then echo "--copt=-msse4.1"; else echo ""; fi
-  register: ENABLE_SSE4_1
+- block:
+  - name: Determine if we have SSE2 instructions
+    shell: |
+      sse2=$(lscpu | grep 'Flags' | grep sse2)
+      if [[ ! -z $sse2 ]]; then echo 'sse2'; else echo ''; fi
+    register: HAVE_SSE2
+    when: SSE_INSTRUCTIONS == 'sse2' or SSE_INSTRUCTIONS == 'sse3' or SSE_INSTRUCTIONS == 'sse4.1' or SSE_INSTRUCTIONS == 'sse4.2'
 
-- name: Set SSE4.2 copt flag
-  shell: if [[ ! -z '{{ HAVE_SSE4_2.stdout }}' ]]; then echo "--copt=-msse4.2"; else echo ""; fi
-  register: ENABLE_SSE4_2
+  - name: Determine if we have SSE3 instructions
+    shell: |
+      sse3=$(lscpu | grep 'Flags' | grep sse3)
+      if [[ ! -z $sse3 ]]; then echo 'sse3'; else echo ''; fi
+    register: HAVE_SSE3
+    when: SSE_INSTRUCTIONS == 'sse3' or SSE_INSTRUCTIONS == 'sse4.1' or SSE_INSTRUCTIONS == 'sse4.2'
+
+  - name: Determine if we have SSE4.1 instructions
+    shell: |
+      sse4_1=$(lscpu | grep 'Flags' | grep sse4_1)
+      if [[ ! -z $sse4_1 ]]; then echo 'sse4.1'; else echo ''; fi
+    register: HAVE_SSE4_1
+    when: SSE_INSTRUCTIONS == 'sse4.1' or SSE_INSTRUCTIONS == 'sse4.2'
+
+  - name: Determine if we have SSE4.2 instructions
+    shell: |
+      sse4_2=$(lscpu | grep 'Flags' | grep sse4_2)
+      if [[ ! -z $sse4_2 ]]; then echo 'sse4.2'; else echo ''; fi
+    register: HAVE_SSE4_2
+    when: SSE_INSTRUCTIONS == 'sse4.2'
+
+  - name: Set SSE2 copt flag
+    shell: if [[ ! -z '{{ HAVE_SSE2.stdout }}' ]]; then echo "--copt=-msse2"; else echo ""; fi
+    register: ENABLE_SSE2
+
+  - name: Set SSE3 copt flag
+    shell: if [[ ! -z '{{ HAVE_SSE3.stdout }}' ]]; then echo "--copt=-msse3"; else echo ""; fi
+    register: ENABLE_SSE3
+
+  - name: Set SSE4.1 copt flag
+    shell: if [[ ! -z '{{ HAVE_SSE4_1.stdout }}' ]]; then echo "--copt=-msse4.1"; else echo ""; fi
+    register: ENABLE_SSE4_1
+
+  - name: Set SSE4.2 copt flag
+    shell: if [[ ! -z '{{ HAVE_SSE4_2.stdout }}' ]]; then echo "--copt=-msse4.2"; else echo ""; fi
+    register: ENABLE_SSE4_2
+
+  when: SSE_INSTRUCTIONS|length > 0
 
 # Now let's print out our final compilation flags
 - debug:
+    msg: "Build flags: {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }}"
+  when: AVX_SETTINGS.stdout == 'default' and SSE_SETTINGS.stdout == 'user_defined'
+
+- debug:
+    msg: "Build flags: {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }}"
+  when: AVX_SETTINGS.stdout == 'default' and SSE_SETTINGS.stdout == 'default'
+
+- debug:
+    msg: "Build flags: {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }}"
+  when: AVX_SETTINGS.stdout == 'user_defined' and SSE_SETTINGS.stdout == 'default'
+
+- debug:
     msg: "Build flags: {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }}"
+  when: AVX_SETTINGS.stdout == 'user_defined' and SSE_SETTINGS.stdout == 'user_defined'
 
 - name: Determine main TensorFlow version
-  shell: |
-    "echo {{ TENSORFLOW_VERSION }} | cut -d '.' -f 1"
+  shell: echo '{{ TENSORFLOW_VERSION }}' | cut -d '.' -f 1
   register: TF_MAIN_VERSION
 
 - name: Determine TensorFlow release
-  shell: |
-    "echo {{ TENSORFLOW_VERSION }} | cut -d '.' -f 2"
+  shell: echo '{{ TENSORFLOW_VERSION }}' | cut -d '.' -f 2
   register: TF_RELEASE
 
 # Setup files for TF 2.1.0 and greater
@@ -183,7 +282,7 @@
       src: '{{ TENSORFLOW_BUILD_DIR }}/third_party/toolchains/preconfig/ubuntu16.04/py/BUILD'
       dest: '{{ TENSORFLOW_BUILD_DIR }}/third_party/py/BUILD'
 
-  when: TF_MAIN_VERSION == 2 and TF_RELEASE > 0
+  when: TF_MAIN_VERSION.stdout|int == 2 and TF_RELEASE.stdout|int > 0
 
 # For RHEL 8 only (and thus ubi8), as well as TensorFlow version > 2.0.0, we have to create symbolic links for python3.6
 - block:
@@ -222,7 +321,7 @@
       src: '/usr/bin/python'
       dest: '/usr/bin/python3'
 
-  when: TF_MAIN_VERSION == 2 and TF_RELEASE > 0 and RHEL_VERSION == 8
+  when: TF_MAIN_VERSION.stdout|int == 2 and TF_RELEASE.stdout|int > 0 and RHEL_VERSION|int == 8
 
 # Update 'WORKSPACE' for TensorFlow 1.x
 - name: TensorFlow 1.x workaround --> update {{ TENSORFLOW_BUILD_DIR }}/WORKSPACE to add the 'io_bazel_rules_docker' http archive so that bazel rules can be cloned
@@ -236,7 +335,7 @@
           strip_prefix = "rules_docker-0.7.0",
           urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.7.0.tar.gz"],
       )
-  when: TF_MAIN_VERSION < 2
+  when: TF_MAIN_VERSION.stdout|int < 2
 
 # The WORKSPACE file is missing info, so we need to add the missing info to it
 - name: Edit WORKSPACE file to include 'local_python_config' so that the build doesn't fail (as per the TensorFlow maintainers' suggestion)
@@ -246,7 +345,7 @@
     block: |
       load("//third_party/py:python_configure.bzl", "python_configure")
       python_configure(name = "local_config_python")
-  when: TF_MAIN_VERSION == 2 and TF_RELEASE > 0
+  when: TF_MAIN_VERSION.stdout|int == 2 and TF_RELEASE.stdout|int > 0
 
 # Now configure TensorFlow for the CPU
 - name: Configure TensorFlow for the CPU
@@ -257,7 +356,7 @@
     GCC_HOST_COMPILER_PATH: '{{ CC }}'
     CC_OPT_FLAGS: '-march=native'
     TF_DOWNLOAD_CLANG: '0'
-    TF_ENABLE_XLA: '0'
+    TF_ENABLE_XLA: '1'
     TF_NEED_COMPUTECPP: '0'
     TF_NEED_CUDA: '0'
     TF_NEED_MPI: '0'
@@ -385,27 +484,81 @@
     src: '{{ TENSORFLOW_BUILD_DIR }}/.tf_configure.bazelrc'
     dest: '/root/.bazelrc'
     state: link
-  when: TF_MAIN_VERSION == 2 and TF_RELEASE > 0
+  when: TF_MAIN_VERSION.stdout|int == 2 and TF_RELEASE.stdout|int > 0
 
 # Now it's time to build TensorFlow for the CPU. We want to use the optimization flags that we
 # found earlier, if applicable.
-- name: Build TensorFlow for the CPU
-  shell: |
-    cd {{ TENSORFLOW_BUILD_DIR }}
-    bazel build --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
-  when: DEVICE == 'cpu'
-  environment:
-    LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
+- block:
+  - name: Build TensorFlow for the CPU using user defined AVX* flags and user defined SSE* flags
+    shell: |
+      cd {{ TENSORFLOW_BUILD_DIR }}
+      bazel build --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
+    when: AVX_SETTINGS.stdout == 'user_defined' and SSE_SETTINGS.stdout == 'user_defined'
+    environment:
+      LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
 
-- name: Build TensorFlow for the GPU
-  shell: |
-    cd {{ TENSORFLOW_BUILD_DIR }}
-    bazel build --copt="-I/usr/include" --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
+  - name: Build TensorFlow for the CPU using default (optimized) AVX* flags, but user defined SSE* flags
+    shell: |
+      cd {{ TENSORFLOW_BUILD_DIR }}
+      bazel build --copt=-mfpmath=both {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
+    when: AVX_SETTINGS.stdout == 'default' and SSE_SETTINGS.stdout == 'user_defined'
+    environment:
+      LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
+
+  - name: Build TensorFlow for the CPU using user defined AVX* flags, but default SSE* flags
+    shell: |
+      cd {{ TENSORFLOW_BUILD_DIR }}
+      bazel build --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
+    when: AVX_SETTINGS.stdout == 'user_defined' and SSE_SETTINGS.stdout == 'default'
+    environment:
+      LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
+
+  - name: Build TensorFlow for the CPU using default (optimized) AVX* flags and default (optimized) SSE* flags
+    shell: |
+      cd {{ TENSORFLOW_BUILD_DIR }}
+      bazel build --copt=-mfpmath=both {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
+    when: AVX_SETTINGS.stdout == 'default' and SSE_SETTINGS.stdout == 'default'
+    environment:
+      LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
+
+  when: DEVICE == 'cpu'
+
+
+# Same as above, except for the GPU
+- block:
+  - name: Build TensorFlow for the GPU using user defined AVX* flags and user defined SSE* flags
+    shell: |
+      cd {{ TENSORFLOW_BUILD_DIR }}
+      bazel build --copt="-I/usr/include" --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
+    when: AVX_SETTINGS.stdout == 'user_defined' and SSE_SETTINGS.stdout == 'user_defined'
+    environment:
+      LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
+
+  - name: Build TensorFlow for the GPU using default (optimized) AVX* flags, but user defined SSE* flags
+    shell: |
+      cd {{ TENSORFLOW_BUILD_DIR }}
+      bazel build --copt="-I/usr/include" --copt=-mfpmath=both {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
+    when: AVX_SETTINGS.stdout == 'default' and SSE_SETTINGS.stdout == 'user_defined'
+    environment:
+      LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
+
+  - name: Build TensorFlow for the GPU using user defined AVX* flags, but default SSE* flags
+    shell: |
+      cd {{ TENSORFLOW_BUILD_DIR }}
+      bazel build --copt="-I/usr/include" --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
+    when: AVX_SETTINGS.stdout == 'user_defined' and SSE_SETTINGS.stdout == 'default'
+    environment:
+      LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
+
+  - name: Build TensorFlow for the GPU using default (optimized) AVX* flags and default (optimized) SSE* flags
+    shell: |
+      cd {{ TENSORFLOW_BUILD_DIR }}
+      bazel build --copt="-I/usr/include" --copt=-mfpmath=both {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
+    when: AVX_SETTINGS.stdout == 'default' and SSE_SETTINGS.stdout == 'default'
+    environment:
+      LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
+
   when: DEVICE == 'gpu'
-  environment:
-    LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
-    TMP: '/tmp'
-    TF_CUDA_PATHS: '/usr/local/cuda,/usr/include,{{ NCCL_INSTALL_PATH }},{{ TENSORRT_INSTALL_PATH }}'
 
 - debug:
     msg: "TensorFlow build logs saved to {{ TENSORFLOW_BUILD_DIR }}/build.log"

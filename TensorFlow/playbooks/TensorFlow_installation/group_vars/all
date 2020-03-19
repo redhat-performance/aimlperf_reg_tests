@@ -10,6 +10,6 @@ FFTW_RHEL7_OPT_LIB_NAMES: fftw_threads
 FFTW_RHEL8_LIB_NAMES: fftw3
 FFTW_RHEL8_OPT_LIB_NAMES: fftw3_threads
 OPENBLAS_LIB_NAMES: openblas
-NUMPY_SITE_CFG: "{{ lookup('env', 'HOME') }}/build/numpy/site.cfg"
+NUMPY_SITE_CFG: "/home/build/numpy/site.cfg"
 PYTHONPATH: "/opt/numpy/lib64/python3.6/site-packages"
 TF_PIP_PACKAGE_LOCATION: "{{ lookup('env', 'HOME') }}/tmp/tensorflow_package"

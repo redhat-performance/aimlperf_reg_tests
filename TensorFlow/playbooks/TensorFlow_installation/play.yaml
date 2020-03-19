@@ -55,6 +55,9 @@
     # the instructions for you. Otherwise, input 'avx', 'avx2', or 'avx512'
     AVX_INSTRUCTIONS: '{{ avx_instructions | default("") }}'
 
+    # SSE related instructions. Inputs: 'sse2', 'sse3', 'sse4.1', or 'sse4.2'
+    SSE_INSTRUCTIONS: '{{ sse_instructions | default("") }}'
+
   roles:
     # Setup NumPy and TensorFlow build folders
     - role: setup
