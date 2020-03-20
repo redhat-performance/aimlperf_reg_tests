@@ -313,14 +313,14 @@
   - name: Create symbolic link for /usr/local/lib/python3.6/site-packages by setting it to point to '{{ NUMPY_INSTALL_DIR }}'
     file:
       src: '{{ NUMPY_INSTALL_DIR }}'
-      dest: '/usr/local/lib/python3.6/site-packages'
+      dest: '/usr/local/lib/python3.6/site-packages/numpy'
       state: link
 
   - name: Create symbolic link that causes /usr/bin/python to point to /usr/bin/python3
     file:
       state: link
-      src: '/usr/bin/python'
-      dest: '/usr/bin/python3'
+      src: '/usr/bin/python3'
+      dest: '/usr/bin/python'
 
   when: TF_MAIN_VERSION.stdout|int == 2 and TF_RELEASE.stdout|int > 0 and RHEL_VERSION|int == 8
 
