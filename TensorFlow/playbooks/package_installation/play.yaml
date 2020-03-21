@@ -5,8 +5,8 @@
   become_user: root
 
   vars:
-    rhel_ver: '{{ rhel_version | default("7") }}'
-    bazel_ver: '{{ bazel_version | default("0.26.1") }}'
+    rhel_ver: '{{ rhel_version | default("8") }}'
+    bazel_ver: '{{ bazel_version | default("0.29.1") }}'
     use_ubi: '{{ ubi | default("yes") }}'
 
   roles:
