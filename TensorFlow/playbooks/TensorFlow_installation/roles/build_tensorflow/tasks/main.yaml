@@ -305,15 +305,21 @@
       dest: '/usr/local/include/python3.6m'
       state: link
 
+  - name: Replace 'dist-packages' with 'site-packages' in the BUILD file, because 'dist-packages' is for Ubuntu and 'site-packages' is for RHEL
+    replace:
+      path: '{{ TENSORFLOW_BUILD_DIR }}/third_party/py/BUILD'
+      regexp: 'dist-packages'
+      replace: 'site-packages'
+
   - name: Create directory which we will use for a symbolic link w/ NumPy
     file:
       state: directory
-      path: '/usr/local/lib/python3.6'
+      path: '/usr/local/lib/python3.6m/site-packages'
 
   - name: Create symbolic link for /usr/local/lib/python3.6/site-packages by setting it to point to '{{ NUMPY_INSTALL_DIR }}'
     file:
-      src: '{{ NUMPY_INSTALL_DIR }}'
-      dest: '/usr/local/lib/python3.6/site-packages/numpy'
+      src: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy'
+      dest: '/usr/local/lib/python3.6m/site-packages/numpy'
       state: link
 
   - name: Create symbolic link that causes /usr/bin/python to point to /usr/bin/python3
@@ -348,8 +354,37 @@
       python_configure(name = "local_config_python")
   when: TF_MAIN_VERSION.stdout|int == 2 and TF_RELEASE.stdout|int > 0
 
+# ./tensorflow/workspace.bzl needs fixing, too, if we're using TF 2.1.0 because the 'pybind11' module pulls a URL that doesn't exist
+- block:
+
+  - name: For TensorFlow 2.1.0 ONLY --> Edit {{ TENSORFLOW_BUILD_DIR }}/tensorflow/workspace.bzl to update the 'pybind11' module Bazel download URL no. 1
+    replace:
+      path: '{{ TENSORFLOW_BUILD_DIR }}/tensorflow/workspace.bzl'
+      regexp: 'https://mirror.bazel.build/github.com/pybind/pybind11/archive/v2.3.0.tar.gz'
+      replace: 'https://storage.googleapis.com/mirror.tensorflow.org/github.com/pybind/pybind11/archive/v2.4.3.tar.gz'
+
+  - name: For TensorFlow 2.1.0 ONLY --> Edit {{ TENSORFLOW_BUILD_DIR }}/tensorflow/workspace.bzl to update the 'pybind11' module Bazel download URL no. 2
+    replace:
+      path: '{{ TENSORFLOW_BUILD_DIR }}/tensorflow/workspace.bzl'
+      regexp: 'https://github.com/pybind/pybind11/archive/v2.3.0.tar.gz'
+      replace: 'https://github.com/pybind/pybind11/archive/v2.4.3.tar.gz'
+
+  - name: For TensorFlow 2.1.0 ONLY --> Edit {{ TENSORFLOW_BUILD_DIR }}/tensorflow/workspace.bzl to update the 'pybind11' module's SHA256 value
+    replace:
+      path: '{{ TENSORFLOW_BUILD_DIR }}/tensorflow/workspace.bzl'
+      regexp: '0f34838f2c8024a6765168227ba587b3687729ebf03dc912f88ff75c7aa9cfe8'
+      replace: '1eed57bc6863190e35637290f97a20c81cfe4d9090ac0a24f3bbf08f265eb71d'
+
+  - name: For TensoRFlow 2.1.0 ONLY --> Edit {{ TENSORFLOW_BUILD_DIR }}/tensorflow/workspace.bzl to update the 'pybind11' module's 'strip_prefix' value
+    replace:
+      path: '{{ TENSORFLOW_BUILD_DIR }}/tensorflow/workspace.bzl'
+      regexp: 'pybind11-2.3.0'
+      replace: 'pybind11-2.4.3'
+
+  when: TF_MAIN_VERSION.stdout|int == 2 and TF_RELEASE.stdout|int == 1
+
 # Now configure TensorFlow for the CPU
-- name: Configure TensorFlow for the CPU
+- name: RHEL 7 and ubi7 ONLY --> Configure TensorFlow for the CPU
   shell: |
     cd {{ TENSORFLOW_BUILD_DIR }} 
     ./configure
@@ -371,7 +406,31 @@
     PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
     NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
     LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
-  when: DEVICE == 'cpu'
+  when: DEVICE == 'cpu' and RHEL_VERSION|int == 7
+
+- name: RHEL 8 and ubi8 ONLY --> Configure TensorFlow for the CPU
+  shell: |
+    cd {{ TENSORFLOW_BUILD_DIR }} 
+    ./configure
+  environment:
+    GCC_HOST_COMPILER_PATH: '{{ CC }}'
+    CC_OPT_FLAGS: '-march=native'
+    TF_DOWNLOAD_CLANG: '0'
+    TF_ENABLE_XLA: '1'
+    TF_NEED_COMPUTECPP: '0'
+    TF_NEED_CUDA: '0'
+    TF_NEED_MPI: '0'
+    TF_NEED_OPENCL: '0'
+    TF_NEED_OPENCL_SYCL: '0'
+    TF_NEED_ROCM: '0'
+    TF_NEED_TENSORRT: '0'
+    TF_PYTHON_CONFIG_REPO: '@org_tensorflow//third_party/toolchains/cpus/py3'
+    TF_SET_ANDROID_WORKSPACE: '0'
+    PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
+    PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
+    NUMPY_INCLUDE_DIR: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core/include/numpy'
+    LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
+  when: DEVICE == 'cpu' and RHEL_VERSION|int == 8
 
 - block:
   # Command taken from: https://georgesterpu.github.io/compile_tensorflow.html
