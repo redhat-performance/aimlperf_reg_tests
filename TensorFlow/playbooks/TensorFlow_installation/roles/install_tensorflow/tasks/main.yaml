@@ -26,7 +26,7 @@
   pip:
     name: '{{ item["path"] }}'
     executable: pip3
-    extra_args: '--target={{ TENSORFLOW_INSTALL_DIR }}'
+    extra_args: '--target={{ TENSORFLOW_INSTALL_DIR }} --upgrade'
   with_items: '{{ tf_wheel_files["files"] }}'
 
 - name: Remove pip package

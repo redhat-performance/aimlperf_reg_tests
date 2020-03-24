@@ -79,6 +79,7 @@
     pip:
       name: Cython
       executable: pip3
+      extra_args: '--target={{ pip3_target_dir }}'
 
   - name: << s2i/ubi only >> Create build dirs for APR (Apache Portable Runtime), APR util, SQLite, LZ4, utf8proc, and Subversion
     file:

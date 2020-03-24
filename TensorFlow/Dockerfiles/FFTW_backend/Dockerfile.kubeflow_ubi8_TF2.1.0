@@ -17,7 +17,7 @@ ENV TENSORFLOW_VERSION=2.1.0
 ENV BAZEL_VERSION=0.29.1
 
 # Python path
-ENV PYTHONPATH=/usr/local/lib/python3.6
+ENV PYTHONPATH=/usr/lib64/python3.6/site-packages
 
 # Set up labels
 LABEL io.openshift.expose-services="8080:http"
@@ -93,7 +93,7 @@ RUN cd ${SCRIPTS_DIR} && \
 RUN cd ${FFTW_PREREQS_PLAYBOOK} && \
     ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', use_ubi: 'yes', update_dnf: 'no'}" && \
     cd ${TF_PREREQS_PLAYBOOK} && \
-    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', ubi: 'yes', bazel_version: '${BAZEL_VERSION}'}" && \
+    ansible-playbook -i hosts play.yaml --extra-vars="{rhel_version: '${RHEL_VERSION}', ubi: 'yes', bazel_version: '${BAZEL_VERSION}', pip_install_dir: '${PYTHONPATH}'}" && \
     rm -rf ${FFTW_PREREQS_PLAYBOOK} ${TF_PREREQS_PLAYBOOK}
 
 # Install FFTW

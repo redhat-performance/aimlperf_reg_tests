@@ -5,9 +5,20 @@
   become_user: root
 
   vars:
+
+    # RHEL version to use
     rhel_ver: '{{ rhel_version | default("8") }}'
+
+    # Bazel version to use (recommended 0.27.1 for TensorFlow 1.x, or 0.29.1 for TensorFlow 2.x)
     bazel_ver: '{{ bazel_version | default("0.29.1") }}'
+
+    # Install packages based on whether or not you're using a ubi image
     use_ubi: '{{ ubi | default("yes") }}'
+
+    # Where to install pip3 packages. By default, it points to the RHEL 7 (and thus, ubi7) default
+    # pip3 install directory. However, one may wish to install to /usr/lib64/python3.6/site-packages
+    # on something like RHEL 8 or ubi8. In that case, edit this variable to point to that new dir.
+    pip3_target_dir: '{{ pip_install_dir | default("/usr/local/lib/python3.6/site-packages") }}'
 
   roles:
 
