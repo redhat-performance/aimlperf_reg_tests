@@ -8,11 +8,20 @@ Written by Courtney Pacheco for Red Hat, Inc. 2020.
 from __future__ import print_function
 from datetime import datetime
 import sys
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
 # Allow soft device placement
 tf.config.set_soft_device_placement(True)
+
+# Set min/max values of specific vars
+EPOCHS_MIN = 1
+EPOCHS_MAX = 100
+NEURONS_MIN = 10
+NEURONS_MAX = 1000
+BATCH_SIZE_MIN = 1
+BATCH_SIZE_MAX = 100
 
 class FashionMNISTNeuralNet:
 
@@ -32,6 +41,10 @@ class FashionMNISTNeuralNet:
 
         # Set batch size
         self.batch_size = batch_size
+
+        # Set options for distributing the data
+        self.options = tf.data.Options()
+        self.options.experimental_distribute.auto_shard = True
 
         # Initialize the dataset
         self.dataset = self.__load_dataset()
@@ -76,6 +89,14 @@ class FashionMNISTNeuralNet:
         # We need to scale the image data to a [0,1] scale. We have the data in RGB 0-255 format
         scale_factor = 255.0
 
+        # Adjust the training labels so they're 32-bit integers
+        train_labels = self.dataset['train']['labels']
+        train_labels = train_labels.astype(np.int32)
+
+        # Do the same with the testing labels
+        test_labels = self.dataset['test']['labels']
+        test_labels = test_labels.astype(np.int32)
+
         # Grab the training and testing data, then scale
         train_images = self.dataset['train']['data'] / scale_factor
         test_images = self.dataset['test']['data'] / scale_factor
@@ -83,6 +104,8 @@ class FashionMNISTNeuralNet:
         # Save the preprocessed data back to the dataset
         self.dataset['train']['data'] = train_images
         self.dataset['test']['data'] = test_images
+        self.dataset['train']['labels'] = train_labels
+        self.dataset['test']['labels'] = test_labels
 
 
     def train(self):
@@ -92,14 +115,23 @@ class FashionMNISTNeuralNet:
         # Use multiple workers
         with self.multiworker_strategy.scope():
 
-            # Define image heights and widths
-            image_height, image_width = 28, 28
+            # Extract data from dict and convert to numpy arrays
+            data = np.array(self.dataset['train']['data'])
+            labels = np.array(self.dataset['train']['labels'])
+
+            # Get image width and height
+            image_height = data.shape[1]
+            image_width = data.shape[2]
+
+            # Convert data to dataset
+            input_dataset = tf.data.Dataset.from_tensor_slices((data, labels))
+            input_dataset = input_dataset.shuffle(5000).batch(self.batch_size)
+            input_dataset.with_options(self.options)
 
             # Define model
             self.model = keras.Sequential([
                             keras.layers.Flatten(input_shape=(image_height, image_width)),
-                            keras.layers.Dense(self.num_neurons, activation='relu'),
-                            keras.layers.Dense(self.softmax)
+                            keras.layers.Dense(self.num_neurons),
                         ])
 
             # Compile model
@@ -107,12 +139,9 @@ class FashionMNISTNeuralNet:
                                loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                                metrics=['accuracy'])
 
-            # Fit the model
-            data = self.dataset['train']['data']
-            labels = self.dataset['train']['labels']
             print('Training...')
             start_train = datetime.now()
-            self.model.fit(data, labels, epochs=self.num_epochs, batch_size=self.batch_size)
+            self.model.fit(input_dataset, epochs=self.num_epochs)
             finish_train = datetime.now()
 
             # Calculate elapsed time
@@ -133,12 +162,18 @@ class FashionMNISTNeuralNet:
         # Use multiple workers
         with self.multiworker_strategy.scope():
 
-            # Evaluate
-            data = self.dataset['test']['data']
-            labels = self.dataset['test']['labels']
+            # Extract dataset
+            data = np.array(self.dataset['test']['data'])
+            labels = np.array(self.dataset['test']['labels'])
+
+            # Convert to Dataset
+            test_dataset = tf.data.Dataset.from_tensor_slices((data, labels))
+            test_dataset = test_dataset.shuffle(5000).batch(self.batch_size)
+            test_dataset.with_options(self.options)
+
             print('Testing...')
             start_test = datetime.now()
-            test_loss, test_acc = self.model.evaluate(data, labels, verbose=2, batch_size=self.batch_size)
+            test_loss, test_acc = self.model.evaluate(test_dataset, verbose=2)
             finish_test = datetime.now()
 
             # Calculate elapsed time
@@ -192,15 +227,26 @@ if __name__ == '__main__':
     num_neurons = int(sys.argv[2])
     batch_size = int(sys.argv[3])
 
-    # Check the values of the arguments, making sure they're not less than 1
-    if num_epochs < 1:
-        raise ValueError('Number of epochs must be greater than or equal to 1.')
+    # Check the values of the arguments, making sure they're within the acceptable range
+    error_msg_template = 'Number of %s must be in the range of [%d, %d]. You entered: %d.'
+    errors = []
+    if num_epochs < EPOCHS_MIN or num_epochs > EPOCHS_MAX:
+        error_msg = error_msg_template % ('epochs', EPOCHS_MIN, EPOCHS_MAX, num_epochs)
+        errors.append(error_msg)
 
-    if num_neurons < 1:
-        raise ValueError('Number of neurons must be greater than or equal to 1.')
+    if num_neurons < NEURONS_MIN or num_neurons > NEURONS_MAX:
+        error_msg = error_msg_template % ('neurons', NEURONS_MIN, NEURONS_MAX, num_neurons)
+        errors.append(error_msg)
 
-    if batch_size < 1:
-        raise ValueError('Batch size must be greater than or equal to 1.')
+    if batch_size < BATCH_SIZE_MIN or batch_size > BATCH_SIZE_MAX:
+        error_msg = 'Batch size must be in the range of [%d, %d]. You entered: %d' % (BATCH_SIZE_MIN, BATCH_SIZE_MAX, batch_size)
+        errors.append(error_msg)
+
+    if len(errors) > 0:
+        all_errors = ''
+        for msg in errors:
+            all_errors += (msg + ' ')
+        raise ValueError(all_errors)
 
     # Run the MNIST classification
     run_mnist(num_epochs, num_neurons, batch_size)
