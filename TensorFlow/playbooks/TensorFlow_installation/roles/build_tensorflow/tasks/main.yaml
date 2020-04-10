@@ -26,6 +26,20 @@
     if [[ '{{ SSE_INSTRUCTIONS }}' != 'sse2' ]] && [[ '{{ SSE_INSTRUCTIONS }}' != 'sse3' ]] && [[ '{{ SSE_INSTRUCTIONS }}' != 'sse4.1' ]] && [[ '{{ SSE_INSTRUCTIONS }}' != 'sse4.2' ]] ; then echo 'default'; else echo 'user_defined'; fi
   register: SSE_SETTINGS
 
+
+# XXX:TODO remove this later
+
+- name: Install skbuild
+  pip:
+    executable: pip3
+    name: scikit-build
+
+- name: Install CMake
+  pip:
+    executable: pip3
+    name: cmake
+
+
 # For users who want this playbook to determine the AVX instructions on their machine...
 - block:
 
@@ -400,7 +414,6 @@
     TF_NEED_OPENCL_SYCL: '0'
     TF_NEED_ROCM: '0'
     TF_NEED_TENSORRT: '0'
-    TF_PYTHON_CONFIG_REPO: '@org_tensorflow//third_party/toolchains/cpus/py3'
     TF_SET_ANDROID_WORKSPACE: '0'
     PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
     PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
@@ -424,7 +437,6 @@
     TF_NEED_OPENCL_SYCL: '0'
     TF_NEED_ROCM: '0'
     TF_NEED_TENSORRT: '0'
-    TF_PYTHON_CONFIG_REPO: '@org_tensorflow//third_party/toolchains/cpus/py3'
     TF_SET_ANDROID_WORKSPACE: '0'
     PYTHON_BIN_PATH: '{{ PYTHON_BIN_PATH }}'
     PYTHON_LIB_PATH: '{{ PYTHONPATH }}'
@@ -488,9 +500,12 @@
   environment:
     GCC_HOST_COMPILER_PATH: '{{ CC }}'
     CC_OPT_FLAGS: '-march=native'
-    TF_CUDA_PATHS: '/usr/local/cuda,/usr/include,{{ NCCL_INSTALL_PATH }}'
+    TF_CUDA_PATHS: '/usr/local/cuda,/usr/include,{{ NCCL_INSTALL_PATH }},/usr/lib64'
+    TF_CUDA_VERSION: '{{ cuda_version.stdout }}'
+    TF_CUDNN_VERSION: '{{ cudnn_version.stdout }}'
     TF_DOWNLOAD_CLANG: '0'
     TF_ENABLE_XLA: '0'
+    TF_NCCL_VERSION: '{{ nccl_major_version.stdout }}'
     TF_NEED_COMPUTECPP: '0'
     TF_NEED_CUDA: '1'
     TF_NEED_MPI: '0'
@@ -588,7 +603,7 @@
   - name: Build TensorFlow for the CPU using user defined AVX* flags and user defined SSE* flags
     shell: |
       cd {{ TENSORFLOW_BUILD_DIR }}
-      bazel build --define=grpc_no_ares=true --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
+      bazel build --cxxopt=-std=c++14 --define=grpc_no_ares=true --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
     when: AVX_SETTINGS.stdout == 'user_defined' and SSE_SETTINGS.stdout == 'user_defined'
     environment:
       LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
@@ -596,7 +611,7 @@
   - name: Build TensorFlow for the CPU using default (optimized) AVX* flags, but user defined SSE* flags
     shell: |
       cd {{ TENSORFLOW_BUILD_DIR }}
-      bazel build --define=grpc_no_ares=true --copt=-mfpmath=both {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
+      bazel build --cxxopt=-std=c++14 --define=grpc_no_ares=true --copt=-mfpmath=both {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
     when: AVX_SETTINGS.stdout == 'default' and SSE_SETTINGS.stdout == 'user_defined'
     environment:
       LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
@@ -604,7 +619,7 @@
   - name: Build TensorFlow for the CPU using user defined AVX* flags, but default SSE* flags
     shell: |
       cd {{ TENSORFLOW_BUILD_DIR }}
-      bazel build --define=grpc_no_ares=true --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
+      bazel build --cxxopt=-std=c++14 --define=grpc_no_ares=true --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
     when: AVX_SETTINGS.stdout == 'user_defined' and SSE_SETTINGS.stdout == 'default'
     environment:
       LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
@@ -612,7 +627,7 @@
   - name: Build TensorFlow for the CPU using default (optimized) AVX* flags and default (optimized) SSE* flags
     shell: |
       cd {{ TENSORFLOW_BUILD_DIR }}
-      bazel build --define=grpc_no_ares=true --copt=-mfpmath=both {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
+      bazel build --cxxopt=-std=c++14 --define=grpc_no_ares=true --copt=-mfpmath=both {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }} --config=opt //tensorflow/tools/pip_package:build_pip_package
     when: AVX_SETTINGS.stdout == 'default' and SSE_SETTINGS.stdout == 'default'
     environment:
       LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
@@ -659,7 +674,7 @@
   - name: Build TensorFlow for the GPU using user defined AVX* flags and user defined SSE* flags
     shell: |
       cd {{ TENSORFLOW_BUILD_DIR }}
-      bazel build --define=grpc_no_ares=true --copt="-I/usr/include" --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
+      bazel build --cxxopt=-std=c++14 --define=grpc_no_ares=true --copt="-I/usr/include" --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
     when: AVX_SETTINGS.stdout == 'user_defined' and SSE_SETTINGS.stdout == 'user_defined'
     environment:
       LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
@@ -667,7 +682,7 @@
   - name: Build TensorFlow for the GPU using default (optimized) AVX* flags, but user defined SSE* flags
     shell: |
       cd {{ TENSORFLOW_BUILD_DIR }}
-      bazel build --define=grpc_no_ares=true --copt="-I/usr/include" --copt=-mfpmath=both {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
+      bazel build --cxxopt=-std=c++14 --define=grpc_no_ares=true --copt="-I/usr/include" --copt=-mfpmath=both {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ ENABLE_SSE2.stdout }} {{ ENABLE_SSE3.stdout }} {{ ENABLE_SSE4_1.stdout }} {{ ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
     when: AVX_SETTINGS.stdout == 'default' and SSE_SETTINGS.stdout == 'user_defined'
     environment:
       LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
@@ -675,7 +690,7 @@
   - name: Build TensorFlow for the GPU using user defined AVX* flags, but default SSE* flags
     shell: |
       cd {{ TENSORFLOW_BUILD_DIR }}
-      bazel build --define=grpc_no_ares=true --copt="-I/usr/include" --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
+      bazel build --cxxopt=-std=c++14 --define=grpc_no_ares=true --copt="-I/usr/include" --copt=-mfpmath=both {{ ENABLE_AVX.stdout }} {{ ENABLE_AVX2.stdout }} {{ ENABLE_AVX512.stdout }} {{ ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
     when: AVX_SETTINGS.stdout == 'user_defined' and SSE_SETTINGS.stdout == 'default'
     environment:
       LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'
@@ -683,7 +698,7 @@
   - name: Build TensorFlow for the GPU using default (optimized) AVX* flags and default (optimized) SSE* flags
     shell: |
       cd {{ TENSORFLOW_BUILD_DIR }}
-      bazel build --define=grpc_no_ares=true --copt="-I/usr/include" --copt=-mfpmath=both {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
+      bazel build --verbose_failures --cxxopt=-std=c++14 --define=grpc_no_ares=true --copt="-I/usr/include" --copt=-mfpmath=both {{ DEFAULT_ENABLE_AVX.stdout }} {{ DEFAULT_ENABLE_AVX2.stdout }} {{ DEFAULT_ENABLE_AVX512.stdout }} {{ DEFAULT_ENABLE_FMA.stdout }} {{ DEFAULT_ENABLE_SSE2.stdout }} {{ DEFAULT_ENABLE_SSE3.stdout }} {{ DEFAULT_ENABLE_SSE4_1.stdout }} {{ DEFAULT_ENABLE_SSE4_2.stdout }} --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
     when: AVX_SETTINGS.stdout == 'default' and SSE_SETTINGS.stdout == 'default'
     environment:
       LD_LIBRARY_PATH: '{{ NUMPY_INSTALL_DIR }}/lib64/python3.6/site-packages/numpy-{{ NUMPY_VERSION }}-py3.6-linux-x86_64.egg/numpy/core:{{ GCC_LIBS }}'

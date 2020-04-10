@@ -22,10 +22,13 @@ NEURONS_MIN = 10
 NEURONS_MAX = 1000
 BATCH_SIZE_MIN = 1
 BATCH_SIZE_MAX = 100
+NUM_WORKERS_MIN = 1
+NUM_WORKERS_MAX = 10
+MAX_ATTEMPTS=10
 
 class FashionMNISTNeuralNet:
 
-    def __init__(self, num_epochs=100, num_neurons=128, batch_size=32):
+    def __init__(self, num_epochs=100, num_neurons=10, batch_size=32, num_workers=None):
 
         # Set multiworker strategy so that we can run across multiple nodes
         self.multiworker_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
@@ -42,9 +45,8 @@ class FashionMNISTNeuralNet:
         # Set batch size
         self.batch_size = batch_size
 
-        # Set options for distributing the data
-        self.options = tf.data.Options()
-        self.options.experimental_distribute.auto_shard = True
+        # Set number of worker nodes
+        self.num_workers = num_workers
 
         # Initialize the dataset
         self.dataset = self.__load_dataset()
@@ -67,8 +69,21 @@ class FashionMNISTNeuralNet:
             test labels 
         """
         # Load the data
+        attempt = 0
         fashion_mnist = keras.datasets.fashion_mnist
-        (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
+        while attempt < MAX_ATTEMPTS:
+            try:
+                train_images = None
+                train_labels = None
+                test_images = None
+                test_labels = None
+                (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
+                if train_images != None and train_labels != None and test_images != None and test_labels != None:
+                    break
+            except:
+                print('Could not load MNIST data. Trying again until we can load it...')
+
+            attempt += 1
 
         # Pack into a dictionary
         dataset = {'train': {'data': train_images, 'labels': train_labels}, 'test': {'data': test_images, 'labels': test_labels}}
@@ -112,6 +127,14 @@ class FashionMNISTNeuralNet:
         """
         Trains the neural network model
         """
+
+        # Check number of workers
+        if self.num_workers is None:
+            raise ValueError('Invalid number of workers. Please choose a value greater than or equal to 1.')
+
+        if self.num_workers < 1:
+            raise ValueError('Invalid number of workers. Please choose a value greater than or equal to 1.')
+
         # Use multiple workers
         with self.multiworker_strategy.scope():
 
@@ -125,8 +148,10 @@ class FashionMNISTNeuralNet:
 
             # Convert data to dataset
             input_dataset = tf.data.Dataset.from_tensor_slices((data, labels))
-            input_dataset = input_dataset.shuffle(5000).batch(self.batch_size)
-            input_dataset.with_options(self.options)
+            if self.num_workers > 1:
+                input_dataset = input_dataset.repeat(self.num_workers-1).shuffle(5000).batch(self.batch_size)
+            else:
+                input_dataset = input_dataset.shuffle(5000).batch(self.batch_size)
 
             # Define model
             self.model = keras.Sequential([
@@ -141,7 +166,7 @@ class FashionMNISTNeuralNet:
 
             print('Training...')
             start_train = datetime.now()
-            self.model.fit(input_dataset, epochs=self.num_epochs)
+            self.model.fit(input_dataset, epochs=self.num_epochs, steps_per_epoch=self.num_epochs*10)
             finish_train = datetime.now()
 
             # Calculate elapsed time
@@ -168,12 +193,14 @@ class FashionMNISTNeuralNet:
 
             # Convert to Dataset
             test_dataset = tf.data.Dataset.from_tensor_slices((data, labels))
-            test_dataset = test_dataset.shuffle(5000).batch(self.batch_size)
-            test_dataset.with_options(self.options)
+            if self.num_workers > 1:
+                test_dataset = test_dataset.repeat(self.num_workers-1).shuffle(5000).batch(self.batch_size)
+            else:   
+                test_dataset = test_dataset.shuffle(5000).batch(self.batch_size)
 
             print('Testing...')
             start_test = datetime.now()
-            test_loss, test_acc = self.model.evaluate(test_dataset, verbose=2)
+            test_loss, test_acc = self.model.evaluate(test_dataset, steps=self.num_epochs*10, verbose=2)
             finish_test = datetime.now()
 
             # Calculate elapsed time
@@ -187,7 +214,7 @@ class FashionMNISTNeuralNet:
             print('    Accuracy:', test_acc)
 
 
-def run_mnist(num_epochs, num_neurons, batch_size):
+def run_mnist(num_epochs, num_neurons, batch_size, num_workers):
     """
     Runs the fashion MNIST training and classification neural network
 
@@ -201,10 +228,13 @@ def run_mnist(num_epochs, num_neurons, batch_size):
 
     batch_size: int
         Training batch size (default: 32)
+
+    num_workers: int
+        Number of OpenShift/Kubernetes workers to be used
     """
 
     # Define the neural network
-    neural_net = FashionMNISTNeuralNet(num_epochs, num_neurons, batch_size)
+    neural_net = FashionMNISTNeuralNet(num_epochs, num_neurons, batch_size, num_workers)
 
     # Train
     neural_net.train()
@@ -216,16 +246,17 @@ def run_mnist(num_epochs, num_neurons, batch_size):
 if __name__ == '__main__':
 
     # Make sure the user passed in all 3 arguments
-    if len(sys.argv) < 4:
-        raise RuntimeError('Too few arguments provided. Please provide two arguments: (1.) number of epochs, (2.) number of neurons (nodes), and (3.) batch size.')
+    if len(sys.argv) < 5:
+        raise RuntimeError('Too few arguments provided. Please provide four arguments: (1.) number of epochs, (2.) number of neurons (nodes), (3.) batch size, and (4.) number of workers.')
 
-    if len(sys.argv) > 4:
-        raise RuntimeError('Too many arguments provided. Please provide two arguments: (1.) number of epochs, (2.) number of neurons (nodes), and (3.) batch size.')
+    if len(sys.argv) > 5:
+        raise RuntimeError('Too many arguments provided. Please provide four arguments: (1.) number of epochs, (2.) number of neurons (nodes), (3.) batch size, and (4.) number of workers.')
 
     # Convert arguments to integers
     num_epochs = int(sys.argv[1])
     num_neurons = int(sys.argv[2])
     batch_size = int(sys.argv[3])
+    num_workers = int(sys.argv[4])
 
     # Check the values of the arguments, making sure they're within the acceptable range
     error_msg_template = 'Number of %s must be in the range of [%d, %d]. You entered: %d.'
@@ -236,6 +267,10 @@ if __name__ == '__main__':
 
     if num_neurons < NEURONS_MIN or num_neurons > NEURONS_MAX:
         error_msg = error_msg_template % ('neurons', NEURONS_MIN, NEURONS_MAX, num_neurons)
+        errors.append(error_msg)
+
+    if num_workers < NUM_WORKERS_MIN or num_workers > NUM_WORKERS_MAX:
+        error_msg = error_msg_template % ('worker nodes', NUM_WORKERS_MIN, NUM_WORKERS_MAX, num_workers)
         errors.append(error_msg)
 
     if batch_size < BATCH_SIZE_MIN or batch_size > BATCH_SIZE_MAX:
@@ -249,4 +284,4 @@ if __name__ == '__main__':
         raise ValueError(all_errors)
 
     # Run the MNIST classification
-    run_mnist(num_epochs, num_neurons, batch_size)
+    run_mnist(num_epochs, num_neurons, batch_size, num_workers)
