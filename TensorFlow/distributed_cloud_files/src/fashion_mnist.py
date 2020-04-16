@@ -12,8 +12,10 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-# Allow soft device placement
-tf.config.set_soft_device_placement(True)
+# Allow for memory growth
+physical_devices = tf.config.list_physical_devices('GPU')
+for device in physical_devices:
+    tf.config.experimental.set_memory_growth(device, True)
 
 # Set min/max values of specific vars
 EPOCHS_MIN = 1
@@ -24,40 +26,64 @@ BATCH_SIZE_MIN = 1
 BATCH_SIZE_MAX = 100
 NUM_WORKERS_MIN = 1
 NUM_WORKERS_MAX = 10
-MAX_ATTEMPTS=10
+MAX_ATTEMPTS = 10
+BATCH_SIZE_PER_REPLICA = 64
 
 class FashionMNISTNeuralNet:
 
-    def __init__(self, num_epochs=100, num_neurons=10, batch_size=32, num_workers=None):
+    def __init__(self, num_epochs=10):
+        self.startup(num_epochs)
 
+
+    def startup(self, num_epochs):
+        """
+        Sets/Resets the object
+
+        Inputs
+        ------
+        num_epochs: int
+            Number of epochs to use when training/testing
+        """
         # Set multiworker strategy so that we can run across multiple nodes
-        self.multiworker_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
-
-        # Set the number of epochs
-        self.num_epochs = num_epochs
-
-        # Set the number of "neurons" (nodes) for the neural net model
-        self.num_neurons = num_neurons
-
-        # Set number of nodes in the 'softmax' layer
-        self.softmax = 10
-
-        # Set batch size
-        self.batch_size = batch_size
-
-        # Set number of worker nodes
-        self.num_workers = num_workers
+        self.__setup_multiworker_strategy()
 
         # Initialize the dataset
-        self.dataset = self.__load_dataset()
+        self.__dataset = self.__load_dataset()
 
         # Preprocess the dataset
         self.__preprocess_dataset()
 
+        # Get the number of images
+        self.__num_train_images = len(self.__dataset['train']['labels'])
+        self.__num_test_images = len(self.__dataset['test']['labels'])
+
+        # Get image dimensions
+        self.__image_height = np.array(self.__dataset['train']['data']).shape[1]
+        self.__image_width = np.array(self.__dataset['train']['data']).shape[2]
+
+        # Setup input pipeline
+        self.__setup_input_pipeline()
+
+        # Create and distribute
+        self.__create_and_distribute_datasets()
+
+        # Set the number of epochs
+        self.num_epochs = num_epochs
+
         # Initialize the model
         self.model = None
 
+    def __setup_multiworker_strategy(self):
+        """
+        Sets up the mirrored worker strategy
+        """
+        # Create the strategy
+        self.__multiworker_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
 
+        # Print the number of devices
+        print ('Number of devices: {}'.format(self.__multiworker_strategy.num_replicas_in_sync))
+
+    
     def __load_dataset(self):
         """
         Loads the fashion MNIST dataset
@@ -105,116 +131,205 @@ class FashionMNISTNeuralNet:
         scale_factor = 255.0
 
         # Adjust the training labels so they're 32-bit integers
-        train_labels = self.dataset['train']['labels']
+        train_labels = self.__dataset['train']['labels']
         train_labels = train_labels.astype(np.int32)
 
         # Do the same with the testing labels
-        test_labels = self.dataset['test']['labels']
+        test_labels = self.__dataset['test']['labels']
         test_labels = test_labels.astype(np.int32)
 
         # Grab the training and testing data, then scale
-        train_images = self.dataset['train']['data'] / scale_factor
-        test_images = self.dataset['test']['data'] / scale_factor
+        train_images = self.__dataset['train']['data'] / scale_factor
+        test_images = self.__dataset['test']['data'] / scale_factor
 
         # Save the preprocessed data back to the dataset
-        self.dataset['train']['data'] = train_images
-        self.dataset['test']['data'] = test_images
-        self.dataset['train']['labels'] = train_labels
-        self.dataset['test']['labels'] = test_labels
+        self.__dataset['train']['data'] = train_images
+        self.__dataset['test']['data'] = test_images
+        self.__dataset['train']['labels'] = train_labels
+        self.__dataset['test']['labels'] = test_labels
 
 
-    def train(self):
+    def __setup_input_pipeline(self):
         """
-        Trains the neural network model
+        Sets up the input pipeline
+        """
+        # Use default batch size per replica
+        batch_size_per_replica = BATCH_SIZE_PER_REPLICA
+
+        # Set global batch size
+        self.__global_batch_size = batch_size_per_replica * self.__multiworker_strategy.num_replicas_in_sync
+
+
+    def __create_and_distribute_datasets(self):
+        """
+        Creates and distributes the MNIST datasets
         """
 
-        # Check number of workers
-        if self.num_workers is None:
-            raise ValueError('Invalid number of workers. Please choose a value greater than or equal to 1.')
+        # Extract the training data and labels
+        train_images = np.array(self.__dataset['train']['data'])
+        train_labels = np.array(self.__dataset['train']['labels'])
 
-        if self.num_workers < 1:
-            raise ValueError('Invalid number of workers. Please choose a value greater than or equal to 1.')
+        # Extract the testing data and labels
+        test_images = np.array(self.__dataset['test']['data'])
+        test_labels = np.array(self.__dataset['test']['labels'])
+
+        # Expand dims of 'test_images' and 'train_images'
+        train_images = np.expand_dims(train_images,3)
+        test_images = np.expand_dims(test_images,3)
+
+        # Create the datasets
+        train_dataset = tf.data.Dataset.from_tensor_slices((train_images, train_labels)).shuffle(self.__num_train_images).batch(self.__global_batch_size)
+        test_dataset = tf.data.Dataset.from_tensor_slices((test_images, test_labels)).batch(self.__global_batch_size)
+
+        # Distribute
+        self.__train_dist_dataset = self.__multiworker_strategy.experimental_distribute_dataset(train_dataset)
+        self.__test_dist_dataset = self.__multiworker_strategy.experimental_distribute_dataset(test_dataset)
+
+
+    def __compute_loss(self, labels, predictions):
+        """
+        Computes loss
+        """
+        per_example_loss = self.__loss_object(labels, predictions)
+        return tf.nn.compute_average_loss(per_example_loss, global_batch_size=self.__global_batch_size)
+
+
+    def __train_step(self, inputs):
+        """
+        Trains the model
+
+        Code based on: https://www.tensorflow.org/tutorials/distribute/custom_training
+        """
+        images, labels = inputs
+
+        with tf.GradientTape() as tape:
+            predictions = self.model(images, training=True)
+            loss = self.__compute_loss(labels, predictions)
+
+        gradients = tape.gradient(loss, self.model.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
+
+        self.__train_accuracy.update_state(labels, predictions)
+
+        return loss 
+
+
+    def __distributed_train_step(self, dataset_inputs):
+        """
+        Computes distributed training step
+
+        Code based on: https://www.tensorflow.org/tutorials/distribute/custom_training
+        """
+        per_replica_losses = self.__multiworker_strategy.experimental_run_v2(self.__train_step, args=(dataset_inputs,))
+        return self.__multiworker_strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None)
+
+
+    def __test_step(self, inputs):
+        """
+        Same as the '__train_step' function, but for testing
+
+        Taken from: https://www.tensorflow.org/tutorials/distribute/custom_training
+        """
+        images, labels = inputs
+
+        predictions = self.model(images, training=False)
+        t_loss = self.__loss_object(labels, predictions)
+
+        self.__test_loss.update_state(t_loss)
+        self.__test_accuracy.update_state(labels, predictions)
+
+
+    def __distributed_test_step(self, dataset_inputs):
+        """
+        Identical to the '__distributed_train_step' function, but for testing
+
+        Also taken from same source
+        """
+        return self.__multiworker_strategy.experimental_run_v2(self.__test_step, args=(dataset_inputs,))
+
+
+    def run(self):
+        """
+        Trains and tests the neural network model
+        """
+        # Capture total train and test time
+        total_train_time = 0.0
+        total_test_time = 0.0
 
         # Use multiple workers
-        with self.multiworker_strategy.scope():
+        with self.__multiworker_strategy.scope():
 
-            # Extract data from dict and convert to numpy arrays
-            data = np.array(self.dataset['train']['data'])
-            labels = np.array(self.dataset['train']['labels'])
+            # Defining the loss function
+            self.__loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
+                from_logits=True,
+                reduction=tf.keras.losses.Reduction.NONE)
 
-            # Get image width and height
-            image_height = data.shape[1]
-            image_width = data.shape[2]
+            # Defining metrics to track loss and accuracy
+            self.__test_loss = tf.keras.metrics.Mean(name='test_loss')
+            self.__train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
+            self.__test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='test_accuracy')
 
-            # Convert data to dataset
-            input_dataset = tf.data.Dataset.from_tensor_slices((data, labels))
-            if self.num_workers > 1:
-                input_dataset = input_dataset.repeat(self.num_workers-1).shuffle(5000).batch(self.batch_size)
-            else:
-                input_dataset = input_dataset.shuffle(5000).batch(self.batch_size)
+            # Generate the model
+            self.model = tf.keras.Sequential([
+                tf.keras.layers.Conv2D(32, 3, activation='relu'),
+                tf.keras.layers.MaxPooling2D(),
+                tf.keras.layers.Conv2D(64, 3, activation='relu'),
+                tf.keras.layers.MaxPooling2D(),
+                tf.keras.layers.Flatten(),
+                tf.keras.layers.Dense(64, activation='relu'),
+                tf.keras.layers.Dense(10)
+            ])
 
-            # Define model
-            self.model = keras.Sequential([
-                            keras.layers.Flatten(input_shape=(image_height, image_width)),
-                            keras.layers.Dense(self.num_neurons),
-                        ])
+            # Set the optimizer
+            self.optimizer = tf.keras.optimizers.Adam()
 
-            # Compile model
-            self.model.compile(optimizer='adam',
-                               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                               metrics=['accuracy'])
+            # Set the checkpoint
+            self.checkpoint = tf.train.Checkpoint(optimizer=self.optimizer, model=self.model)
 
-            print('Training...')
-            start_train = datetime.now()
-            self.model.fit(input_dataset, epochs=self.num_epochs, steps_per_epoch=self.num_epochs*10)
-            finish_train = datetime.now()
+            for epoch in range(self.num_epochs):
 
-            # Calculate elapsed time
-            elapsed_time_seconds = (finish_train - start_train).total_seconds()
+                print('Training...')
+                ####### Training #######
+                start_train = datetime.now() #START
+                total_loss = 0.0
+                num_batches = 0
+                for x in self.__train_dist_dataset:
+                    total_loss += self.__distributed_train_step(x)
+                    num_batches += 1
+                train_loss = total_loss / num_batches
+                finish_train = datetime.now() #STOP
 
-            # Print elapsed time
-            print('    Train time (sec):', elapsed_time_seconds)
+                print('Testing...')
+                ####### Testing #######
+                start_test = datetime.now() #START
+                for x in self.__test_dist_dataset:
+                    self.__distributed_test_step(x)
+                finish_test = datetime.now() #STOP
 
+            # Calculate elapsed times
+            elapsed_train_time_seconds = (finish_train - start_train).total_seconds()
+            elapsed_test_time_seconds = (finish_test - start_test).total_seconds()
 
-    def test(self):
-        """
-        Tests the neural network model
-        """
-        # Check if we have already trained
-        if self.model is None:
-            raise AttributeError('Model has not been trained yet. Please train the model first.')
-
-        # Use multiple workers
-        with self.multiworker_strategy.scope():
-
-            # Extract dataset
-            data = np.array(self.dataset['test']['data'])
-            labels = np.array(self.dataset['test']['labels'])
-
-            # Convert to Dataset
-            test_dataset = tf.data.Dataset.from_tensor_slices((data, labels))
-            if self.num_workers > 1:
-                test_dataset = test_dataset.repeat(self.num_workers-1).shuffle(5000).batch(self.batch_size)
-            else:   
-                test_dataset = test_dataset.shuffle(5000).batch(self.batch_size)
-
-            print('Testing...')
-            start_test = datetime.now()
-            test_loss, test_acc = self.model.evaluate(test_dataset, steps=self.num_epochs*10, verbose=2)
-            finish_test = datetime.now()
-
-            # Calculate elapsed time
-            elapsed_time_seconds = (finish_test - start_test).total_seconds()
+            template = ('Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, Test Accuracy: {}, Train time: {}, Test time: {}')
+            print (template.format(epoch+1,
+                           train_loss,
+                           self.__train_accuracy.result()*100,
+                           self.__test_loss.result(),
+                           self.__test_accuracy.result()*100),
+                           elapsed_train_time_seconds,
+                           elapsed_test_time_seconds)
             
-            # Print elapsed time
-            print('    Test time (sec):', elapsed_time_seconds)
+            total_train_time += elapsed_train_time_seconds
+            total_test_time += elapsed_test_time_seconds
 
-            # Print loss and accuracy
-            print('    Loss:', test_loss)
-            print('    Accuracy:', test_acc)
+        print('-----------------------------\n')
+        print('Total train time: %0.2f' % (total_train_time))
+        print('Total test time: %0.2f' % (total_test_time))
 
 
-def run_mnist(num_epochs, num_neurons, batch_size, num_workers):
+#####################################################################################
+
+def run_mnist(num_epochs):
     """
     Runs the fashion MNIST training and classification neural network
 
@@ -222,66 +337,36 @@ def run_mnist(num_epochs, num_neurons, batch_size, num_workers):
     ----------
     num_epochs: int
         Number of epochs to use when training (default: 100)
-
-    num_neurons: int
-        Number of neurons (nodes) to use in the first layer (default: 128)
-
-    batch_size: int
-        Training batch size (default: 32)
-
-    num_workers: int
-        Number of OpenShift/Kubernetes workers to be used
     """
 
     # Define the neural network
-    neural_net = FashionMNISTNeuralNet(num_epochs, num_neurons, batch_size, num_workers)
+    neural_net = FashionMNISTNeuralNet(num_epochs)
 
-    # Train
-    neural_net.train()
+    # Train and test
+    neural_net.run()
 
-    # Test
-    neural_net.test()
+#####################################################################################
 
 
 if __name__ == '__main__':
 
-    # Make sure the user passed in all 3 arguments
-    if len(sys.argv) < 5:
-        raise RuntimeError('Too few arguments provided. Please provide four arguments: (1.) number of epochs, (2.) number of neurons (nodes), (3.) batch size, and (4.) number of workers.')
+    # Make sure the user passed in a valid argument
+    if len(sys.argv) < 2:
+        raise RuntimeError('Missing argument for number of epochs.')
 
-    if len(sys.argv) > 5:
-        raise RuntimeError('Too many arguments provided. Please provide four arguments: (1.) number of epochs, (2.) number of neurons (nodes), (3.) batch size, and (4.) number of workers.')
+    if len(sys.argv) > 2:
+        raise RuntimeError('Too many arguments provided. This script only utilizes one argument, the number of epochs.')
 
-    # Convert arguments to integers
+    # Convert argument to integers
     num_epochs = int(sys.argv[1])
-    num_neurons = int(sys.argv[2])
-    batch_size = int(sys.argv[3])
-    num_workers = int(sys.argv[4])
 
     # Check the values of the arguments, making sure they're within the acceptable range
     error_msg_template = 'Number of %s must be in the range of [%d, %d]. You entered: %d.'
     errors = []
     if num_epochs < EPOCHS_MIN or num_epochs > EPOCHS_MAX:
-        error_msg = error_msg_template % ('epochs', EPOCHS_MIN, EPOCHS_MAX, num_epochs)
-        errors.append(error_msg)
-
-    if num_neurons < NEURONS_MIN or num_neurons > NEURONS_MAX:
-        error_msg = error_msg_template % ('neurons', NEURONS_MIN, NEURONS_MAX, num_neurons)
-        errors.append(error_msg)
-
-    if num_workers < NUM_WORKERS_MIN or num_workers > NUM_WORKERS_MAX:
-        error_msg = error_msg_template % ('worker nodes', NUM_WORKERS_MIN, NUM_WORKERS_MAX, num_workers)
-        errors.append(error_msg)
-
-    if batch_size < BATCH_SIZE_MIN or batch_size > BATCH_SIZE_MAX:
-        error_msg = 'Batch size must be in the range of [%d, %d]. You entered: %d' % (BATCH_SIZE_MIN, BATCH_SIZE_MAX, batch_size)
-        errors.append(error_msg)
-
-    if len(errors) > 0:
-        all_errors = ''
-        for msg in errors:
-            all_errors += (msg + ' ')
-        raise ValueError(all_errors)
+        error_msg_template = 'Number of epochs must be in the range of [%d, %d]. You entered: %d.'
+        error_msg = error_msg_template % (EPOCHS_MIN, EPOCHS_MAX, num_epochs)
+        raise ValueError(err_msg)
 
     # Run the MNIST classification
-    run_mnist(num_epochs, num_neurons, batch_size, num_workers)
+    run_mnist(num_epochs)
